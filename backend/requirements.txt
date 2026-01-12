@@ -3,4 +3,9 @@ uvicorn[standard]==0.27.0
 pydantic==2.5.3
 python-dateutil==2.8.2
 azure-cosmos==4.7.0
+azure-storage-blob==12.19.0
 python-dotenv==1.0.0
+python-multipart==0.0.19
+pymupdf==1.25.3
+openai==1.63.0
+rapidfuzz==3.11.0

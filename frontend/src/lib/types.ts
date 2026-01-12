@@ -73,3 +73,51 @@ export interface Alert {
   tank_name: string;
   level_percentage: number;
 }
+
+// PDF Import Types
+export interface PDFExtractedMovement {
+  tank_name: string;
+  level_before: number;
+  level_after: number;
+  movement_qty: number;
+  movement_date: string | null;
+  row_index: number;
+}
+
+export interface TankMatchSuggestion {
+  tank_id: string;
+  tank_name: string;
+  confidence: number;
+}
+
+export interface PDFMovementWithMatches {
+  extracted: PDFExtractedMovement;
+  movement_type: MovementType;
+  suggested_matches: TankMatchSuggestion[];
+  best_match: TankMatchSuggestion | null;
+  is_exact_match: boolean;
+}
+
+export interface PDFExtractionResult {
+  filename: string;
+  movements: PDFMovementWithMatches[];
+  extraction_errors: string[];
+}
+
+export interface PDFImportConfirmItem {
+  tank_id: string;
+  type: MovementType;
+  volume: number;
+  date: string;
+  notes?: string;
+}
+
+export interface PDFImportRequest {
+  movements: PDFImportConfirmItem[];
+}
+
+export interface PDFImportResult {
+  created_count: number;
+  failed_count: number;
+  errors: string[];
+}

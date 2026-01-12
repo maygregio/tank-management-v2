@@ -19,6 +19,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 const drawerWidth = 240;
 
@@ -27,6 +28,7 @@ const menuItems = [
   { text: 'Tanks', href: '/tanks', icon: <PropaneTankIcon /> },
   { text: 'Movements', href: '/movements', icon: <SwapHorizIcon /> },
   { text: 'Adjustments', href: '/adjustments', icon: <TuneIcon /> },
+  { text: 'Import PDF', href: '/imports', icon: <UploadFileIcon /> },
 ];
 
 export default function Navigation({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,7 @@
 import type {
   Tank, TankWithLevel, TankCreate,
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
-  DashboardStats
+  DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult
 } from './types';
 
 const API_BASE = 'http://localhost:8000/api';
@@ -78,4 +78,31 @@ export const movementsApi = {
 // Dashboard
 export const dashboardApi = {
   getStats: () => fetchAPI<DashboardStats>('/tanks/dashboard'),
+};
+
+// Imports
+export const importsApi = {
+  extractFromPDFs: async (files: File[]): Promise<PDFExtractionResult[]> => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    const response = await fetch(`${API_BASE}/imports/extract`, {
+      method: 'POST',
+      body: formData,
+      // Note: Don't set Content-Type header for FormData - browser sets it with boundary
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Extraction failed' }));
+      throw new Error(error.detail || 'Extraction failed');
+    }
+
+    return response.json();
+  },
+
+  confirmImport: (data: PDFImportRequest) =>
+    fetchAPI<PDFImportResult>('/imports/confirm', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
