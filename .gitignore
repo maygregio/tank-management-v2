@@ -37,3 +37,7 @@ node_modules/
 
 # Claude
 .claude/
+
+# Claude documentation
+CLAUDE.md
+**/CLAUDE.md
