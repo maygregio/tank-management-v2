@@ -19,27 +19,33 @@ def get_openai_client() -> OpenAI:
     return _client
 
 
-EXTRACTION_PROMPT = """Analyze this text extracted from a PDF containing tank movement records.
-Extract all movement entries from tables. Each movement should have:
-- tank_name: The name/identifier of the tank
-- level_before: Fuel level before the movement (in liters or the unit shown)
-- level_after: Fuel level after the movement (in liters or the unit shown)
-- movement_qty: The quantity moved (positive number, absolute value)
-- movement_date: Date if shown (YYYY-MM-DD format) or null
+EXTRACTION_PROMPT = """This PDF contains analysis reports with various content. Your task is to find ONLY the table(s) showing tank volume differences/movements.
 
-Return a JSON array of objects. Example:
+WHAT TO LOOK FOR:
+- Tables with columns like: tank name/ID, initial volume, final volume, difference/variation
+- Tables showing fuel stock movements or inventory changes
+- Any tabular data with "before" and "after" volumes or level differences
+
+WHAT TO IGNORE:
+- Headers, footers, logos, addresses
+- Introductory text, summaries, conclusions
+- Tables without volume/level data
+- Any content that is not a volume difference table
+
+For each row in the volume table(s), extract:
+- tank_name: Tank identifier/name from the row
+- level_before: Starting volume/level (in liters or shown unit)
+- level_after: Ending volume/level (in liters or shown unit)
+- movement_qty: The difference/variation amount (absolute value)
+- movement_date: Date if shown in the table (YYYY-MM-DD) or null
+
+Return a JSON array. Example:
 [
-  {
-    "tank_name": "Tank A1",
-    "level_before": 5000.0,
-    "level_after": 7000.0,
-    "movement_qty": 2000.0,
-    "movement_date": "2024-01-15"
-  }
+  {"tank_name": "TQ-01", "level_before": 5000.0, "level_after": 7000.0, "movement_qty": 2000.0, "movement_date": "2024-01-15"}
 ]
 
-If you cannot extract any movement data, return an empty array [].
-Only return the JSON array, no other text or explanation.
+Return [] if no volume difference table is found.
+Return ONLY the JSON array, no explanation.
 
 PDF TEXT:
 """
@@ -64,7 +70,7 @@ async def extract_movements_with_ai(pdf_text: str) -> list[PDFExtractedMovement]
         messages=[
             {
                 "role": "system",
-                "content": "You are a data extraction assistant. Extract tank movement data from text and return valid JSON only."
+                "content": "You are a data extraction specialist. Your job is to locate volume difference tables in PDF text and extract the data as JSON. Ignore all non-tabular content."
             },
             {
                 "role": "user",
