@@ -1,0 +1,17 @@
+# EIA Real-Time Data Fetcher Dependencies
+
+# HTTP client
+requests>=2.28.0
+
+# Data processing
+pandas>=1.5.0
+
+# Excel file support
+openpyxl>=3.0.0  # For .xlsx files
+xlrd>=2.0.0      # For .xls files
+
+# Timezone handling
+pytz>=2023.3
+
+# Environment variables
+python-dotenv>=1.0.0
