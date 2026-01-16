@@ -9,13 +9,23 @@ import io
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import requests
 
-from .config import Config, WPSR_EXCEL_FILES, WPSR_FILES, get_config
+from .config import (
+    Config,
+    DNAV_BASE_URL,
+    DNAV_MONTHLY_SERIES,
+    DNAV_WEEKLY_SERIES,
+    PSM_PDF_BASE_URL,
+    PSM_TABLES,
+    WPSR_EXCEL_FILES,
+    WPSR_FILES,
+    get_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +76,7 @@ class DataFetcher:
         Returns:
             FetchResult: Result containing content or error
         """
-        fetch_time = datetime.utcnow()
+        fetch_time = datetime.now(timezone.utc)
 
         try:
             response = self.session.get(url, timeout=60)
@@ -204,29 +214,192 @@ class DataFetcher:
 
         return results
 
-    def fetch_psm_data(self) -> Dict[str, FetchResult]:
+    def fetch_psm_pdf(self, table_name: str) -> FetchResult:
         """
-        Fetch Petroleum Supply Monthly data.
+        Fetch a single PSM PDF table.
+
+        Args:
+            table_name: Name of the table (e.g., "table1", "table39")
 
         Returns:
-            Dict[str, FetchResult]: Results keyed by data type
+            FetchResult: Result containing PDF content
+        """
+        if table_name not in PSM_TABLES:
+            return FetchResult(
+                url="",
+                filename=table_name,
+                success=False,
+                error=f"Unknown PSM table: {table_name}",
+            )
+
+        filename = f"{table_name}.pdf"
+        url = f"{PSM_PDF_BASE_URL}/{filename}"
+        return self.fetch_file(url, filename)
+
+    def fetch_psm_data(
+        self,
+        tables: Optional[List[str]] = None,
+        fetch_all: bool = True
+    ) -> Dict[str, FetchResult]:
+        """
+        Fetch Petroleum Supply Monthly data (all 60 tables as PDFs).
+
+        Note: PSM CSV files have been discontinued by EIA.
+        Data is now accessed via PDF tables or the EIA API.
+
+        Args:
+            tables: Specific tables to fetch (e.g., ["table1", "table39"])
+                   If None and fetch_all=True, fetches all 60 tables
+            fetch_all: If True and tables is None, fetch all tables
+
+        Returns:
+            Dict[str, FetchResult]: Results keyed by table name
         """
         results = {}
 
-        # PSM main page URL
-        psm_url = f"{self.config.psm_base_url}/csv/table1.csv"
+        if tables is not None:
+            tables_to_fetch = tables
+        elif fetch_all:
+            tables_to_fetch = list(PSM_TABLES.keys())
+        else:
+            # Default: fetch key summary tables only
+            tables_to_fetch = [
+                "table1",   # U.S. Supply & Disposition
+                "table25",  # Crude Oil by PAD District
+                "table26",  # Crude Production by State
+                "table39",  # Imports by Country
+                "table49",  # Exports by PAD District
+                "table53",  # Net Imports by Country
+                "table55",  # Stocks by PAD District
+            ]
 
-        result = self.fetch_file(psm_url, "psm_table1.csv")
+        logger.info(f"Fetching {len(tables_to_fetch)} PSM tables...")
+
+        for table_name in tables_to_fetch:
+            results[table_name] = self.fetch_psm_pdf(table_name)
+
+        successful = sum(1 for r in results.values() if r.success)
+        logger.info(f"Fetched {successful}/{len(results)} PSM PDF tables successfully")
+
+        return results
+
+    def fetch_psm_key_tables(self) -> Dict[str, FetchResult]:
+        """
+        Fetch only key PSM summary tables (7 tables instead of all 60).
+
+        Returns:
+            Dict[str, FetchResult]: Results for key tables
+        """
+        return self.fetch_psm_data(fetch_all=False)
+
+    # =========================================================================
+    # DNAV (Data Navigator) XLS Downloads
+    # =========================================================================
+
+    def fetch_dnav_xls(self, series_name: str, weekly: bool = False) -> FetchResult:
+        """
+        Fetch a DNAV XLS data file (historical time series).
+
+        Args:
+            series_name: Name of the series (e.g., "supply_disposition", "stocks_type")
+            weekly: If True, fetch from weekly series; if False, from monthly
+
+        Returns:
+            FetchResult: Result with parsed DataFrame
+        """
+        series_dict = DNAV_WEEKLY_SERIES if weekly else DNAV_MONTHLY_SERIES
+
+        if series_name not in series_dict:
+            return FetchResult(
+                url="",
+                filename=series_name,
+                success=False,
+                error=f"Unknown DNAV series: {series_name}",
+            )
+
+        series_info = series_dict[series_name]
+        filename = series_info["file"]
+        url = f"{DNAV_BASE_URL}/{filename}"
+
+        result = self.fetch_file(url, filename)
 
         if result.success and result.content:
             try:
-                df = pd.read_csv(io.BytesIO(result.content), encoding="utf-8")
+                # Parse Excel content
+                df = pd.read_excel(
+                    io.BytesIO(result.content),
+                    engine="xlrd" if filename.endswith(".xls") else "openpyxl"
+                )
                 result.dataframe = df
+                logger.debug(f"Parsed DNAV {filename}: {len(df)} rows, {len(df.columns)} columns")
             except Exception as e:
-                logger.error(f"Failed to parse PSM CSV: {e}")
+                logger.error(f"Failed to parse DNAV Excel {filename}: {e}")
                 result.error = f"Parse error: {e}"
 
-        results["psm_summary"] = result
+        return result
+
+    def fetch_all_dnav_monthly(self) -> Dict[str, FetchResult]:
+        """
+        Fetch all monthly DNAV XLS data series.
+
+        Returns:
+            Dict[str, FetchResult]: Results keyed by series name
+        """
+        results = {}
+
+        logger.info(f"Fetching {len(DNAV_MONTHLY_SERIES)} monthly DNAV series...")
+
+        for series_name in DNAV_MONTHLY_SERIES.keys():
+            results[series_name] = self.fetch_dnav_xls(series_name, weekly=False)
+
+        successful = sum(1 for r in results.values() if r.success)
+        logger.info(f"Fetched {successful}/{len(results)} DNAV monthly series successfully")
+
+        return results
+
+    def fetch_all_dnav_weekly(self) -> Dict[str, FetchResult]:
+        """
+        Fetch all weekly DNAV XLS data series.
+
+        Returns:
+            Dict[str, FetchResult]: Results keyed by series name
+        """
+        results = {}
+
+        logger.info(f"Fetching {len(DNAV_WEEKLY_SERIES)} weekly DNAV series...")
+
+        for series_name in DNAV_WEEKLY_SERIES.keys():
+            results[series_name] = self.fetch_dnav_xls(series_name, weekly=True)
+
+        successful = sum(1 for r in results.values() if r.success)
+        logger.info(f"Fetched {successful}/{len(results)} DNAV weekly series successfully")
+
+        return results
+
+    def fetch_dnav_key_series(self) -> Dict[str, FetchResult]:
+        """
+        Fetch key monthly DNAV series (subset of most important data).
+
+        Returns:
+            Dict[str, FetchResult]: Results for key series
+        """
+        key_series = [
+            "supply_disposition",
+            "crude_supply_disposition",
+            "crude_production",
+            "refinery_utilization",
+            "imports_country",
+            "exports",
+            "stocks_type",
+            "product_supplied",
+        ]
+
+        results = {}
+        for series_name in key_series:
+            results[series_name] = self.fetch_dnav_xls(series_name, weekly=False)
+
+        successful = sum(1 for r in results.values() if r.success)
+        logger.info(f"Fetched {successful}/{len(results)} key DNAV series successfully")
 
         return results
 
