@@ -410,7 +410,9 @@ class DataFetcher:
     def fetch_dnav_html_table(
         self,
         page_url: str,
-        table_index: int = 0
+        table_index: Optional[int] = None,
+        auto_detect: bool = True,
+        clean_dataframe: bool = True
     ) -> FetchResult:
         """
         Fetch and parse an HTML table directly from a DNAV page.
@@ -421,7 +423,12 @@ class DataFetcher:
         Args:
             page_url: Full URL to the DNAV page (e.g.,
                      "https://www.eia.gov/dnav/pet/pet_sum_crdsnd_k_m.htm")
-            table_index: Which table to extract if multiple exist (default: 0)
+            table_index: Which table to extract. If None and auto_detect=True,
+                        automatically finds the main data table.
+            auto_detect: If True and table_index is None, automatically detect
+                        the main data table (largest table with numeric data).
+            clean_dataframe: If True, clean up the dataframe by removing
+                            empty/unnamed columns.
 
         Returns:
             FetchResult: Result with parsed DataFrame
@@ -448,18 +455,33 @@ class DataFetcher:
                     fetch_time=fetch_time,
                 )
 
-            if table_index >= len(tables):
-                return FetchResult(
-                    url=page_url,
-                    filename=filename,
-                    success=False,
-                    error=f"Table index {table_index} not found (only {len(tables)} tables)",
-                    fetch_time=fetch_time,
-                )
+            # Determine which table to use
+            if table_index is not None:
+                if table_index >= len(tables):
+                    return FetchResult(
+                        url=page_url,
+                        filename=filename,
+                        success=False,
+                        error=f"Table index {table_index} not found (only {len(tables)} tables)",
+                        fetch_time=fetch_time,
+                    )
+                selected_index = table_index
+            elif auto_detect:
+                # Auto-detect: find the largest table with numeric data
+                selected_index = self._find_data_table(tables)
+            else:
+                selected_index = 0
 
-            df = tables[table_index]
+            df = tables[selected_index]
 
-            logger.info(f"Parsed HTML table from {filename}: {len(df)} rows, {len(df.columns)} columns")
+            # Clean up the dataframe
+            if clean_dataframe:
+                df = self._clean_dnav_dataframe(df)
+
+            logger.info(
+                f"Parsed HTML table from {filename} (table {selected_index}): "
+                f"{len(df)} rows, {len(df.columns)} columns"
+            )
 
             return FetchResult(
                 url=page_url,
@@ -489,6 +511,98 @@ class DataFetcher:
                 error=str(e),
                 fetch_time=fetch_time,
             )
+
+    def _find_data_table(self, tables: List[pd.DataFrame]) -> int:
+        """
+        Find the main data table from a list of tables.
+
+        Looks for the table with the most rows that contains numeric data.
+        DNAV pages typically have the data table at index 3.
+
+        Args:
+            tables: List of DataFrames from pd.read_html()
+
+        Returns:
+            int: Index of the best data table
+        """
+        best_index = 0
+        best_score = 0
+
+        for i, df in enumerate(tables):
+            if df.empty:
+                continue
+
+            # Score based on: rows, columns, and numeric content
+            rows = len(df)
+            cols = len(df.columns)
+
+            # Count numeric values
+            numeric_count = 0
+            for col in df.columns:
+                try:
+                    numeric_count += pd.to_numeric(df[col], errors='coerce').notna().sum()
+                except Exception:
+                    pass
+
+            # Calculate score (favor tables with more rows and numeric data)
+            score = rows * cols + numeric_count * 2
+
+            # Bonus for tables that look like data tables (>10 rows, >3 columns)
+            if rows > 10 and cols > 3:
+                score *= 2
+
+            if score > best_score:
+                best_score = score
+                best_index = i
+
+        logger.debug(f"Auto-detected data table at index {best_index}")
+        return best_index
+
+    def _clean_dnav_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Clean up a DNAV HTML table dataframe.
+
+        - Flattens multi-level column headers
+        - Removes unnamed/empty columns
+        - Drops rows that are all NaN
+        - Removes 'View History' column
+
+        Args:
+            df: DataFrame to clean
+
+        Returns:
+            pd.DataFrame: Cleaned DataFrame
+        """
+        # Flatten multi-level column headers (common in DNAV tables)
+        if isinstance(df.columns, pd.MultiIndex):
+            # Use the last level of the multi-index (actual column names)
+            df.columns = [col[-1] if isinstance(col, tuple) else col for col in df.columns]
+
+        # Remove columns that are all NaN
+        df = df.dropna(axis=1, how='all')
+
+        # Remove columns with 'Unnamed' in name
+        unnamed_cols = [col for col in df.columns if 'Unnamed' in str(col)]
+        if unnamed_cols:
+            df = df.drop(columns=unnamed_cols)
+
+        # Remove 'View History' column if present (not useful for data)
+        if 'View History' in df.columns:
+            df = df.drop(columns=['View History'])
+
+        # Remove rows that are all NaN
+        df = df.dropna(how='all')
+
+        # Rename first column if it looks like a label column
+        if len(df.columns) > 0:
+            first_col = df.columns[0]
+            if first_col == 0 or 'Unnamed' in str(first_col):
+                df = df.rename(columns={first_col: 'Item'})
+
+        # Reset index
+        df = df.reset_index(drop=True)
+
+        return df
 
     def fetch_dnav_page(self, page_code: str) -> FetchResult:
         """
