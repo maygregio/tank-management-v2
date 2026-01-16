@@ -403,6 +403,145 @@ class DataFetcher:
 
         return results
 
+    # =========================================================================
+    # DNAV HTML Table Scraping (Current Data from Web Pages)
+    # =========================================================================
+
+    def fetch_dnav_html_table(
+        self,
+        page_url: str,
+        table_index: int = 0
+    ) -> FetchResult:
+        """
+        Fetch and parse an HTML table directly from a DNAV page.
+
+        This gets the current data displayed on the page (recent months)
+        without downloading the full historical XLS file.
+
+        Args:
+            page_url: Full URL to the DNAV page (e.g.,
+                     "https://www.eia.gov/dnav/pet/pet_sum_crdsnd_k_m.htm")
+            table_index: Which table to extract if multiple exist (default: 0)
+
+        Returns:
+            FetchResult: Result with parsed DataFrame
+        """
+        fetch_time = datetime.now(timezone.utc)
+        filename = page_url.split("/")[-1]
+
+        try:
+            response = self.session.get(page_url, timeout=30)
+            response.raise_for_status()
+
+            # Use pandas to parse HTML tables
+            tables = pd.read_html(
+                io.StringIO(response.text),
+                flavor="lxml"
+            )
+
+            if not tables:
+                return FetchResult(
+                    url=page_url,
+                    filename=filename,
+                    success=False,
+                    error="No tables found on page",
+                    fetch_time=fetch_time,
+                )
+
+            if table_index >= len(tables):
+                return FetchResult(
+                    url=page_url,
+                    filename=filename,
+                    success=False,
+                    error=f"Table index {table_index} not found (only {len(tables)} tables)",
+                    fetch_time=fetch_time,
+                )
+
+            df = tables[table_index]
+
+            logger.info(f"Parsed HTML table from {filename}: {len(df)} rows, {len(df.columns)} columns")
+
+            return FetchResult(
+                url=page_url,
+                filename=filename,
+                success=True,
+                content=response.content,
+                dataframe=df,
+                fetch_time=fetch_time,
+                file_size=len(response.content),
+            )
+
+        except ImportError:
+            logger.error("lxml not installed. Install with: pip install lxml")
+            return FetchResult(
+                url=page_url,
+                filename=filename,
+                success=False,
+                error="lxml not installed for HTML parsing",
+                fetch_time=fetch_time,
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch HTML table from {page_url}: {e}")
+            return FetchResult(
+                url=page_url,
+                filename=filename,
+                success=False,
+                error=str(e),
+                fetch_time=fetch_time,
+            )
+
+    def fetch_dnav_page(self, page_code: str) -> FetchResult:
+        """
+        Fetch HTML table from a DNAV page using a short code.
+
+        Args:
+            page_code: The page code (e.g., "pet_sum_crdsnd_k_m" for crude supply)
+
+        Returns:
+            FetchResult: Result with parsed DataFrame
+        """
+        url = f"https://www.eia.gov/dnav/pet/{page_code}.htm"
+        return self.fetch_dnav_html_table(url)
+
+    def fetch_dnav_html_tables(
+        self,
+        page_codes: Optional[List[str]] = None
+    ) -> Dict[str, FetchResult]:
+        """
+        Fetch HTML tables from multiple DNAV pages.
+
+        Args:
+            page_codes: List of page codes to fetch. If None, fetches key pages.
+
+        Returns:
+            Dict[str, FetchResult]: Results keyed by page code
+        """
+        if page_codes is None:
+            # Default key pages for monthly data
+            page_codes = [
+                "pet_sum_snd_d_nus_mbbl_m_cur",      # Supply & Disposition
+                "pet_sum_crdsnd_k_m",                 # Crude Oil Supply & Disposition
+                "pet_crd_crpdn_adc_mbbl_m",          # Crude Production by State
+                "pet_pnp_unc_dcu_nus_m",             # Refinery Utilization
+                "pet_move_impcus_a2_nus_ep00_im0_mbbl_m",  # Imports by Country
+                "pet_move_exp_dc_NUS-Z00_mbbl_m",    # Exports
+                "pet_stoc_typ_d_nus_SAE_mbbl_m",     # Stocks by Type
+                "pet_cons_psup_dc_nus_mbbl_m",       # Product Supplied
+                "pet_pri_spt_s1_d",                  # Spot Prices
+            ]
+
+        results = {}
+
+        logger.info(f"Fetching {len(page_codes)} DNAV HTML tables...")
+
+        for code in page_codes:
+            results[code] = self.fetch_dnav_page(code)
+
+        successful = sum(1 for r in results.values() if r.success)
+        logger.info(f"Fetched {successful}/{len(results)} DNAV HTML tables successfully")
+
+        return results
+
     def validate_data(self, df: pd.DataFrame, table_name: str) -> List[str]:
         """
         Validate a parsed DataFrame for common issues.
