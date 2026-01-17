@@ -2,7 +2,7 @@ import type {
   Tank, TankWithLevel, TankCreate,
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
   DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
-  SignalAssignment, SignalUploadResult
+  SignalAssignment, SignalUploadResult, TradeInfoUpdate
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -97,6 +97,10 @@ export const movementsApi = {
     return response.json();
   },
   assignSignal: (id: string, data: SignalAssignment) => fetchAPI<Movement>(`/movements/${id}/assign`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  updateTradeInfo: (id: string, data: TradeInfoUpdate) => fetchAPI<Movement>(`/movements/${id}/trade`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),

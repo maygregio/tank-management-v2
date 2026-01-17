@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from typing import Optional
 from models.schemas import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
-    Tank, AdjustmentCreate, TransferCreate, SignalAssignment
+    Tank, AdjustmentCreate, TransferCreate, SignalAssignment, TradeInfoUpdate
 )
 from services.storage import CosmosStorage
 from services.calculations import calculate_tank_level, calculate_adjustment
@@ -240,11 +240,19 @@ def create_adjustment(adjustment_data: AdjustmentCreate):
 
 # Signal endpoints
 @router.get("/signals", response_model=list[Movement])
-def get_unassigned_signals():
-    """Get all unassigned signals (movements with tank_id=None)."""
+def get_pending_signals():
+    """Get signals that need work (unassigned OR missing trade info)."""
     movements = movement_storage.get_all()
-    # Filter for unassigned signals (tank_id is None and signal_id is set)
-    signals = [m for m in movements if m.tank_id is None and m.signal_id is not None]
+    # Filter for signals that need attention:
+    # - Has signal_id (is a signal)
+    # - AND either: tank_id is None (unassigned) OR trade info is missing
+    signals = [
+        m for m in movements
+        if m.signal_id is not None and (
+            m.tank_id is None or  # Unassigned
+            m.trade_number is None or m.trade_line_item is None  # Missing trade info
+        )
+    ]
     # Sort by scheduled_date descending
     signals.sort(key=lambda m: m.scheduled_date, reverse=True)
     return signals
@@ -332,6 +340,30 @@ def assign_signal(movement_id: str, data: SignalAssignment):
     updated = movement_storage.update(movement_id, update_data)
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to assign signal")
+
+    return updated
+
+
+@router.put("/{movement_id}/trade", response_model=Movement)
+def update_trade_info(movement_id: str, data: TradeInfoUpdate):
+    """Update trade information on a movement."""
+    movement = movement_storage.get_by_id(movement_id)
+    if not movement:
+        raise HTTPException(status_code=404, detail="Movement not found")
+
+    # Verify this is a signal
+    if movement.signal_id is None:
+        raise HTTPException(status_code=400, detail="Movement is not a signal")
+
+    # Update trade information
+    update_data = {
+        "trade_number": data.trade_number,
+        "trade_line_item": data.trade_line_item,
+    }
+
+    updated = movement_storage.update(movement_id, update_data)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to update trade info")
 
     return updated
 
