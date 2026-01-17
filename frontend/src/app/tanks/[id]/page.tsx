@@ -20,7 +20,6 @@ import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
 import TankLevelGauge from '@/components/TankLevelGauge';
 import AreaChart from '@/components/charts/AreaChart';
-import BarChart from '@/components/charts/BarChart';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -178,16 +177,6 @@ export default function TankDetailPage() {
       return new Date(left).getTime() - new Date(right).getTime();
     }
   ) : [];
-
-  const movementVolumeByType = useMemo(() => {
-    if (!sortedHistory.length) return { load: 0, discharge: 0, transfer: 0, adjustment: 0 };
-    const volumeByType = { load: 0, discharge: 0, transfer: 0, adjustment: 0 };
-    sortedHistory.forEach(movement => {
-      const volume = Math.abs(movement.actual_volume ?? movement.expected_volume);
-      volumeByType[movement.type] += volume;
-    });
-    return volumeByType;
-  }, [sortedHistory]);
 
   const startingLevel = tank?.initial_level || 0;
   const runningBalanceRows = sortedHistory.map((movement) => {
@@ -350,7 +339,7 @@ export default function TankDetailPage() {
       </Box>
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <Box
             sx={{
               p: 3,
@@ -441,32 +430,6 @@ export default function TankDetailPage() {
               </Typography>
               <Typography sx={{ fontWeight: 600 }}>{(history?.length || 0).toLocaleString()}</Typography>
             </Box>
-          </Box>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '12px',
-              border: '1px solid var(--glass-border)',
-              background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))'
-            }}
-          >
-            <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              MOVEMENT VOLUME BY TYPE
-            </Typography>
-            <BarChart
-              categories={['Load', 'Discharge', 'Transfer', 'Adjustment']}
-              data={[
-                movementVolumeByType.load,
-                movementVolumeByType.discharge,
-                movementVolumeByType.transfer,
-                movementVolumeByType.adjustment
-              ]}
-              height={250}
-              name="Volume (bbl)"
-            />
           </Box>
         </Grid>
       </Grid>
