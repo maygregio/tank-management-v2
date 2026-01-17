@@ -1,8 +1,8 @@
 'use client';
 
-import { createTheme } from '@mui/material/styles';
+import { createTheme, ThemeOptions } from '@mui/material/styles';
 
-const theme = createTheme({
+const darkTheme: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
@@ -40,6 +40,49 @@ const theme = createTheme({
     },
     divider: 'rgba(0, 229, 255, 0.16)',
   },
+};
+
+const lightTheme: ThemeOptions = {
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#00b3cc',
+      light: '#5cd4f4',
+      dark: '#008399',
+    },
+    secondary: {
+      main: '#8b5cf6',
+      light: '#b794ff',
+      dark: '#5a34c7',
+    },
+    warning: {
+      main: '#ff9800',
+      light: '#ffc947',
+      dark: '#c66900',
+    },
+    error: {
+      main: '#d32f2f',
+      light: '#ff6659',
+      dark: '#9a0007',
+    },
+    success: {
+      main: '#2e7d32',
+      light: '#60ad5e',
+      dark: '#005005',
+    },
+    background: {
+      default: '#f5f7fa',
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#1a1a1a',
+      secondary: '#666666',
+    },
+    divider: 'rgba(0, 179, 204, 0.2)',
+  },
+};
+
+const commonThemeOptions: ThemeOptions = {
   typography: {
     fontFamily: '"Plus Jakarta Sans", "Inter", "Roboto", sans-serif',
     h4: {
@@ -60,7 +103,7 @@ const theme = createTheme({
       textTransform: 'uppercase',
     },
     body2: {
-      color: '#9aa7b4',
+      color: 'inherit',
     },
   },
   shape: {
@@ -74,26 +117,6 @@ const theme = createTheme({
           border: '1px solid rgba(0, 229, 255, 0.18)',
           boxShadow: '0 20px 60px rgba(5, 10, 18, 0.55)',
           backdropFilter: 'blur(16px)',
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'linear-gradient(90deg, rgba(12, 18, 30, 0.85), rgba(14, 20, 32, 0.9))',
-          backgroundColor: 'rgba(12, 18, 30, 0.9)',
-          borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-          backdropFilter: 'blur(18px)',
-        },
-      },
-    },
-    MuiDrawer: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(12, 18, 30, 0.95)',
-          backgroundImage: 'linear-gradient(180deg, rgba(18, 25, 40, 0.95) 0%, rgba(10, 14, 23, 0.96) 100%)',
-          borderRight: '1px solid rgba(0, 229, 255, 0.14)',
-          backdropFilter: 'blur(18px)',
         },
       },
     },
@@ -121,6 +144,19 @@ const theme = createTheme({
       },
     },
   },
-});
+};
 
-export default theme;
+function createCustomTheme(mode: 'dark' | 'light') {
+  const baseTheme = mode === 'dark' ? darkTheme : lightTheme;
+
+  return createTheme({
+    ...baseTheme,
+    ...commonThemeOptions,
+    palette: {
+      ...baseTheme.palette,
+      ...commonThemeOptions.palette,
+    },
+  });
+}
+
+export default createCustomTheme;
