@@ -10,7 +10,8 @@ import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { useMediaQuery, useTheme as useMuiTheme } from '@mui/material/styles';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const menuItems = [
   { text: 'Dashboard', href: '/', Icon: DashboardIcon },

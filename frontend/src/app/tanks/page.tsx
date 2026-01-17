@@ -1,3 +1,5 @@
+'use client';
+
 import { tankCreateSchema, type TankCreateInput } from '@/lib/validation';
 import { useToast } from '@/contexts/ToastContext';
 import { tanksApi } from '@/lib/api';
@@ -25,7 +27,7 @@ export default function TanksPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filterLocation, setFilterLocation] = useState<string>('');
-  const [formData, setFormData] = useState<TankCreate>({
+  const [formData, setFormData] = useState<TankCreateInput>({
     name: '',
     location: '',
     fuel_type: 'diesel',

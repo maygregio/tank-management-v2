@@ -179,18 +179,6 @@ export default function TankDetailPage() {
     }
   ) : [];
 
-  const levelChartData = useMemo(() => {
-    if (!sortedHistory.length) return [];
-    const data: Array<[number, number]> = [
-      [new Date(tank?.created_at || 0).getTime(), tank?.initial_level || 0],
-      ...sortedHistory.map(m => [
-        new Date(m.scheduled_date || m.created_at).getTime(),
-        tank?.current_level
-      ])
-    ];
-    return data.sort((a, b) => a[0] - b[0]);
-  }, [sortedHistory, tank]);
-
   const movementVolumeByType = useMemo(() => {
     if (!sortedHistory.length) return { load: 0, discharge: 0, transfer: 0, adjustment: 0 };
     const volumeByType = { load: 0, discharge: 0, transfer: 0, adjustment: 0 };
@@ -225,6 +213,21 @@ export default function TankDetailPage() {
     acc.push({ ...row, tankAfter });
     return acc;
   }, []), [runningBalanceRows, startingLevel]);
+
+  const levelChartData = useMemo(() => {
+    if (!rows.length) return [];
+    const data: Array<[number, number]> = [
+      [new Date(tank?.created_at || 0).getTime(), tank?.initial_level || 0],
+      ...rows.map(row => {
+        const movement = sortedHistory.find(m => m.id === row.id);
+        const timestamp = movement
+          ? new Date(movement.scheduled_date || movement.created_at).getTime()
+          : 0;
+        return [timestamp, row.tankAfter] as [number, number];
+      })
+    ];
+    return data.sort((a, b) => a[0] - b[0]);
+  }, [rows, sortedHistory, tank]);
 
   const levelStatusColor = tank?.level_percentage < 20 ? '#ff5252' : tank?.level_percentage < 50 ? '#ffb300' : '#00e676';
   const levelStatusText = tank?.level_percentage < 20 ? 'LOW' : tank?.level_percentage < 50 ? 'MEDIUM' : 'OPTIMAL';

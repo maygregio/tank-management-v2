@@ -20,7 +20,7 @@ function ThemeProviders({ children }: { children: React.ReactNode }) {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         autoHideDuration={4000}
           Components={{
-            success: () => (
+            success: ({ message }) => (
               <div
                 style={{
                   background: mode === 'dark'
@@ -44,7 +44,7 @@ function ThemeProviders({ children }: { children: React.ReactNode }) {
                 {message}
               </div>
             ),
-            error: () => (
+            error: ({ message }) => (
               <div
                 style={{
                   background: mode === 'dark'
@@ -68,7 +68,7 @@ function ThemeProviders({ children }: { children: React.ReactNode }) {
                 {message}
               </div>
             ),
-            warning: () => (
+            warning: ({ message }) => (
               <div
                 style={{
                   background: mode === 'dark'
@@ -92,7 +92,7 @@ function ThemeProviders({ children }: { children: React.ReactNode }) {
                 {message}
               </div>
             ),
-            info: () => (
+            info: ({ message }) => (
               <div
                 style={{
                   background: mode === 'dark'

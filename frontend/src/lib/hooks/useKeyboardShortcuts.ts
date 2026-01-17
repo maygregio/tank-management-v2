@@ -14,6 +14,14 @@ interface KeyboardShortcut {
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isEditable = target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable;
+
+      if (isEditable) return;
+
       const shortcut = shortcuts.find(s => {
         const keyMatches = s.key.toLowerCase() === e.key.toLowerCase();
         const ctrlMatches = !s.ctrl || e.ctrlKey || e.metaKey;
