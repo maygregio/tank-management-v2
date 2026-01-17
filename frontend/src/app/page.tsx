@@ -54,7 +54,6 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
           {title.toUpperCase()}
         </Typography>
         <Typography variant="h5" sx={{
-          fontFamily: '"JetBrains Mono", monospace',
           color: accent,
           fontWeight: 700,
           textShadow: `0 0 12px ${accent}44`,
@@ -135,7 +134,7 @@ export default function Dashboard() {
                 LOCATION: {location.toUpperCase()}
               </Typography>
               <Box sx={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(0, 212, 255, 0.3) 0%, transparent 100%)' }} />
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontFamily: 'monospace', opacity: 0.5 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.5 }}>
                 {locationTanks.length} UNIT{locationTanks.length !== 1 ? 'S' : ''}
               </Typography>
             </Box>

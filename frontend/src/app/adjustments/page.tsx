@@ -105,7 +105,7 @@ export default function AdjustmentsPage() {
         </Typography>
         <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
       </Box>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4, fontSize: '0.75rem' }}>
         RECONCILE PHYSICAL READINGS WITH CALCULATED SYSTEM LEVELS
       </Typography>
 
@@ -158,7 +158,7 @@ export default function AdjustmentsPage() {
                     <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em', display: 'block', mb: 1 }}>
                       CALCULATED SYSTEM LEVEL
                     </Typography>
-                    <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '1.25rem', fontWeight: 600 }}>
+                    <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '1.25rem', fontWeight: 600 }}>
                       {selectedTank.current_level.toLocaleString()} bbl
                     </Typography>
                     <Box sx={{ mt: 2 }}>
@@ -192,10 +192,10 @@ export default function AdjustmentsPage() {
                     <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em', display: 'block', mb: 1 }}>
                       DELTA ADJUSTMENT
                     </Typography>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '1.5rem', fontWeight: 700, color: difference >= 0 ? '#00e676' : '#ff5252', textShadow: difference >= 0 ? '0 0 10px rgba(0, 230, 118, 0.3)' : '0 0 10px rgba(255, 82, 82, 0.3)' }}>
+                    <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: difference >= 0 ? '#00e676' : '#ff5252', textShadow: difference >= 0 ? '0 0 10px rgba(0, 230, 118, 0.3)' : '0 0 10px rgba(255, 82, 82, 0.3)' }}>
                       {difference >= 0 ? '+' : ''}{difference.toLocaleString()} bbl
                     </Typography>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.65rem', color: 'text.secondary', mt: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', mt: 0.5 }}>
                       {difference >= 0 ? 'SURPLUS DETECTED' : 'DEFICIT DETECTED'}
                     </Typography>
                   </Box>
@@ -254,7 +254,7 @@ export default function AdjustmentsPage() {
               <TableBody>
                 {movements?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary', fontSize: '0.75rem' }}>
                       NO CALIBRATIONS RECORDED
                     </TableCell>
                   </TableRow>
@@ -264,10 +264,10 @@ export default function AdjustmentsPage() {
                     const isPositive = (movement.actual_volume ?? 0) >= 0;
                     return (
                       <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem' } }}>
-                        <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+                        <TableCell sx={{ color: 'text.secondary' }}>
                           {new Date(movement.created_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>{tank?.name || 'Unknown'}</TableCell>
+                        <TableCell>{tank?.name || 'Unknown'}</TableCell>
                         <TableCell align="right">
                           <Chip
                             label={`${isPositive ? '+' : ''}${(movement.actual_volume ?? 0).toLocaleString()} bbl`}
@@ -277,7 +277,7 @@ export default function AdjustmentsPage() {
                               color: isPositive ? '#00e676' : '#ff5252',
                               fontSize: '0.65rem',
                               fontWeight: 700,
-                              fontFamily: 'monospace'
+                              letterSpacing: '0.02em'
                             }}
                           />
                         </TableCell>

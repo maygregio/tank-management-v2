@@ -73,7 +73,7 @@ export default function TankDetailPage() {
   if (!tank) {
     return (
       <Box sx={{ textAlign: 'center', p: 6, border: '1px solid var(--color-border)', bgcolor: 'rgba(0,0,0,0.2)' }}>
-        <Typography sx={{ color: 'text.secondary', fontFamily: 'monospace', mb: 2 }}>UNIT NOT FOUND</Typography>
+        <Typography sx={{ color: 'text.secondary', mb: 2 }}>UNIT NOT FOUND</Typography>
         <Button onClick={() => router.push('/tanks')} sx={{ color: 'var(--color-accent-cyan)' }}>
           Return to Registry
         </Button>
@@ -92,7 +92,7 @@ export default function TankDetailPage() {
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
             UNIT TELEMETRY: {tank.name.toUpperCase()}
           </Typography>
-          <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontFamily: 'monospace', fontSize: '0.6rem' }}>
+          <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontSize: '0.6rem' }}>
             ID: {tank.id.toUpperCase()}
           </Typography>
         </Box>
@@ -121,7 +121,7 @@ export default function TankDetailPage() {
 
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>LOCATION</Typography>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{tank.location}</Typography>
+                <Typography sx={{ fontSize: '0.85rem' }}>{tank.location}</Typography>
               </Box>
 
               <Box sx={{ mb: 2.5 }}>
@@ -133,7 +133,7 @@ export default function TankDetailPage() {
 
               <Box>
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>MAX CAPACITY</Typography>
-                <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{tank.capacity.toLocaleString()} bbl</Typography>
+                <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{tank.capacity.toLocaleString()} bbl</Typography>
               </Box>
             </CardContent>
           </Card>
@@ -154,12 +154,12 @@ export default function TankDetailPage() {
                 <TankLevelGauge percentage={tank.level_percentage} />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-cyan)', textShadow: '0 0 20px rgba(0, 212, 255, 0.2)' }}>
+                <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-cyan)', textShadow: '0 0 20px rgba(0, 212, 255, 0.2)' }}>
                   {tank.current_level.toLocaleString()}
                 </Typography>
                 <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>bbl</Typography>
               </Box>
-              <Typography sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem', mt: 1 }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 1, letterSpacing: '0.02em' }}>
                 {tank.level_percentage.toFixed(1)}% OF {tank.capacity.toLocaleString()} bbl TOTAL CAPACITY
               </Typography>
             </CardContent>
@@ -187,7 +187,7 @@ export default function TankDetailPage() {
           <TableBody>
             {history?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary', fontSize: '0.75rem' }}>
                   NO MOVEMENT RECORDS FOUND
                 </TableCell>
               </TableRow>
@@ -198,16 +198,16 @@ export default function TankDetailPage() {
                 const isPending = movement.actual_volume === null;
                 return (
                   <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid var(--color-border)', fontSize: '0.75rem' } }}>
-                    <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+                    <TableCell sx={{ color: 'text.secondary' }}>
                       {new Date(movement.scheduled_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <MovementTypeChip type={movement.type} />
                     </TableCell>
-                    <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
+                    <TableCell align="right">
                       {sign}{movement.expected_volume.toLocaleString()} bbl
                     </TableCell>
-                    <TableCell align="right" sx={{ fontFamily: 'monospace', color: isPending ? 'text.disabled' : 'text.primary' }}>
+                    <TableCell align="right" sx={{ color: isPending ? 'text.disabled' : 'text.primary' }}>
                       {movement.actual_volume !== null
                         ? `${sign}${Math.abs(movement.actual_volume).toLocaleString()} bbl`
                         : '—'}

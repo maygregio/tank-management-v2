@@ -139,7 +139,7 @@ export default function TanksPage() {
 
       {tanks?.length === 0 && (
         <Box sx={{ textAlign: 'center', mt: 6, p: 4, border: '1px solid var(--color-border)', bgcolor: 'rgba(0,0,0,0.2)' }}>
-          <Typography sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
             NO STORAGE UNITS DEPLOYED // INITIALIZE NEW UNIT TO BEGIN
           </Typography>
         </Box>

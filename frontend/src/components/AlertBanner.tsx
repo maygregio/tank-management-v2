@@ -55,8 +55,7 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
             color: 'var(--color-warning)',
             fontWeight: 800,
             letterSpacing: '0.15em',
-            lineHeight: 1,
-            fontFamily: 'monospace'
+            lineHeight: 1
           }}
         >
           CRITICAL SYSTEM ALERT // RESERVES DEPLETED ({alerts.length})
@@ -66,10 +65,10 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
         {alerts.map((alert) => (
           <Box key={alert.tank_id}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, px: 0.25 }}>
-              <Typography variant="caption" sx={{ color: 'rgba(255, 171, 0, 0.9)', fontFamily: 'monospace', fontWeight: 600, fontSize: '0.65rem' }}>
+              <Typography variant="caption" sx={{ color: 'rgba(255, 171, 0, 0.9)', fontWeight: 600, fontSize: '0.65rem' }}>
                 {alert.tank_name.toUpperCase()}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'var(--color-warning)', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.65rem' }}>
+              <Typography variant="caption" sx={{ color: 'var(--color-warning)', fontWeight: 700, fontSize: '0.65rem' }}>
                 {alert.level_percentage.toFixed(1)}%
               </Typography>
             </Box>

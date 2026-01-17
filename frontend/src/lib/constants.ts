@@ -54,5 +54,5 @@ export const styles = {
   },
 
   // Monospace font family
-  monoFont: '"JetBrains Mono", "Roboto Mono", monospace',
+  monoFont: '"Plus Jakarta Sans", sans-serif',
 };

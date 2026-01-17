@@ -321,7 +321,7 @@ export default function MovementsPage() {
               <TableBody>
                 {movements?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary', fontSize: '0.75rem' }}>
                       NO OPERATIONS SCHEDULED
                     </TableCell>
                   </TableRow>
@@ -332,20 +332,20 @@ export default function MovementsPage() {
                     const isPending = movement.actual_volume === null;
                     return (
                       <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem' } }}>
-                        <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+                        <TableCell sx={{ color: 'text.secondary' }}>
                           {new Date(movement.scheduled_date).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           <MovementTypeChip type={movement.type} />
                         </TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>
+                        <TableCell>
                           {tank?.name || 'Unknown'}
                           {targetTank && <span style={{ color: 'var(--color-accent-cyan)' }}> → {targetTank.name}</span>}
                         </TableCell>
-                        <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
+                        <TableCell align="right">
                           {movement.expected_volume.toLocaleString()} bbl
                         </TableCell>
-                        <TableCell align="right" sx={{ fontFamily: 'monospace', color: isPending ? 'text.disabled' : 'text.primary' }}>
+                        <TableCell align="right" sx={{ color: isPending ? 'text.disabled' : 'text.primary' }}>
                           {movement.actual_volume !== null
                             ? `${movement.actual_volume.toLocaleString()} bbl`
                             : '—'}
@@ -414,11 +414,11 @@ export default function MovementsPage() {
             <Box>
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{tankMap.get(selectedMovement.tank_id)?.name}</Typography>
+                <Typography sx={{ fontSize: '0.85rem' }}>{tankMap.get(selectedMovement.tank_id)?.name}</Typography>
               </Box>
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
-                <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} bbl</Typography>
+                <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} bbl</Typography>
               </Box>
               <TextField
                 fullWidth
@@ -484,7 +484,7 @@ export default function MovementsPage() {
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
                   TARGET UNIT
                 </Typography>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                <Typography sx={{ fontSize: '0.85rem' }}>
                   {tankMap.get(selectedMovement.tank_id)?.name}
                 </Typography>
               </Box>

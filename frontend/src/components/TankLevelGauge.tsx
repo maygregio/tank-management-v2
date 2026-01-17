@@ -65,7 +65,6 @@ function TankLevelGauge({
       {showLabel && (
         <Typography
           sx={{
-            fontFamily: '"JetBrains Mono", "Roboto Mono", monospace',
             fontSize: '0.65rem',
             fontWeight: 700,
             color: statusColor,
