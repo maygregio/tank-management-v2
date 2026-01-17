@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from models.schemas import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
-    Tank, AdjustmentCreate
+    Tank, AdjustmentCreate, TransferCreate
 )
 from services.storage import CosmosStorage
 from services.calculations import calculate_tank_level, calculate_adjustment
@@ -90,6 +90,48 @@ def create_movement(movement_data: MovementCreate):
     return movement_storage.create(movement)
 
 
+@router.post("/transfer", response_model=list[Movement], status_code=201)
+def create_transfer(movement_data: TransferCreate):
+    """Create a transfer from one source tank to multiple targets."""
+    source_tank = tank_storage.get_by_id(movement_data.source_tank_id)
+    if not source_tank:
+        raise HTTPException(status_code=400, detail="Source tank not found")
+
+    if not movement_data.targets:
+        raise HTTPException(status_code=400, detail="At least one target is required")
+
+    target_ids = [target.tank_id for target in movement_data.targets]
+    if movement_data.source_tank_id in target_ids:
+        raise HTTPException(status_code=400, detail="Source and target tank cannot be the same")
+
+    total_volume = sum(target.volume for target in movement_data.targets)
+    movements = movement_storage.get_all()
+    current_level = calculate_tank_level(source_tank, movements)
+    if total_volume > current_level:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Insufficient fuel. Current level: {current_level:.2f}L"
+        )
+
+    created_movements: list[Movement] = []
+    for target in movement_data.targets:
+        target_tank = tank_storage.get_by_id(target.tank_id)
+        if not target_tank:
+            raise HTTPException(status_code=400, detail=f"Target tank not found: {target.tank_id}")
+        movement = Movement(
+            type=MovementType.TRANSFER,
+            tank_id=movement_data.source_tank_id,
+            target_tank_id=target.tank_id,
+            expected_volume=target.volume,
+            actual_volume=None,
+            scheduled_date=movement_data.scheduled_date,
+            notes=movement_data.notes,
+        )
+        created_movements.append(movement_storage.create(movement))
+
+    return created_movements
+
+
 @router.put("/{movement_id}", response_model=Movement)
 def update_movement(movement_id: str, data: MovementUpdate):
     """Update a pending movement's date, expected volume, or notes."""
@@ -108,6 +150,8 @@ def update_movement(movement_id: str, data: MovementUpdate):
         # Validate sufficient fuel for discharge/transfer
         if movement.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
             tank = tank_storage.get_by_id(movement.tank_id)
+            if not tank:
+                raise HTTPException(status_code=400, detail="Tank not found")
             movements = movement_storage.get_all()
             current_level = calculate_tank_level(tank, movements)
             # Add back the old expected volume since it was already "reserved"

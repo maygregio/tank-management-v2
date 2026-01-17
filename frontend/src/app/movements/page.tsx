@@ -35,7 +35,7 @@ import { styles } from '@/lib/constants';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
-import type { MovementCreate, Movement, MovementType, MovementUpdate } from '@/lib/types';
+import type { MovementCreate, Movement, MovementType, MovementUpdate, TransferTargetCreate } from '@/lib/types';
 
 export default function MovementsPage() {
   const queryClient = useQueryClient();
@@ -55,6 +55,7 @@ export default function MovementsPage() {
     scheduled_date: today,
     notes: '',
   });
+  const [transferTargets, setTransferTargets] = useState<TransferTargetCreate[]>([]);
 
   const { data: movements, isLoading: movementsLoading } = useQuery({
     queryKey: ['movements'],
@@ -78,6 +79,27 @@ export default function MovementsPage() {
         scheduled_date: today,
         notes: '',
       });
+      setTransferTargets([]);
+      setError(null);
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: movementsApi.createTransfer,
+    onSuccess: () => {
+      invalidateCommonQueries(queryClient);
+      setFormData({
+        type: formData.type,
+        tank_id: '',
+        target_tank_id: '',
+        expected_volume: 0,
+        scheduled_date: today,
+        notes: '',
+      });
+      setTransferTargets([]);
       setError(null);
     },
     onError: (err: Error) => {
@@ -115,8 +137,20 @@ export default function MovementsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.tank_id || formData.expected_volume <= 0) return;
-    if (formData.type === 'transfer' && !formData.target_tank_id) return;
+    if (!formData.tank_id || (formData.type !== 'transfer' && formData.expected_volume <= 0)) return;
+
+    if (formData.type === 'transfer') {
+      if (transferTargets.length === 0) return;
+      if (transferTargets.some((target) => !target.tank_id || target.volume <= 0)) return;
+
+      transferMutation.mutate({
+        source_tank_id: formData.tank_id,
+        targets: transferTargets,
+        scheduled_date: formData.scheduled_date,
+        notes: formData.notes || undefined,
+      });
+      return;
+    }
 
     createMutation.mutate(formData);
   };
@@ -155,6 +189,22 @@ export default function MovementsPage() {
   const targetTanks = useMemo(() => (
     tanks?.filter((t) => t.id !== formData.tank_id) || []
   ), [tanks, formData.tank_id]);
+
+  const availableTargetTanks = useMemo(() => (
+    targetTanks.filter((tank) => !transferTargets.some((target) => target.tank_id === tank.id))
+  ), [targetTanks, transferTargets]);
+
+  const totalTransferVolume = useMemo(
+    () => transferTargets.reduce((sum, target) => sum + (target.volume || 0), 0),
+    [transferTargets]
+  );
+
+  const remainingTransferVolume = useMemo(() => {
+    const currentLevel = tankMap.get(formData.tank_id)?.current_level || 0;
+    return currentLevel - totalTransferVolume;
+  }, [formData.tank_id, tankMap, totalTransferVolume]);
+
+  const hasTransferTargets = transferTargets.length > 0;
 
   if (isLoading) {
     return (
@@ -227,21 +277,87 @@ export default function MovementsPage() {
                 </FormControl>
 
                 {formData.type === 'transfer' && (
-                  <FormControl fullWidth margin="normal" required>
-                    <InputLabel>Destination Tank</InputLabel>
-                    <Select
-                      value={formData.target_tank_id}
-                      label="Destination Tank"
-                      onChange={(e) => setFormData({ ...formData, target_tank_id: e.target.value })}
-                    >
-                      {targetTanks.map((tank) => (
-                        <MenuItem key={tank.id} value={tank.id}>
-                        {tank.name} ({tank.current_level.toLocaleString()} bbl / {tank.capacity.toLocaleString()} bbl)
-
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.1em' }}>
+                      DESTINATION TANKS
+                    </Typography>
+                    <Box sx={{ display: 'grid', gap: 1.5, mt: 1.5 }}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
+                        Total volume: {totalTransferVolume.toLocaleString()} bbl
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
+                        Remaining: {remainingTransferVolume.toLocaleString()} bbl
+                      </Typography>
+                      {transferTargets.map((target, index) => {
+                        const targetTank = tanks?.find((tank) => tank.id === target.tank_id);
+                        return (
+                          <Box key={`${target.tank_id}-${index}`} sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr auto' }, alignItems: 'center' }}>
+                            <FormControl size="small" fullWidth required>
+                              <InputLabel>Target Tank</InputLabel>
+                              <Select
+                                value={target.tank_id}
+                                label="Target Tank"
+                                onChange={(e) => {
+                                  const nextTargets = [...transferTargets];
+                                  nextTargets[index] = { ...target, tank_id: e.target.value };
+                                  setTransferTargets(nextTargets);
+                                }}
+                              >
+                                {targetTanks.map((tank) => (
+                                  <MenuItem key={tank.id} value={tank.id}>
+                                    {tank.name} ({tank.current_level.toLocaleString()} bbl / {tank.capacity.toLocaleString()} bbl)
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <TextField
+                              size="small"
+                              label="Volume (bbl)"
+                              type="number"
+                              value={target.volume || ''}
+                              onChange={(e) => {
+                                const nextTargets = [...transferTargets];
+                                nextTargets[index] = { ...target, volume: Number(e.target.value) };
+                                setTransferTargets(nextTargets);
+                              }}
+                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                            />
+                            <Button
+                              variant="text"
+                              sx={{ color: 'text.secondary' }}
+                              onClick={() => {
+                                const nextTargets = transferTargets.filter((_, idx) => idx !== index);
+                                setTransferTargets(nextTargets);
+                              }}
+                            >
+                              Remove
+                            </Button>
+                            {targetTank && (
+                              <Typography sx={{ color: 'text.secondary', fontSize: '0.7rem', gridColumn: { xs: '1', sm: '1 / span 3' } }}>
+                                {targetTank.name} available: {targetTank.current_level.toLocaleString()} bbl
+                              </Typography>
+                            )}
+                          </Box>
+                        );
+                      })}
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={availableTargetTanks.length === 0}
+                        onClick={() => setTransferTargets((prev) => ([
+                          ...prev,
+                          { tank_id: availableTargetTanks[0]?.id || '', volume: 0 }
+                        ]))}
+                        sx={{
+                          alignSelf: 'flex-start',
+                          borderColor: 'var(--color-accent-cyan)',
+                          color: 'var(--color-accent-cyan)',
+                        }}
+                      >
+                        Add Target
+                      </Button>
+                    </Box>
+                  </Box>
                 )}
 
                 <TextField
@@ -255,16 +371,18 @@ export default function MovementsPage() {
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
 
-                <TextField
-                  fullWidth
-                  margin="normal"
-                  label="Expected Volume (bbl)"
-                  type="number"
-                  required
-                  value={formData.expected_volume || ''}
-                  onChange={(e) => setFormData({ ...formData, expected_volume: Number(e.target.value) })}
-                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                />
+                {formData.type !== 'transfer' && (
+                  <TextField
+                    fullWidth
+                    margin="normal"
+                    label="Expected Volume (bbl)"
+                    type="number"
+                    required
+                    value={formData.expected_volume || ''}
+                    onChange={(e) => setFormData({ ...formData, expected_volume: Number(e.target.value) })}
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  />
+                )}
 
                 <TextField
                   fullWidth
@@ -290,7 +408,7 @@ export default function MovementsPage() {
                     '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.2)' },
                     '&:disabled': { opacity: 0.3 }
                   }}
-                  disabled={!formData.tank_id || formData.expected_volume <= 0 || createMutation.isPending}
+                  disabled={!formData.tank_id || createMutation.isPending || transferMutation.isPending || (formData.type !== 'transfer' && formData.expected_volume <= 0) || (formData.type === 'transfer' && !hasTransferTargets)}
                 >
                   {createMutation.isPending ? 'INITIALIZING...' : 'EXECUTE OPERATION'}
                 </Button>

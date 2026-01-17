@@ -52,6 +52,18 @@ export interface MovementCreate {
   notes?: string;
 }
 
+export interface TransferTargetCreate {
+  tank_id: string;
+  volume: number;
+}
+
+export interface TransferCreate {
+  source_tank_id: string;
+  targets: TransferTargetCreate[];
+  scheduled_date: string;
+  notes?: string;
+}
+
 export interface MovementComplete {
   actual_volume: number;
 }

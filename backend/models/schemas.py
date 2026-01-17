@@ -72,6 +72,18 @@ class MovementCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class TransferTarget(BaseModel):
+    tank_id: str
+    volume: float = Field(gt=0, description="Transfer quantity in liters")
+
+
+class TransferCreate(BaseModel):
+    source_tank_id: str
+    targets: list[TransferTarget]
+    scheduled_date: date
+    notes: Optional[str] = None
+
+
 class MovementComplete(BaseModel):
     actual_volume: float = Field(gt=0, description="Actual quantity in liters")
 

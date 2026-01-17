@@ -1,7 +1,7 @@
 import type {
   Tank, TankWithLevel, TankCreate,
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
-  DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult
+  DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate
 } from './types';
 
 const API_BASE = 'http://localhost:8000/api';
@@ -57,6 +57,10 @@ export const movementsApi = {
     return fetchAPI<Movement[]>(`/movements${query}`);
   },
   create: (data: MovementCreate) => fetchAPI<Movement>('/movements', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  createTransfer: (data: TransferCreate) => fetchAPI<Movement[]>('/movements/transfer', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
