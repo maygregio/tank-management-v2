@@ -19,7 +19,7 @@ import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
 import TankLevelGauge from '@/components/TankLevelGauge';
-import AreaChart from '@/components/charts/AreaChart';
+import TankActivityChart from '@/components/charts/TankActivityChart';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -220,6 +220,16 @@ export default function TankDetailPage() {
     return data.sort((a, b) => a[0] - b[0]);
   }, [rows, sortedHistory, tank]);
 
+  const movementChartData = useMemo(() => {
+    return rows.map(row => {
+      const movement = sortedHistory.find(m => m.id === row.id);
+      const timestamp = movement
+        ? new Date(movement.scheduled_date || movement.created_at).getTime()
+        : 0;
+      return [timestamp, row.movementVolume] as [number, number];
+    }).sort((a, b) => a[0] - b[0]);
+  }, [rows, sortedHistory]);
+
   const levelPercentage = tank?.level_percentage ?? 0;
   const levelStatusColor = levelPercentage < 20 ? '#ff5252' : levelPercentage < 50 ? '#ffb300' : '#00e676';
   const levelStatusText = levelPercentage < 20 ? 'LOW' : levelPercentage < 50 ? 'MEDIUM' : 'OPTIMAL';
@@ -389,11 +399,10 @@ export default function TankDetailPage() {
             <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
               Level History
             </Typography>
-            <AreaChart
-              data={levelChartData}
+            <TankActivityChart
+              levelData={levelChartData}
+              movementData={movementChartData}
               height={200}
-              name="Tank Level (bbl)"
-              color="#00e5ff"
             />
           </Box>
 
