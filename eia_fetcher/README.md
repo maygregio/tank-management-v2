@@ -305,7 +305,7 @@ export EIA_API_KEY="your-eia-api-key"
 ### Optional Environment Variables
 
 ```bash
-# Data storage location (default: ./eia_data)
+# Data storage location (default: repo-root/eia_data)
 export EIA_DATA_DIR="/path/to/data"
 
 # User-Agent for requests (EIA recommends identifying your application)
@@ -404,7 +404,7 @@ eia_data/
 ├── psm/
 │   └── 20260130_100000/
 │       └── psm_summary.csv
-├── api/
+├── psm/
 │   └── psm_api_data_20260130_100500.csv
 ├── raw/
 │   └── (backup raw files)

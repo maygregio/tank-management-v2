@@ -6,7 +6,7 @@ including holiday exceptions and timezone conversions.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Optional, Tuple
 
@@ -27,6 +27,7 @@ class ReportType(Enum):
     """Types of EIA reports."""
     WPSR = "wpsr"  # Weekly Petroleum Status Report
     PSM = "psm"    # Petroleum Supply Monthly
+    SYSTEM = "system"  # Internal system events
 
 
 class ReleaseSchedule:
@@ -99,9 +100,9 @@ class ReleaseSchedule:
 
     def _apply_holiday_exceptions(
         self,
-        candidate_date: datetime.date,
+        candidate_date: date,
         default_hour: int,
-        default_minute: int
+        default_minute: int,
     ) -> datetime:
         """
         Apply holiday exceptions to the release schedule.

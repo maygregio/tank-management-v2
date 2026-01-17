@@ -10,7 +10,8 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlencode
 
 import pandas as pd
 import requests
@@ -82,20 +83,19 @@ class EIAAPIClient:
         # Add API key
         params["api_key"] = self.config.eia_api_key
 
-        # Build query string
-        query_parts = []
+        query_parts: List[Tuple[str, Any]] = []
         for key, value in params.items():
             if isinstance(value, list):
                 for i, v in enumerate(value):
                     if isinstance(v, dict):
                         for k2, v2 in v.items():
-                            query_parts.append(f"{key}[{i}][{k2}]={v2}")
+                            query_parts.append((f"{key}[{i}][{k2}]", v2))
                     else:
-                        query_parts.append(f"{key}[{i}]={v}")
+                        query_parts.append((f"{key}[{i}]", v))
             else:
-                query_parts.append(f"{key}={value}")
+                query_parts.append((key, value))
 
-        return f"{base_url}?{'&'.join(query_parts)}"
+        return f"{base_url}?{urlencode(query_parts, doseq=True)}"
 
     def query(
         self,

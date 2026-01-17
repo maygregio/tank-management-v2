@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -50,7 +50,7 @@ class Notifier:
     def notify_release(
         self,
         report_type: ReportType,
-        summary: Dict[str, any],
+        summary: Dict[str, Any],
         files_fetched: Optional[List[str]] = None,
     ) -> List[NotificationResult]:
         """
@@ -87,7 +87,7 @@ class Notifier:
     def _build_message(
         self,
         report_type: ReportType,
-        summary: Dict[str, any],
+        summary: Dict[str, Any],
         files_fetched: Optional[List[str]] = None,
     ) -> str:
         """Build the notification message."""
@@ -165,7 +165,7 @@ class Notifier:
         self,
         message: str,
         report_type: ReportType,
-        summary: Dict[str, any],
+        summary: Dict[str, Any],
     ) -> NotificationResult:
         """
         Send notification to a generic webhook.
@@ -260,12 +260,17 @@ class Notifier:
             )
 
         try:
+            assert smtp_host is not None
+            assert smtp_user is not None
+            assert smtp_password is not None
+            assert smtp_from is not None
+
             report_name = "WPSR" if report_type == ReportType.WPSR else "PSM"
             subject = f"EIA {report_name} Data Release - {datetime.now().strftime('%Y-%m-%d')}"
 
             msg = MIMEMultipart()
-            msg["From"] = smtp_from
-            msg["To"] = self.config.notify_email
+            msg["From"] = smtp_from or ""
+            msg["To"] = self.config.notify_email or ""
             msg["Subject"] = subject
             msg.attach(MIMEText(message, "plain"))
 
@@ -293,7 +298,7 @@ class Notifier:
         self,
         error_type: str,
         error_message: str,
-        context: Optional[Dict[str, any]] = None,
+        context: Optional[Dict[str, Any]] = None,
     ) -> List[NotificationResult]:
         """
         Send error notifications.
@@ -322,7 +327,7 @@ class Notifier:
         if self.config.notify_webhook_url:
             payload_result = self._send_webhook(
                 message,
-                ReportType.WPSR,  # Default
+                ReportType.SYSTEM,
                 {"error_type": error_type, "error_message": error_message},
             )
             results.append(payload_result)
