@@ -37,7 +37,7 @@ def get_dashboard():
     return DashboardStats(
         total_tanks=len(tanks),
         total_locations=unique_locations,
-        total_fuel_volume=round(total_volume, 2)
+        total_feedstock_volume=round(total_volume, 2)
     )
 
 

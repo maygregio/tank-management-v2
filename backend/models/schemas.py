@@ -9,9 +9,8 @@ def generate_id() -> str:
     return str(uuid.uuid4())
 
 
-class FuelType(str, Enum):
-    DIESEL = "diesel"
-    GASOLINE = "gasoline"
+class FeedstockType(str, Enum):
+    CARBON_BLACK_OIL = "carbon_black_oil"
     OTHER = "other"
 
 
@@ -26,9 +25,9 @@ class MovementType(str, Enum):
 class TankBase(BaseModel):
     name: str
     location: str = Field(description="Location/site name for the tank")
-    fuel_type: FuelType
+    feedstock_type: FeedstockType
     capacity: float = Field(gt=0, description="Tank capacity in liters")
-    initial_level: float = Field(default=0.0, ge=0, description="Initial fuel level in liters")
+    initial_level: float = Field(default=0.0, ge=0, description="Initial feedstock level in liters")
 
 
 class TankCreate(TankBase):
@@ -38,7 +37,7 @@ class TankCreate(TankBase):
 class TankUpdate(BaseModel):
     name: Optional[str] = None
     location: Optional[str] = None
-    fuel_type: Optional[FuelType] = None
+    feedstock_type: Optional[FeedstockType] = None
     capacity: Optional[float] = Field(default=None, gt=0)
 
 
@@ -55,12 +54,15 @@ class TankWithLevel(Tank):
 # Movement Models
 class MovementBase(BaseModel):
     type: MovementType
-    tank_id: str
+    tank_id: Optional[str] = None  # None = unassigned signal
     target_tank_id: Optional[str] = None  # Only for transfers
     expected_volume: float = Field(gt=0, description="Expected quantity in liters")
     actual_volume: Optional[float] = Field(default=None, ge=0, description="Actual quantity after completion")
     scheduled_date: date = Field(description="Date the movement is scheduled for")
     notes: Optional[str] = None
+    # Signal metadata (for movements created from refinery signals)
+    signal_id: Optional[str] = None  # Refinery's signal ID
+    source_tank: Optional[str] = None  # Refinery tank name (external)
 
 
 class MovementCreate(BaseModel):
@@ -94,6 +96,14 @@ class MovementUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class SignalAssignment(BaseModel):
+    """Data for assigning a signal to a tank."""
+    tank_id: str
+    expected_volume: float = Field(gt=0)
+    scheduled_date: date
+    notes: Optional[str] = None
+
+
 class Movement(MovementBase):
     id: str = Field(default_factory=generate_id)
     created_at: datetime = Field(default_factory=datetime.now)
@@ -110,7 +120,7 @@ class AdjustmentCreate(BaseModel):
 class DashboardStats(BaseModel):
     total_tanks: int
     total_locations: int
-    total_fuel_volume: float
+    total_feedstock_volume: float
 
 
 # PDF Import Models

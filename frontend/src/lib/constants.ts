@@ -1,4 +1,4 @@
-import type { MovementType, FuelType } from './types';
+import type { MovementType, FeedstockType } from './types';
 
 // Movement type display labels
 export const movementTypeLabels: Record<MovementType, string> = {
@@ -16,10 +16,9 @@ export const movementTypeColors: Record<MovementType, 'success' | 'error' | 'inf
   adjustment: 'warning',
 };
 
-// Fuel type display labels
-export const fuelTypeLabels: Record<FuelType, string> = {
-  diesel: 'Diesel',
-  gasoline: 'Gasoline',
+// Feedstock type display labels
+export const feedstockTypeLabels: Record<FeedstockType, string> = {
+  carbon_black_oil: 'Carbon Black Oil',
   other: 'Other',
 };
 

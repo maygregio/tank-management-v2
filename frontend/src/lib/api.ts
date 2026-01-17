@@ -1,7 +1,8 @@
 import type {
   Tank, TankWithLevel, TankCreate,
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
-  DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate
+  DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
+  SignalAssignment, SignalUploadResult
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -77,6 +78,28 @@ export const movementsApi = {
     body: JSON.stringify(data),
   }),
   delete: (id: string) => fetchAPI<void>(`/movements/${id}`, { method: 'DELETE' }),
+  // Signal methods
+  getSignals: () => fetchAPI<Movement[]>('/movements/signals'),
+  uploadSignals: async (file: File): Promise<SignalUploadResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE}/movements/signals/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || 'Upload failed');
+    }
+
+    return response.json();
+  },
+  assignSignal: (id: string, data: SignalAssignment) => fetchAPI<Movement>(`/movements/${id}/assign`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
 };
 
 // Dashboard

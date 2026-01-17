@@ -30,7 +30,7 @@ export default function TanksPage() {
   const [formData, setFormData] = useState<TankCreateInput>({
     name: '',
     location: '',
-    fuel_type: 'diesel',
+    feedstock_type: 'carbon_black_oil',
     capacity: 0,
     initial_level: undefined,
   });
@@ -64,7 +64,7 @@ export default function TanksPage() {
     setFormData({
       name: '',
       location: '',
-      fuel_type: 'diesel',
+      feedstock_type: 'carbon_black_oil',
       capacity: 0,
       initial_level: undefined,
     });
@@ -176,7 +176,7 @@ export default function TanksPage() {
         <EmptyState
           icon={<PropaneTankIcon />}
           title="No Storage Units Deployed"
-          description="Deploy your first storage unit to begin monitoring fuel levels."
+          description="Deploy your first storage unit to begin monitoring feedstock levels."
           action={{
             label: 'Deploy Unit',
             onClick: handleOpenDialog
@@ -240,15 +240,14 @@ export default function TanksPage() {
             aria-label="Tank location"
           />
           <FormControl fullWidth margin="dense" required>
-            <InputLabel>Fuel Classification</InputLabel>
+            <InputLabel>Feedstock Classification</InputLabel>
             <Select
-              value={formData.fuel_type}
-              label="Fuel Classification"
-              onChange={(e) => handleChange('fuel_type', e.target.value)}
-              aria-label="Fuel type"
+              value={formData.feedstock_type}
+              label="Feedstock Classification"
+              onChange={(e) => handleChange('feedstock_type', e.target.value)}
+              aria-label="Feedstock type"
             >
-              <MenuItem value="diesel">Diesel</MenuItem>
-              <MenuItem value="gasoline">Gasoline</MenuItem>
+              <MenuItem value="carbon_black_oil">Carbon Black Oil</MenuItem>
               <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>

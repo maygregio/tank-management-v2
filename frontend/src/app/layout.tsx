@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Tank Management System",
-  description: "Fuel tank level management and monitoring",
+  description: "Feedstock tank level management and monitoring",
 };
 
 export default function RootLayout({

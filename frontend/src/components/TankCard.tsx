@@ -7,7 +7,7 @@ import CardActionArea from '@mui/material/CardActionArea';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import TankLevelGauge from './TankLevelGauge';
-import { fuelTypeLabels, styles } from '@/lib/constants';
+import { feedstockTypeLabels, styles } from '@/lib/constants';
 import type { TankWithLevel } from '@/lib/types';
 
 interface TankCardProps {
@@ -73,7 +73,7 @@ export default function TankCard({ tank }: TankCardProps) {
                   fontSize: '0.65rem'
                 }}
               >
-                {fuelTypeLabels[tank.fuel_type]}
+                {feedstockTypeLabels[tank.feedstock_type]}
               </Typography>
             </Box>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>

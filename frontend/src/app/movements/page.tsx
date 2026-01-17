@@ -125,7 +125,7 @@ function useMovementsViewModel({
       })
       .filter((movement) => {
         if (!search) return true;
-        const source = tankMap.get(movement.tank_id)?.name || '';
+        const source = movement.tank_id ? tankMap.get(movement.tank_id)?.name || '' : '';
         const target = movement.target_tank_id ? tankMap.get(movement.target_tank_id)?.name || '' : '';
         return (
           source.toLowerCase().includes(search)
@@ -138,7 +138,7 @@ function useMovementsViewModel({
 
   const rows = useMemo<MovementGridRow[]>(() => (
     filteredMovements.map((movement) => {
-      const tank = tankMap.get(movement.tank_id);
+      const tank = movement.tank_id ? tankMap.get(movement.tank_id) : undefined;
       const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
       const isPending = movement.actual_volume === null;
       const dateValue = movement.scheduled_date || movement.created_at || '';
@@ -701,7 +701,7 @@ export default function MovementsPage() {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
-            Fuel Operations
+            Feedstock Operations
           </Typography>
 
         <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
@@ -964,7 +964,7 @@ export default function MovementsPage() {
             <Box>
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
-                <Typography sx={{ fontSize: '0.85rem' }}>{tankMap.get(selectedMovement.tank_id)?.name}</Typography>
+                <Typography sx={{ fontSize: '0.85rem' }}>{selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}</Typography>
               </Box>
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
@@ -1038,7 +1038,7 @@ export default function MovementsPage() {
                   TARGET UNIT
                 </Typography>
                 <Typography sx={{ fontSize: '0.85rem' }}>
-                  {tankMap.get(selectedMovement.tank_id)?.name}
+                  {selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}
                 </Typography>
               </Box>
               <TextField

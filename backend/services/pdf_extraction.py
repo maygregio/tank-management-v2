@@ -23,7 +23,7 @@ EXTRACTION_PROMPT = """This PDF contains analysis reports with various content. 
 
 WHAT TO LOOK FOR:
 - Tables with columns like: tank name/ID, initial volume, final volume, difference/variation
-- Tables showing fuel stock movements or inventory changes
+- Tables showing feedstock movements or inventory changes
 - Any tabular data with "before" and "after" volumes or level differences
 
 WHAT TO IGNORE:
