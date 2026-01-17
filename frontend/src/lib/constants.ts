@@ -18,8 +18,7 @@ export const movementTypeColors: Record<MovementType, 'success' | 'error' | 'inf
 
 // Fuel type display labels
 export const fuelTypeLabels: Record<FuelType, string> = {
-  diesel: 'Diesel',
-  gasoline: 'Gasoline',
+  carbon_black_oil: 'Carbon Black Oil',
   other: 'Other',
 };
 

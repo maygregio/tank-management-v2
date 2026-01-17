@@ -1,12 +1,13 @@
 from datetime import date
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from typing import Optional
 from models.schemas import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
-    Tank, AdjustmentCreate, TransferCreate
+    Tank, AdjustmentCreate, TransferCreate, SignalAssignment
 )
 from services.storage import CosmosStorage
 from services.calculations import calculate_tank_level, calculate_adjustment
+from services.excel_parser import parse_signals_excel, ExcelParseResult
 
 router = APIRouter()
 movement_storage = CosmosStorage("movements", Movement)
@@ -235,6 +236,93 @@ def create_adjustment(adjustment_data: AdjustmentCreate):
     )
 
     return movement_storage.create(movement)
+
+
+# Signal endpoints
+@router.get("/signals", response_model=list[Movement])
+def get_unassigned_signals():
+    """Get all unassigned signals (movements with tank_id=None)."""
+    movements = movement_storage.get_all()
+    # Filter for unassigned signals (tank_id is None and signal_id is set)
+    signals = [m for m in movements if m.tank_id is None and m.signal_id is not None]
+    # Sort by scheduled_date descending
+    signals.sort(key=lambda m: m.scheduled_date, reverse=True)
+    return signals
+
+
+class SignalUploadResult(ExcelParseResult):
+    """Result from uploading signals."""
+    created_count: int = 0
+
+
+@router.post("/signals/upload", response_model=SignalUploadResult)
+async def upload_signals(file: UploadFile = File(...)):
+    """Upload an Excel file with refinery signals and create movements."""
+    # Validate file type
+    if not file.filename or not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
+
+    # Read file content
+    content = await file.read()
+
+    # Parse Excel
+    parse_result = parse_signals_excel(content)
+
+    # Create movements for each signal
+    created_count = 0
+    for signal in parse_result.signals:
+        movement = Movement(
+            type=MovementType.LOAD,  # Signals are incoming loads
+            tank_id=None,  # Unassigned
+            expected_volume=signal.volume,
+            scheduled_date=signal.load_date,
+            signal_id=signal.signal_id,
+            source_tank=signal.source_tank,
+            notes=f"Signal from refinery tank: {signal.source_tank}"
+        )
+        movement_storage.create(movement)
+        created_count += 1
+
+    return SignalUploadResult(
+        signals=parse_result.signals,
+        errors=parse_result.errors,
+        created_count=created_count
+    )
+
+
+@router.put("/{movement_id}/assign", response_model=Movement)
+def assign_signal(movement_id: str, data: SignalAssignment):
+    """Assign an unassigned signal to a tank."""
+    movement = movement_storage.get_by_id(movement_id)
+    if not movement:
+        raise HTTPException(status_code=404, detail="Movement not found")
+
+    # Verify this is an unassigned signal
+    if movement.tank_id is not None:
+        raise HTTPException(status_code=400, detail="Movement is already assigned to a tank")
+
+    if movement.signal_id is None:
+        raise HTTPException(status_code=400, detail="Movement is not a signal")
+
+    # Validate tank exists
+    tank = tank_storage.get_by_id(data.tank_id)
+    if not tank:
+        raise HTTPException(status_code=400, detail="Tank not found")
+
+    # Update the movement with assignment data
+    update_data = {
+        "tank_id": data.tank_id,
+        "expected_volume": data.expected_volume,
+        "scheduled_date": data.scheduled_date,
+    }
+    if data.notes is not None:
+        update_data["notes"] = data.notes
+
+    updated = movement_storage.update(movement_id, update_data)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to assign signal")
+
+    return updated
 
 
 @router.delete("/{movement_id}", status_code=204)

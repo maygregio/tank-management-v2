@@ -1,4 +1,4 @@
-export type FuelType = 'diesel' | 'gasoline' | 'other';
+export type FuelType = 'carbon_black_oil' | 'other';
 export type MovementType = 'load' | 'discharge' | 'transfer' | 'adjustment';
 
 export interface Tank {
@@ -19,13 +19,16 @@ export interface TankWithLevel extends Tank {
 export interface Movement {
   id: string;
   type: MovementType;
-  tank_id: string;
+  tank_id: string | null;  // null = unassigned signal
   target_tank_id?: string;
   expected_volume: number;
   actual_volume: number | null;
   scheduled_date: string;
   notes?: string;
   created_at: string;
+  // Signal metadata
+  signal_id?: string;
+  source_tank?: string;
 }
 
 export interface DashboardStats {
@@ -132,4 +135,25 @@ export interface PDFImportResult {
   created_count: number;
   failed_count: number;
   errors: string[];
+}
+
+// Signal types
+export interface SignalAssignment {
+  tank_id: string;
+  expected_volume: number;
+  scheduled_date: string;
+  notes?: string;
+}
+
+export interface ParsedSignal {
+  signal_id: string;
+  load_date: string;
+  source_tank: string;
+  volume: number;
+}
+
+export interface SignalUploadResult {
+  signals: ParsedSignal[];
+  errors: string[];
+  created_count: number;
 }

@@ -10,8 +10,7 @@ def generate_id() -> str:
 
 
 class FuelType(str, Enum):
-    DIESEL = "diesel"
-    GASOLINE = "gasoline"
+    CARBON_BLACK_OIL = "carbon_black_oil"
     OTHER = "other"
 
 
@@ -55,12 +54,15 @@ class TankWithLevel(Tank):
 # Movement Models
 class MovementBase(BaseModel):
     type: MovementType
-    tank_id: str
+    tank_id: Optional[str] = None  # None = unassigned signal
     target_tank_id: Optional[str] = None  # Only for transfers
     expected_volume: float = Field(gt=0, description="Expected quantity in liters")
     actual_volume: Optional[float] = Field(default=None, ge=0, description="Actual quantity after completion")
     scheduled_date: date = Field(description="Date the movement is scheduled for")
     notes: Optional[str] = None
+    # Signal metadata (for movements created from refinery signals)
+    signal_id: Optional[str] = None  # Refinery's signal ID
+    source_tank: Optional[str] = None  # Refinery tank name (external)
 
 
 class MovementCreate(BaseModel):
@@ -91,6 +93,14 @@ class MovementComplete(BaseModel):
 class MovementUpdate(BaseModel):
     scheduled_date: Optional[date] = None
     expected_volume: Optional[float] = Field(default=None, gt=0)
+    notes: Optional[str] = None
+
+
+class SignalAssignment(BaseModel):
+    """Data for assigning a signal to a tank."""
+    tank_id: str
+    expected_volume: float = Field(gt=0)
+    scheduled_date: date
     notes: Optional[str] = None
 
 

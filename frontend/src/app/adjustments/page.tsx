@@ -264,7 +264,7 @@ export default function AdjustmentsPage() {
                   </TableRow>
                 ) : (
                   movements?.slice(0, 20).map((movement) => {
-                    const tank = tankMap.get(movement.tank_id);
+                    const tank = movement.tank_id ? tankMap.get(movement.tank_id) : undefined;
                     const isPositive = (movement.actual_volume ?? 0) >= 0;
                     return (
                         <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem', color: 'text.secondary' } }}>

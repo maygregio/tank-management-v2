@@ -30,7 +30,7 @@ export default function TanksPage() {
   const [formData, setFormData] = useState<TankCreateInput>({
     name: '',
     location: '',
-    fuel_type: 'diesel',
+    fuel_type: 'carbon_black_oil',
     capacity: 0,
     initial_level: undefined,
   });
@@ -64,7 +64,7 @@ export default function TanksPage() {
     setFormData({
       name: '',
       location: '',
-      fuel_type: 'diesel',
+      fuel_type: 'carbon_black_oil',
       capacity: 0,
       initial_level: undefined,
     });
@@ -247,8 +247,7 @@ export default function TanksPage() {
               onChange={(e) => handleChange('fuel_type', e.target.value)}
               aria-label="Fuel type"
             >
-              <MenuItem value="diesel">Diesel</MenuItem>
-              <MenuItem value="gasoline">Gasoline</MenuItem>
+              <MenuItem value="carbon_black_oil">Carbon Black Oil</MenuItem>
               <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>
