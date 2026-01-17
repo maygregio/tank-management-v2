@@ -23,6 +23,7 @@ export default function TankCard({ tank }: TankCardProps) {
         borderTop: '1.5px solid var(--color-accent-cyan)',
         background: styles.cardGradient,
         boxShadow: '0 18px 45px rgba(5, 10, 18, 0.55)',
+        cursor: 'pointer',
         transition: 'transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease',
         '&::after': {
           content: '""',
