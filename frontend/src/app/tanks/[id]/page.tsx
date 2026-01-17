@@ -229,8 +229,9 @@ export default function TankDetailPage() {
     return data.sort((a, b) => a[0] - b[0]);
   }, [rows, sortedHistory, tank]);
 
-  const levelStatusColor = tank?.level_percentage < 20 ? '#ff5252' : tank?.level_percentage < 50 ? '#ffb300' : '#00e676';
-  const levelStatusText = tank?.level_percentage < 20 ? 'LOW' : tank?.level_percentage < 50 ? 'MEDIUM' : 'OPTIMAL';
+  const levelPercentage = tank?.level_percentage ?? 0;
+  const levelStatusColor = levelPercentage < 20 ? '#ff5252' : levelPercentage < 50 ? '#ffb300' : '#00e676';
+  const levelStatusText = levelPercentage < 20 ? 'LOW' : levelPercentage < 50 ? 'MEDIUM' : 'OPTIMAL';
 
   if (isLoading) {
     return (

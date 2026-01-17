@@ -44,11 +44,12 @@ export function exportToExcel({ filename, data }: ExportData) {
   saveAs(blob, `${filename}.xlsx`);
 }
 
-export function formatDataForExport(data: Record<string, unknown>[], fieldLabels: Record<string, string>): Record<string, string | number>[] {
+export function formatDataForExport<T extends object>(data: T[], fieldLabels: Record<string, string>): Record<string, string | number>[] {
   return data.map(item => {
     const formatted: Record<string, string | number> = {};
+    const itemRecord = item as Record<string, unknown>;
     Object.keys(fieldLabels).forEach(key => {
-      formatted[fieldLabels[key]] = (item[key] ?? '—') as string | number;
+      formatted[fieldLabels[key]] = (itemRecord[key] ?? '—') as string | number;
     });
     return formatted;
   });

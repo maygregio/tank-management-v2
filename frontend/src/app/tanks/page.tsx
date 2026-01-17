@@ -99,7 +99,7 @@ export default function TanksPage() {
     });
   };
 
-  const handleChange = (field: keyof TankCreateInput, value: string | number) => {
+  const handleChange = (field: keyof TankCreateInput, value: string | number | undefined) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));

@@ -1,13 +1,13 @@
 'use client';
 
 import { createContext, useContext, useCallback } from 'react';
-import { useSnackbar, SnackbarMessage } from 'notistack';
+import { useSnackbar, OptionsObject } from 'notistack';
 
 interface ToastContextValue {
-  success: (message: string, options?: Partial<SnackbarMessage>) => void;
-  error: (message: string, options?: Partial<SnackbarMessage>) => void;
-  warning: (message: string, options?: Partial<SnackbarMessage>) => void;
-  info: (message: string, options?: Partial<SnackbarMessage>) => void;
+  success: (message: string, options?: OptionsObject) => void;
+  error: (message: string, options?: OptionsObject) => void;
+  warning: (message: string, options?: OptionsObject) => void;
+  info: (message: string, options?: OptionsObject) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -16,7 +16,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const success = useCallback(
-    (message: string, options?: Partial<SnackbarMessage>) => {
+    (message: string, options?: OptionsObject) => {
       enqueueSnackbar(message, {
         variant: 'success',
         ...options,
@@ -26,7 +26,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const error = useCallback(
-    (message: string, options?: Partial<SnackbarMessage>) => {
+    (message: string, options?: OptionsObject) => {
       enqueueSnackbar(message, {
         variant: 'error',
         ...options,
@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const warning = useCallback(
-    (message: string, options?: Partial<SnackbarMessage>) => {
+    (message: string, options?: OptionsObject) => {
       enqueueSnackbar(message, {
         variant: 'warning',
         ...options,
@@ -46,7 +46,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const info = useCallback(
-    (message: string, options?: Partial<SnackbarMessage>) => {
+    (message: string, options?: OptionsObject) => {
       enqueueSnackbar(message, {
         variant: 'info',
         ...options,
