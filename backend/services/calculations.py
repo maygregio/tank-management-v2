@@ -1,3 +1,5 @@
+from datetime import date
+
 from models.schemas import Tank, Movement, MovementType, TankWithLevel
 
 
@@ -8,11 +10,14 @@ def get_effective_volume(movement: Movement) -> float:
     return movement.expected_volume
 
 
-def calculate_tank_level(tank: Tank, movements: list[Movement]) -> float:
+def calculate_tank_level(tank: Tank, movements: list[Movement], as_of: date | None = None) -> float:
     """Calculate current tank level based on initial level and movements."""
     level = tank.initial_level
+    cutoff = as_of or date.today()
 
     for movement in movements:
+        if movement.scheduled_date > cutoff:
+            continue
         volume = get_effective_volume(movement)
         if movement.type == MovementType.LOAD and movement.tank_id == tank.id:
             level += volume
