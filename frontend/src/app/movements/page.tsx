@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -149,6 +149,13 @@ export default function MovementsPage() {
 
   const isLoading = movementsLoading || tanksLoading;
 
+  const tankMap = useMemo(() => new Map(tanks?.map((t) => [t.id, t]) || []), [tanks]);
+
+  // Filter tanks for transfer target (exclude source tank)
+  const targetTanks = useMemo(() => (
+    tanks?.filter((t) => t.id !== formData.tank_id) || []
+  ), [tanks, formData.tank_id]);
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
@@ -156,11 +163,6 @@ export default function MovementsPage() {
       </Box>
     );
   }
-
-  const tankMap = new Map(tanks?.map((t) => [t.id, t]) || []);
-
-  // Filter tanks for transfer target (exclude source tank)
-  const targetTanks = tanks?.filter((t) => t.id !== formData.tank_id) || [];
 
   return (
     <Box>

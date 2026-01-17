@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -77,10 +77,16 @@ export default function AdjustmentsPage() {
     createMutation.mutate(adjustmentData);
   };
 
-  const selectedTank: TankWithLevel | undefined = tanks?.find((t) => t.id === selectedTankId);
-  const difference = selectedTank ? physicalLevel - selectedTank.current_level : 0;
+  const selectedTank: TankWithLevel | undefined = useMemo(
+    () => tanks?.find((t) => t.id === selectedTankId),
+    [tanks, selectedTankId]
+  );
+  const difference = useMemo(
+    () => (selectedTank ? physicalLevel - selectedTank.current_level : 0),
+    [physicalLevel, selectedTank]
+  );
 
-  const tankMap = new Map(tanks?.map((t) => [t.id, t]) || []);
+  const tankMap = useMemo(() => new Map(tanks?.map((t) => [t.id, t]) || []), [tanks]);
 
   if (tanksLoading) {
     return (

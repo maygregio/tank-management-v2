@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
@@ -8,7 +9,7 @@ interface TankLevelGaugeProps {
   showLabel?: boolean;
 }
 
-export default function TankLevelGauge({
+function TankLevelGauge({
   percentage,
   showLabel = true,
 }: TankLevelGaugeProps) {
@@ -64,6 +65,10 @@ export default function TankLevelGauge({
             '@keyframes scan': {
               '0%': { transform: 'translateX(-100%)' },
               '100%': { transform: 'translateX(300%)' }
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+              '&::after': { animation: 'none' }
             }
           }}
         />
@@ -87,3 +92,5 @@ export default function TankLevelGauge({
     </Box>
   );
 }
+
+export default memo(TankLevelGauge);

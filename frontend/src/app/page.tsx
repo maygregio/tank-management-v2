@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -79,6 +80,13 @@ export default function Dashboard() {
 
   const isLoading = statsLoading || tanksLoading;
 
+  const tanksByLocation = useMemo(() => (tanks?.reduce((acc, tank) => {
+    const location = tank.location;
+    if (!acc[location]) acc[location] = [];
+    acc[location].push(tank);
+    return acc;
+  }, {} as Record<string, TankWithLevel[]>) || {}), [tanks]);
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
@@ -86,13 +94,6 @@ export default function Dashboard() {
       </Box>
     );
   }
-
-  const tanksByLocation = tanks?.reduce((acc, tank) => {
-    const location = tank.location;
-    if (!acc[location]) acc[location] = [];
-    acc[location].push(tank);
-    return acc;
-  }, {} as Record<string, TankWithLevel[]>) || {};
 
   return (
     <Box>

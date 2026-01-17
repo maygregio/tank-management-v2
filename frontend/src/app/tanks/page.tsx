@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -40,10 +40,12 @@ export default function TanksPage() {
   });
 
   // Filter tanks client-side and extract unique locations
-  const tanks = filterLocation
+  const tanks = useMemo(() => (filterLocation
     ? allTanks?.filter((t) => t.location === filterLocation)
-    : allTanks;
-  const uniqueLocations = [...new Set(allTanks?.map((t) => t.location) || [])].sort();
+    : allTanks), [allTanks, filterLocation]);
+  const uniqueLocations = useMemo(() => (
+    [...new Set(allTanks?.map((t) => t.location) || [])].sort()
+  ), [allTanks]);
 
   const createMutation = useMutation({
     mutationFn: tanksApi.create,

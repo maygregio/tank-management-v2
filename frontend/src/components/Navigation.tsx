@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AppBar from '@mui/material/AppBar';
@@ -24,11 +24,11 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 const drawerWidth = 240;
 
 const menuItems = [
-  { text: 'Dashboard', href: '/', icon: <DashboardIcon /> },
-  { text: 'Tanks', href: '/tanks', icon: <PropaneTankIcon /> },
-  { text: 'Movements', href: '/movements', icon: <SwapHorizIcon /> },
-  { text: 'Adjustments', href: '/adjustments', icon: <TuneIcon /> },
-  { text: 'Import PDF', href: '/imports', icon: <UploadFileIcon /> },
+  { text: 'Dashboard', href: '/', Icon: DashboardIcon },
+  { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
+  { text: 'Movements', href: '/movements', Icon: SwapHorizIcon },
+  { text: 'Adjustments', href: '/adjustments', Icon: TuneIcon },
+  { text: 'Import PDF', href: '/imports', Icon: UploadFileIcon },
 ];
 
 export default function Navigation({ children }: { children: React.ReactNode }) {
@@ -39,7 +39,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
     setMobileOpen(!mobileOpen);
   };
 
-  const drawer = (
+  const drawer = useMemo(() => (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
       <Box sx={{
         height: 64,
@@ -96,7 +96,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 32, transition: 'color 0.2s', '& .MuiSvgIcon-root': { fontSize: 18 } }}>
-                  {item.icon}
+                  <item.Icon />
                 </ListItemIcon>
                 <ListItemText
                   primary={item.text}
@@ -122,7 +122,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
         </Typography>
       </Box>
     </Box>
-  );
+  ), [pathname]);
 
   return (
     <Box sx={{ display: 'flex' }}>

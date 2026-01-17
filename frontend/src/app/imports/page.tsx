@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -177,6 +177,8 @@ export default function ImportsPage() {
     setSelectedMovements(new Map());
   };
 
+  const tankOptions = useMemo(() => (tanks || []), [tanks]);
+
   const renderUploadStep = () => (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
       <Box
@@ -320,6 +322,12 @@ export default function ImportsPage() {
                     const selection = selectedMovements.get(key);
                     const typeColor = movementTypeColors[movement.movement_type];
                     const chipColor = movementTypeChipColors[typeColor];
+                    const suggestedMatchIds = new Set(
+                      movement.suggested_matches.map((match) => match.tank_id)
+                    );
+                    const extraTankOptions = tankOptions.filter(
+                      (tank) => !suggestedMatchIds.has(tank.id)
+                    );
 
                     return (
                       <TableRow
@@ -365,12 +373,11 @@ export default function ImportsPage() {
                                   </MenuItem>
                                 ))}
                                 {/* Add tanks not in suggestions */}
-                                {tanks?.filter(t => !movement.suggested_matches.find(m => m.tank_id === t.id))
-                                  .map((tank) => (
-                                    <MenuItem key={tank.id} value={tank.id}>
-                                      {tank.name}
-                                    </MenuItem>
-                                  ))}
+                                {extraTankOptions.map((tank) => (
+                                  <MenuItem key={tank.id} value={tank.id}>
+                                    {tank.name}
+                                  </MenuItem>
+                                ))}
                               </Select>
                             </FormControl>
                           ) : (
