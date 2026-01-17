@@ -5,24 +5,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
-import TankLevelGauge from '@/components/TankLevelGauge';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
@@ -82,149 +70,165 @@ export default function TankDetailPage() {
   }
 
   return (
-    <Box>
-      {/* Tactical Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <IconButton onClick={() => router.push('/tanks')} sx={{ color: 'text.secondary', '&:hover': { color: 'var(--color-accent-cyan)' } }}>
-          <ArrowBackIcon sx={{ fontSize: 20 }} />
-        </IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
-            UNIT TELEMETRY: {tank.name.toUpperCase()}
-          </Typography>
-          <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontSize: '0.6rem' }}>
-            ID: {tank.id.toUpperCase()}
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<DeleteIcon sx={{ fontSize: 16 }} />}
-          onClick={handleDelete}
-          sx={{ color: '#ff5252', borderColor: '#ff5252', fontSize: '0.75rem', '&:hover': { bgcolor: 'rgba(255, 82, 82, 0.1)', borderColor: '#ff5252' } }}
+      <Box>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            mb: 4,
+            p: 2,
+            borderRadius: '14px',
+            border: '1px solid var(--glass-border)',
+            background: 'linear-gradient(120deg, rgba(14, 21, 34, 0.92), rgba(9, 14, 23, 0.9))',
+            boxShadow: '0 20px 50px rgba(5, 10, 18, 0.55)',
+            backdropFilter: 'blur(18px)',
+          }}
         >
-          Decommission
-        </Button>
-      </Box>
+          <IconButton onClick={() => router.push('/tanks')} sx={{ color: 'text.secondary', '&:hover': { color: 'var(--color-accent-cyan)' } }}>
+            <ArrowBackIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.25em' }}>
+              UNIT TELEMETRY
+            </Typography>
+            <Typography sx={{ fontSize: '1.35rem', fontWeight: 700 }}>
+              {tank.name}
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.7rem' }}>
+              {tank.location} • {fuelTypeLabels[tank.fuel_type]} • {tank.capacity.toLocaleString()} bbl
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
+              ID: {tank.id.toUpperCase()}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Chip
+              label={`${tank.level_percentage.toFixed(1)}% FULL`}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(0, 229, 255, 0.12)',
+                color: 'var(--color-accent-cyan)',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                border: '1px solid rgba(0, 229, 255, 0.25)',
+              }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<DeleteIcon sx={{ fontSize: 16 }} />}
+              onClick={handleDelete}
+              sx={{ color: '#ff5252', borderColor: '#ff5252', fontSize: '0.75rem', '&:hover': { bgcolor: 'rgba(255, 82, 82, 0.1)', borderColor: '#ff5252' } }}
+            >
+              Decommission
+            </Button>
+          </Box>
+        </Box>
 
-      <Grid container spacing={3}>
-        {/* Unit Specifications Panel */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{
-            background: styles.cardGradient,
-            borderLeft: '2px solid var(--color-accent-cyan)',
-          }}>
-            <CardContent>
-              <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem' }}>
-                UNIT SPECIFICATIONS
-              </Typography>
-              <Divider sx={{ my: 2, borderColor: 'var(--color-border)' }} />
 
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>LOCATION</Typography>
-                <Typography sx={{ fontSize: '0.85rem' }}>{tank.location}</Typography>
-              </Box>
+        <Box
+          sx={{
+            mt: 4,
+            p: 2,
+            borderRadius: '12px',
+            border: '1px solid var(--glass-border)',
+            background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))',
+            display: 'grid',
+            gap: 1.5,
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)' },
+          }}
+        >
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+              CAPACITY
+            </Typography>
+            <Typography sx={{ fontWeight: 600 }}>{tank.capacity.toLocaleString()} bbl</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+              CURRENT
+            </Typography>
+            <Typography sx={{ fontWeight: 600 }}>{tank.current_level.toLocaleString()} bbl</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+              FUEL TYPE
+            </Typography>
+            <Typography sx={{ fontWeight: 600 }}>{fuelTypeLabels[tank.fuel_type]}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+              LAST ACTIVITY
+            </Typography>
+            <Typography sx={{ fontWeight: 600 }}>
+              {history && history.length > 0
+                ? new Date(history[0].scheduled_date).toLocaleDateString()
+                : '—'}
+            </Typography>
+          </Box>
+        </Box>
 
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>FUEL CLASS</Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  <Chip label={fuelTypeLabels[tank.fuel_type]} size="small" sx={{ bgcolor: 'rgba(0, 212, 255, 0.1)', color: 'var(--color-accent-cyan)', fontSize: '0.7rem' }} />
-                </Box>
-              </Box>
+        <Box sx={{ mt: 5, mb: 2 }}>
+          <SectionHeader title="ACTIVITY TIMELINE" />
+        </Box>
 
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>MAX CAPACITY</Typography>
-                <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{tank.capacity.toLocaleString()} bbl</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Box sx={{ display: 'grid', gap: 2 }}>
+          {history?.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+              NO MOVEMENT RECORDS FOUND
+            </Box>
+          ) : (
+            history?.map((movement) => {
+              const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
+              const sign = isOutgoing ? '-' : '+';
+              const isPending = movement.actual_volume === null;
+              const volume = movement.actual_volume ?? movement.expected_volume;
 
-        {/* Live Status Panel */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Card sx={{
-            mb: 3,
-            background: styles.cardGradient,
-            borderTop: '2px solid var(--color-accent-cyan)',
-          }}>
-            <CardContent>
-              <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-                LIVE STATUS
-              </Typography>
-              <Box sx={{ my: 3 }}>
-                <TankLevelGauge percentage={tank.level_percentage} />
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-cyan)', textShadow: '0 0 20px rgba(0, 212, 255, 0.2)' }}>
-                  {tank.current_level.toLocaleString()}
-                </Typography>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>bbl</Typography>
-              </Box>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 1, letterSpacing: '0.02em' }}>
-                {tank.level_percentage.toFixed(1)}% OF {tank.capacity.toLocaleString()} bbl TOTAL CAPACITY
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Movement Log Header */}
-      <Box sx={{ mt: 5, mb: 2 }}>
-        <SectionHeader title="MOVEMENT LOG" />
-      </Box>
-
-      <TableContainer component={Paper} sx={{ bgcolor: 'background.paper', border: '1px solid var(--color-border)' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={styles.tableHeadRow}>
-              <TableCell>Date</TableCell>
-              <TableCell>Operation</TableCell>
-              <TableCell align="right">Expected</TableCell>
-              <TableCell align="right">Actual</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Notes</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {history?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary', fontSize: '0.75rem' }}>
-                  NO MOVEMENT RECORDS FOUND
-                </TableCell>
-              </TableRow>
-            ) : (
-              history?.map((movement) => {
-                const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
-                const sign = isOutgoing ? '-' : '+';
-                const isPending = movement.actual_volume === null;
-                return (
-                  <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid var(--color-border)', fontSize: '0.75rem' } }}>
-                    <TableCell sx={{ color: 'text.secondary' }}>
+              return (
+                <Box
+                  key={movement.id}
+                  sx={{
+                    p: 2,
+                    borderRadius: '12px',
+                    border: '1px solid rgba(0, 229, 255, 0.12)',
+                    background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+                    display: 'grid',
+                    gap: 1,
+                    gridTemplateColumns: { xs: '1fr', md: '120px 1fr auto' },
+                    alignItems: { md: 'center' },
+                  }}
+                >
+                  <Box>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+                      DATE
+                    </Typography>
+                    <Typography sx={{ fontWeight: 600 }}>
                       {new Date(movement.scheduled_date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                       <MovementTypeChip type={movement.type} />
-                    </TableCell>
-                    <TableCell align="right">
-                      {sign}{movement.expected_volume.toLocaleString()} bbl
-                    </TableCell>
-                    <TableCell align="right" sx={{ color: isPending ? 'text.disabled' : 'text.primary' }}>
-                      {movement.actual_volume !== null
-                        ? `${sign}${Math.abs(movement.actual_volume).toLocaleString()} bbl`
-                        : '—'}
-                    </TableCell>
-                    <TableCell>
                       <MovementStatus isPending={isPending} />
-                    </TableCell>
-                    <TableCell sx={{ color: 'text.secondary', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {movement.notes || '—'}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+                      <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                        {movement.notes || 'No notes'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+                      VOLUME
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, color: isOutgoing ? '#ff6b6b' : '#00f0a8' }}>
+                      {sign}{Math.abs(volume).toLocaleString()} bbl
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })
+          )}
+        </Box>
+      </Box>
+
   );
 }
