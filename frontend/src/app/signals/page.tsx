@@ -348,7 +348,7 @@ export default function SignalsPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".xlsx,.xls"
+                  accept=".xlsx"
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
@@ -357,7 +357,7 @@ export default function SignalsPage() {
                   Click to upload Excel file
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                  .xlsx or .xls files only
+                  .xlsx files only
                 </Typography>
               </Box>
 

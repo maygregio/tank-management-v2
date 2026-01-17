@@ -258,9 +258,9 @@ class SignalUploadResult(ExcelParseResult):
 @router.post("/signals/upload", response_model=SignalUploadResult)
 async def upload_signals(file: UploadFile = File(...)):
     """Upload an Excel file with refinery signals and create movements."""
-    # Validate file type
-    if not file.filename or not file.filename.endswith(('.xlsx', '.xls')):
-        raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
+    # Validate file type (only .xlsx supported - openpyxl doesn't support legacy .xls)
+    if not file.filename or not file.filename.endswith('.xlsx'):
+        raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx)")
 
     # Read file content
     content = await file.read()
