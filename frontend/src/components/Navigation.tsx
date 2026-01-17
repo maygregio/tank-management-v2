@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AppBar from '@mui/material/AppBar';
@@ -24,7 +23,7 @@ const menuItems = [
 export default function Navigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const tabMenu = useMemo(() => (
+  const tabMenu = (
     <Box
       sx={{
         display: 'flex',
@@ -88,7 +87,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
         );
       })}
     </Box>
-  ), [pathname]);
+  );
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>

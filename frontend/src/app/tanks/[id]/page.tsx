@@ -8,6 +8,16 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
+import MovementTypeChip from '@/components/MovementTypeChip';
+import MovementStatus from '@/components/MovementStatus';
+import SectionHeader from '@/components/SectionHeader';
+import { tanksApi } from '@/lib/api';
+import { fuelTypeLabels } from '@/lib/constants';
+import { formatDate } from '@/lib/dateUtils';
 
 interface MovementRow {
   id: string;
@@ -18,15 +28,6 @@ interface MovementRow {
   tankAfter: number;
   notes: string | null;
 }
-import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeleteIcon from '@mui/icons-material/Delete';
-import MovementTypeChip from '@/components/MovementTypeChip';
-import MovementStatus from '@/components/MovementStatus';
-import SectionHeader from '@/components/SectionHeader';
-import { tanksApi } from '@/lib/api';
-import { fuelTypeLabels } from '@/lib/constants';
 
 export default function TankDetailPage() {
   const params = useParams();
@@ -80,17 +81,6 @@ export default function TankDetailPage() {
     );
   }
 
-  const formatDate = (value?: string | null) => {
-    if (!value) return '—';
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString();
-    }
-    if (typeof value === 'string') {
-      return value.split('T')[0];
-    }
-    return '—';
-  };
 
   const columns: GridColDef<MovementRow>[] = [
     {
@@ -270,9 +260,10 @@ export default function TankDetailPage() {
               LAST ACTIVITY
             </Typography>
             <Typography sx={{ fontWeight: 600 }}>
-              {history && history.length > 0
-                ? new Date(history[0].scheduled_date).toLocaleDateString()
+               {history && history.length > 0
+                ? formatDate(history[0].scheduled_date)
                 : '—'}
+
             </Typography>
           </Box>
         </Box>

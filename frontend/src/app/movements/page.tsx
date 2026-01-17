@@ -29,10 +29,342 @@ import { DataGrid, GridColDef, GridRenderCellParams, GridRowSelectionModel } fro
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles } from '@/lib/constants';
+import { formatDate } from '@/lib/dateUtils';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
-import type { MovementCreate, Movement, MovementType, MovementUpdate, TransferTargetCreate } from '@/lib/types';
+import type {
+  MovementCreate,
+  Movement,
+  MovementType,
+  MovementUpdate,
+  TransferTargetCreate,
+  TankWithLevel,
+} from '@/lib/types';
+
+interface MovementGridRow {
+  id: string;
+  date: string;
+  type: MovementType;
+  tankName: string;
+  expectedVolume: number;
+  actualVolume: number | null;
+  status: boolean;
+  isFuture: boolean;
+  notes: string;
+}
+
+interface MovementSummaryStats {
+  total: number;
+  pending: number;
+  completed: number;
+  scheduledToday: number;
+}
+
+interface MovementsViewModelInput {
+  movements?: Movement[];
+  tanks?: TankWithLevel[];
+  formData: MovementCreate;
+  transferTargets: TransferTargetCreate[];
+  todayDate: Date;
+  searchQuery: string;
+  statusFilter: 'all' | 'pending' | 'completed';
+  typeFilter: MovementType | 'all';
+}
+
+function useMovementsViewModel({
+  movements,
+  tanks,
+  formData,
+  transferTargets,
+  todayDate,
+  searchQuery,
+  statusFilter,
+  typeFilter,
+}: MovementsViewModelInput) {
+  const tankMap = useMemo(() => new Map(tanks?.map((tank) => [tank.id, tank]) || []), [tanks]);
+
+  const targetTanks = useMemo(() => (
+    tanks?.filter((tank) => tank.id !== formData.tank_id) || []
+  ), [tanks, formData.tank_id]);
+
+  const availableTargetTanks = useMemo(() => (
+    targetTanks.filter((tank) => !transferTargets.some((target) => target.tank_id === tank.id))
+  ), [targetTanks, transferTargets]);
+
+  const totalTransferVolume = useMemo(
+    () => transferTargets.reduce((sum, target) => sum + (target.volume || 0), 0),
+    [transferTargets]
+  );
+
+  const remainingTransferVolume = useMemo(() => {
+    const currentLevel = tankMap.get(formData.tank_id)?.current_level || 0;
+    return currentLevel - totalTransferVolume;
+  }, [formData.tank_id, tankMap, totalTransferVolume]);
+
+  const summaryStats = useMemo<MovementSummaryStats>(() => {
+    const total = movements?.length || 0;
+    const pending = movements?.filter((movement) => movement.actual_volume === null).length || 0;
+    const completed = total - pending;
+    const scheduledToday = movements?.filter((movement) => {
+      const dateValue = movement.scheduled_date || movement.created_at || '';
+      return new Date(dateValue).toDateString() === todayDate.toDateString();
+    }).length || 0;
+    return { total, pending, completed, scheduledToday };
+  }, [movements, todayDate]);
+
+  const filteredMovements = useMemo(() => {
+    const search = searchQuery.trim().toLowerCase();
+    return (movements || [])
+      .filter((movement) => (typeFilter === 'all' ? true : movement.type === typeFilter))
+      .filter((movement) => {
+        if (statusFilter === 'pending') return movement.actual_volume === null;
+        if (statusFilter === 'completed') return movement.actual_volume !== null;
+        return true;
+      })
+      .filter((movement) => {
+        if (!search) return true;
+        const source = tankMap.get(movement.tank_id)?.name || '';
+        const target = movement.target_tank_id ? tankMap.get(movement.target_tank_id)?.name || '' : '';
+        return (
+          source.toLowerCase().includes(search)
+          || target.toLowerCase().includes(search)
+          || movement.type.toLowerCase().includes(search)
+          || movement.notes?.toLowerCase().includes(search)
+        );
+      });
+  }, [movements, statusFilter, typeFilter, searchQuery, tankMap]);
+
+  const rows = useMemo<MovementGridRow[]>(() => (
+    filteredMovements.map((movement) => {
+      const tank = tankMap.get(movement.tank_id);
+      const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
+      const isPending = movement.actual_volume === null;
+      const dateValue = movement.scheduled_date || movement.created_at || '';
+      const scheduledDate = new Date(dateValue);
+      const isFuture = scheduledDate > todayDate;
+      return {
+        id: movement.id,
+        date: dateValue,
+        type: movement.type,
+        tankName: `${tank?.name || 'Unknown'}${targetTank ? ` → ${targetTank.name}` : ''}`,
+        expectedVolume: movement.expected_volume,
+        actualVolume: movement.actual_volume,
+        status: isPending,
+        isFuture,
+        notes: movement.notes || '',
+      };
+    })
+  ), [filteredMovements, tankMap, todayDate]);
+
+  return {
+    tankMap,
+    targetTanks,
+    availableTargetTanks,
+    totalTransferVolume,
+    remainingTransferVolume,
+    summaryStats,
+    rows,
+  };
+}
+
+function MovementSummaryCards({ summaryStats }: { summaryStats: MovementSummaryStats }) {
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+      {[
+        { label: 'Scheduled Today', value: summaryStats.scheduledToday },
+        { label: 'Pending', value: summaryStats.pending },
+        { label: 'Completed', value: summaryStats.completed },
+        { label: 'Total', value: summaryStats.total },
+      ].map((stat) => (
+        <Box key={stat.label} sx={{ p: 2, borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
+            {stat.label.toUpperCase()}
+          </Typography>
+          <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-accent-cyan)' }}>
+            {stat.value}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+interface MovementsTableSectionProps {
+  rows: MovementGridRow[];
+  columns: GridColDef[];
+  selectedRows: GridRowSelectionModel;
+  onSelectedRowsChange: (selection: GridRowSelectionModel) => void;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+  statusFilter: 'all' | 'pending' | 'completed';
+  onStatusFilterChange: (value: 'all' | 'pending' | 'completed') => void;
+  typeFilter: MovementType | 'all';
+  onTypeFilterChange: (value: MovementType | 'all') => void;
+  editData: MovementUpdate;
+  onEditDataChange: (data: MovementUpdate) => void;
+  onBulkComplete: () => void;
+  onBulkReschedule: () => void;
+}
+
+function MovementsTableSection({
+  rows,
+  columns,
+  selectedRows,
+  onSelectedRowsChange,
+  searchQuery,
+  onSearchQueryChange,
+  statusFilter,
+  onStatusFilterChange,
+  typeFilter,
+  onTypeFilterChange,
+  editData,
+  onEditDataChange,
+  onBulkComplete,
+  onBulkReschedule,
+}: MovementsTableSectionProps) {
+  return (
+    <Grid size={{ xs: 12, md: 7 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <SectionHeader title="OPERATION LOG" />
+        <Stack direction="row" spacing={1} alignItems="center">
+          <TextField
+            size="small"
+            placeholder="Search tanks, notes..."
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            sx={{ minWidth: 200 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'completed')}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="completed">Completed</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Type</InputLabel>
+            <Select
+              value={typeFilter}
+              label="Type"
+              onChange={(e) => onTypeFilterChange(e.target.value as MovementType | 'all')}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="load">Load</MenuItem>
+              <MenuItem value="discharge">Discharge</MenuItem>
+              <MenuItem value="transfer">Transfer</MenuItem>
+              <MenuItem value="adjustment">Adjustment</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={selectedRows.ids.size === 0}
+            onClick={onBulkComplete}
+            sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
+          >
+            Complete Selected
+          </Button>
+        </Stack>
+      </Box>
+
+      <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Selected: {selectedRows.ids.size}
+        </Typography>
+        <TextField
+          size="small"
+          type="date"
+          value={editData.scheduled_date || ''}
+          onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ maxWidth: 160 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
+          onClick={onBulkReschedule}
+          sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
+        >
+          Reschedule
+        </Button>
+      </Box>
+
+      <Box sx={{ height: 520, width: '100%' }}>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          disableRowSelectionOnClick
+          checkboxSelection
+          onRowSelectionModelChange={onSelectedRowsChange}
+          rowSelectionModel={selectedRows}
+          pageSizeOptions={[10, 20, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+          getRowClassName={(params) => {
+            const statusClass = params.row.status ? 'row-pending' : 'row-complete';
+            const futureClass = params.row.isFuture ? 'row-future' : '';
+            return `${statusClass} ${futureClass}`.trim();
+          }}
+          sx={{
+            border: '1px solid var(--glass-border)',
+            background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+            borderRadius: '12px',
+            '& .MuiDataGrid-columnHeaders': {
+              borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
+              background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
+              fontSize: '0.7rem',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            },
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 0,
+              overflow: 'hidden',
+            },
+            '& .MuiDataGrid-cellContent': {
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            },
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(0, 229, 255, 0.04)',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: '1px solid rgba(0, 229, 255, 0.15)',
+            },
+            '& .row-pending': {
+              backgroundColor: 'rgba(255, 179, 0, 0.04)',
+            },
+            '& .row-complete': {
+              backgroundColor: 'rgba(0, 230, 118, 0.04)',
+            },
+            '& .row-future': {
+              boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
+            },
+          }}
+        />
+      </Box>
+    </Grid>
+  );
+}
 
 export default function MovementsPage() {
   const queryClient = useQueryClient();
@@ -109,28 +441,36 @@ export default function MovementsPage() {
     },
   });
 
+  const resetCompleteState = () => {
+    setCompleteDialogOpen(false);
+    setSelectedMovement(null);
+    setActualVolume(0);
+  };
+
   const completeMutation = useMutation({
     mutationFn: ({ id, actual_volume }: { id: string; actual_volume: number }) =>
       movementsApi.complete(id, { actual_volume }),
     onSuccess: () => {
       invalidateCommonQueries(queryClient);
-      setCompleteDialogOpen(false);
-      setSelectedMovement(null);
-      setActualVolume(0);
+      resetCompleteState();
     },
     onError: (err: Error) => {
       setError(err.message);
     },
   });
 
+  const resetEditState = () => {
+    setEditDialogOpen(false);
+    setSelectedMovement(null);
+    setEditData({});
+  };
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: MovementUpdate }) =>
       movementsApi.update(id, data),
     onSuccess: () => {
       invalidateCommonQueries(queryClient);
-      setEditDialogOpen(false);
-      setSelectedMovement(null);
-      setEditData({});
+      resetEditState();
     },
     onError: (err: Error) => {
       setError(err.message);
@@ -210,95 +550,27 @@ export default function MovementsPage() {
 
   const isLoading = movementsLoading || tanksLoading;
 
-  const tankMap = useMemo(() => new Map(tanks?.map((t) => [t.id, t]) || []), [tanks]);
-
-  // Filter tanks for transfer target (exclude source tank)
-  const targetTanks = useMemo(() => (
-    tanks?.filter((t) => t.id !== formData.tank_id) || []
-  ), [tanks, formData.tank_id]);
-
-  const availableTargetTanks = useMemo(() => (
-    targetTanks.filter((tank) => !transferTargets.some((target) => target.tank_id === tank.id))
-  ), [targetTanks, transferTargets]);
-
-  const totalTransferVolume = useMemo(
-    () => transferTargets.reduce((sum, target) => sum + (target.volume || 0), 0),
-    [transferTargets]
-  );
-
-  const remainingTransferVolume = useMemo(() => {
-    const currentLevel = tankMap.get(formData.tank_id)?.current_level || 0;
-    return currentLevel - totalTransferVolume;
-  }, [formData.tank_id, tankMap, totalTransferVolume]);
+  const {
+    tankMap,
+    targetTanks,
+    availableTargetTanks,
+    totalTransferVolume,
+    remainingTransferVolume,
+    summaryStats,
+    rows,
+  } = useMovementsViewModel({
+    movements,
+    tanks,
+    formData,
+    transferTargets,
+    todayDate,
+    searchQuery,
+    statusFilter,
+    typeFilter,
+  });
 
   const hasTransferTargets = transferTargets.length > 0;
 
-  const summaryStats = useMemo(() => {
-    const total = movements?.length || 0;
-    const pending = movements?.filter((movement) => movement.actual_volume === null).length || 0;
-    const completed = total - pending;
-    const scheduledToday = movements?.filter((movement) => {
-      const dateValue = movement.scheduled_date || movement.created_at || '';
-      return new Date(dateValue).toDateString() === todayDate.toDateString();
-    }).length || 0;
-    return { total, pending, completed, scheduledToday };
-  }, [movements, todayDate]);
-
-  const filteredMovements = useMemo(() => {
-    const search = searchQuery.trim().toLowerCase();
-    return (movements || [])
-      .filter((movement) => (typeFilter === 'all' ? true : movement.type === typeFilter))
-      .filter((movement) => {
-        if (statusFilter === 'pending') return movement.actual_volume === null;
-        if (statusFilter === 'completed') return movement.actual_volume !== null;
-        return true;
-      })
-      .filter((movement) => {
-        if (!search) return true;
-        const source = tankMap.get(movement.tank_id)?.name || '';
-        const target = movement.target_tank_id ? tankMap.get(movement.target_tank_id)?.name || '' : '';
-        return (
-          source.toLowerCase().includes(search)
-          || target.toLowerCase().includes(search)
-          || movement.type.toLowerCase().includes(search)
-          || movement.notes?.toLowerCase().includes(search)
-        );
-      });
-  }, [movements, statusFilter, typeFilter, searchQuery, tankMap]);
-
-  const rows = useMemo(() => (
-    filteredMovements.map((movement) => {
-      const tank = tankMap.get(movement.tank_id);
-      const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
-      const isPending = movement.actual_volume === null;
-      const dateValue = movement.scheduled_date || movement.created_at || '';
-      const scheduledDate = new Date(dateValue);
-      const isFuture = scheduledDate > todayDate;
-      return {
-        id: movement.id,
-        date: dateValue,
-        type: movement.type,
-        tankName: `${tank?.name || 'Unknown'}${targetTank ? ` → ${targetTank.name}` : ''}`,
-        expectedVolume: movement.expected_volume,
-        actualVolume: movement.actual_volume,
-        status: isPending,
-        isFuture,
-        notes: movement.notes || '',
-      };
-    })
-  ), [filteredMovements, tankMap, todayDate]);
-
-  const formatDate = (value?: string | null) => {
-    if (!value) return '—';
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString();
-    }
-    if (typeof value === 'string') {
-      return value.split('T')[0];
-    }
-    return '—';
-  };
 
   if (isLoading) {
     return (
@@ -422,23 +694,7 @@ export default function MovementsPage() {
         <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
-        {[
-          { label: 'Scheduled Today', value: summaryStats.scheduledToday },
-          { label: 'Pending', value: summaryStats.pending },
-          { label: 'Completed', value: summaryStats.completed },
-          { label: 'Total', value: summaryStats.total },
-        ].map((stat) => (
-          <Box key={stat.label} sx={{ p: 2, borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
-              {stat.label.toUpperCase()}
-            </Typography>
-            <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-accent-cyan)' }}>
-              {stat.value}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
+      <MovementSummaryCards summaryStats={summaryStats} />
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 5 }}>
@@ -535,18 +791,20 @@ export default function MovementsPage() {
                                 ))}
                               </Select>
                             </FormControl>
-                            <TextField
-                              size="small"
-                              label="Volume (bbl)"
-                              type="number"
-                              value={target.volume || ''}
-                              onChange={(e) => {
-                                const nextTargets = [...transferTargets];
-                                nextTargets[index] = { ...target, volume: Number(e.target.value) };
-                                setTransferTargets(nextTargets);
-                              }}
-                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                            />
+                              <TextField
+                                size="small"
+                                label="Volume (bbl)"
+                                type="number"
+                                value={target.volume || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const nextTargets = [...transferTargets];
+                                  nextTargets[index] = { ...target, volume: value === '' ? 0 : Number(value) };
+                                  setTransferTargets(nextTargets);
+                                }}
+                                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                              />
+
                             <Button
                               variant="text"
                               sx={{ color: 'text.secondary' }}
@@ -597,16 +855,20 @@ export default function MovementsPage() {
                 />
 
                 {formData.type !== 'transfer' && (
-                  <TextField
-                    fullWidth
-                    margin="normal"
-                    label="Expected Volume (bbl)"
-                    type="number"
-                    required
-                    value={formData.expected_volume || ''}
-                    onChange={(e) => setFormData({ ...formData, expected_volume: Number(e.target.value) })}
-                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                  />
+                <TextField
+                  fullWidth
+                  margin="normal"
+                  label="Expected Volume (bbl)"
+                  type="number"
+                  required
+                  value={formData.expected_volume || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData({ ...formData, expected_volume: value === '' ? 0 : Number(value) });
+                  }}
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                />
+
                 )}
 
                 <TextField
@@ -642,151 +904,28 @@ export default function MovementsPage() {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <SectionHeader title="OPERATION LOG" />
-            <Stack direction="row" spacing={1} alignItems="center">
-              <TextField
-                size="small"
-                placeholder="Search tanks, notes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ minWidth: 200 }}
-              />
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'completed')}
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel>Type</InputLabel>
-                <Select
-                  value={typeFilter}
-                  label="Type"
-                  onChange={(e) => setTypeFilter(e.target.value as MovementType | 'all')}
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="load">Load</MenuItem>
-                  <MenuItem value="discharge">Discharge</MenuItem>
-                  <MenuItem value="transfer">Transfer</MenuItem>
-                  <MenuItem value="adjustment">Adjustment</MenuItem>
-                </Select>
-              </FormControl>
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={selectedRows.ids.size === 0}
-                onClick={handleBulkComplete}
-                sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
-              >
-                Complete Selected
-              </Button>
-            </Stack>
-          </Box>
-
-          <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Selected: {selectedRows.ids.size}
-            </Typography>
-            <TextField
-              size="small"
-              type="date"
-              value={editData.scheduled_date || ''}
-              onChange={(e) => setEditData({ ...editData, scheduled_date: e.target.value })}
-              slotProps={{ inputLabel: { shrink: true } }}
-              sx={{ maxWidth: 160 }}
-            />
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
-              onClick={handleBulkReschedule}
-              sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
-            >
-              Reschedule
-            </Button>
-          </Box>
-
-          <Box sx={{ height: 520, width: '100%' }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              disableRowSelectionOnClick
-              checkboxSelection
-              onRowSelectionModelChange={(selection) => setSelectedRows(selection)}
-              rowSelectionModel={selectedRows}
-              pageSizeOptions={[10, 20, 50]}
-              initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-              getRowClassName={(params) => {
-                const statusClass = params.row.status ? 'row-pending' : 'row-complete';
-                const futureClass = params.row.isFuture ? 'row-future' : '';
-                return `${statusClass} ${futureClass}`.trim();
-              }}
-              sx={{
-                border: '1px solid var(--glass-border)',
-                background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
-                borderRadius: '12px',
-                '& .MuiDataGrid-columnHeaders': {
-                  borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-                  background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: 'text.secondary',
-                },
-                '& .MuiDataGrid-columnHeaderTitle': {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                },
-                '& .MuiDataGrid-cell': {
-                  borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  minWidth: 0,
-                  overflow: 'hidden',
-                },
-                '& .MuiDataGrid-cellContent': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  width: '100%',
-                },
-                '& .MuiDataGrid-row:hover': {
-                  backgroundColor: 'rgba(0, 229, 255, 0.04)',
-                },
-                '& .MuiDataGrid-footerContainer': {
-                  borderTop: '1px solid rgba(0, 229, 255, 0.15)',
-                },
-                '& .row-pending': {
-                  backgroundColor: 'rgba(255, 179, 0, 0.04)',
-                },
-                '& .row-complete': {
-                  backgroundColor: 'rgba(0, 230, 118, 0.04)',
-                },
-                '& .row-future': {
-                  boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
-                },
-              }}
-            />
-          </Box>
-        </Grid>
+        <MovementsTableSection
+          rows={rows}
+          columns={columns}
+          selectedRows={selectedRows}
+          onSelectedRowsChange={setSelectedRows}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          editData={editData}
+          onEditDataChange={setEditData}
+          onBulkComplete={handleBulkComplete}
+          onBulkReschedule={handleBulkReschedule}
+        />
       </Grid>
 
       {/* Complete Movement Dialog */}
         <Dialog
           open={completeDialogOpen}
-          onClose={() => setCompleteDialogOpen(false)}
+          onClose={resetCompleteState}
           maxWidth="sm"
           fullWidth
           slotProps={{
@@ -825,7 +964,10 @@ export default function MovementsPage() {
                 type="number"
                 required
                 value={actualVolume || ''}
-                onChange={(e) => setActualVolume(Number(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setActualVolume(value === '' ? 0 : Number(value));
+                }}
                 slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 autoFocus
               />
@@ -854,7 +996,7 @@ export default function MovementsPage() {
       {/* Edit Movement Dialog */}
         <Dialog
           open={editDialogOpen}
-          onClose={() => setEditDialogOpen(false)}
+          onClose={resetEditState}
           maxWidth="sm"
           fullWidth
           slotProps={{
@@ -901,7 +1043,10 @@ export default function MovementsPage() {
                 label="Expected Volume (bbl)"
                 type="number"
                 value={editData.expected_volume || ''}
-                onChange={(e) => setEditData({ ...editData, expected_volume: Number(e.target.value) })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEditData({ ...editData, expected_volume: value === '' ? undefined : Number(value) });
+                }}
                 slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
               />
               <TextField

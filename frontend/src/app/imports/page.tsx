@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -177,7 +177,7 @@ export default function ImportsPage() {
     setSelectedMovements(new Map());
   };
 
-  const tankOptions = useMemo(() => (tanks || []), [tanks]);
+  const tankOptions = tanks || [];
 
   const renderUploadStep = () => (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>

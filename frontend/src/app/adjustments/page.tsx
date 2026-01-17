@@ -26,6 +26,7 @@ import Alert from '@mui/material/Alert';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles } from '@/lib/constants';
+import { formatDate } from '@/lib/dateUtils';
 import TankLevelGauge from '@/components/TankLevelGauge';
 import SectionHeader from '@/components/SectionHeader';
 import type { AdjustmentCreate, TankWithLevel } from '@/lib/types';
@@ -176,7 +177,10 @@ export default function AdjustmentsPage() {
                   type="number"
                   required
                   value={physicalLevel || ''}
-                  onChange={(e) => setPhysicalLevel(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPhysicalLevel(value === '' ? 0 : Number(value));
+                  }}
                   slotProps={{ htmlInput: { min: 0, max: selectedTank?.capacity, step: 0.01 } }}
                   helperText={selectedTank ? `Max: ${selectedTank.capacity.toLocaleString()} bbl` : ''}
                 />
@@ -265,7 +269,7 @@ export default function AdjustmentsPage() {
                     return (
                       <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem' } }}>
                         <TableCell sx={{ color: 'text.secondary' }}>
-                          {new Date(movement.created_at).toLocaleDateString()}
+                          {formatDate(movement.created_at)}
                         </TableCell>
                         <TableCell>{tank?.name || 'Unknown'}</TableCell>
                         <TableCell align="right">

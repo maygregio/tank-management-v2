@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -30,7 +30,7 @@ export default function TanksPage() {
     location: '',
     fuel_type: 'diesel',
     capacity: 0,
-    initial_level: 0,
+    initial_level: undefined,
   });
 
   // Fetch all tanks once, filter client-side
@@ -40,12 +40,10 @@ export default function TanksPage() {
   });
 
   // Filter tanks client-side and extract unique locations
-  const tanks = useMemo(() => (filterLocation
+  const tanks = filterLocation
     ? allTanks?.filter((t) => t.location === filterLocation)
-    : allTanks), [allTanks, filterLocation]);
-  const uniqueLocations = useMemo(() => (
-    [...new Set(allTanks?.map((t) => t.location) || [])].sort()
-  ), [allTanks]);
+    : allTanks;
+  const uniqueLocations = [...new Set(allTanks?.map((t) => t.location) || [])].sort();
 
   const createMutation = useMutation({
     mutationFn: tanksApi.create,
@@ -62,7 +60,7 @@ export default function TanksPage() {
       location: '',
       fuel_type: 'diesel',
       capacity: 0,
-      initial_level: 0,
+      initial_level: undefined,
     });
     setDialogOpen(true);
   };
@@ -73,7 +71,10 @@ export default function TanksPage() {
 
   const handleSubmit = () => {
     if (!formData.name.trim() || !formData.location.trim() || formData.capacity <= 0) return;
-    createMutation.mutate(formData);
+    createMutation.mutate({
+      ...formData,
+      initial_level: formData.initial_level || 0,
+    });
   };
 
   if (isLoading) {
@@ -198,25 +199,30 @@ export default function TanksPage() {
               <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>
-            <TextField
-              margin="dense"
-              label="Maximum Capacity (bbl)"
-
+          <TextField
+            margin="dense"
+            label="Maximum Capacity (bbl)"
             type="number"
             fullWidth
             required
             value={formData.capacity || ''}
-            onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFormData({ ...formData, capacity: value === '' ? 0 : Number(value) });
+            }}
           />
-            <TextField
-              margin="dense"
-              label="Initial Fill Level (bbl)"
-
+          <TextField
+            margin="dense"
+            label="Initial Fill Level (bbl)"
             type="number"
             fullWidth
-            value={formData.initial_level || ''}
-            onChange={(e) => setFormData({ ...formData, initial_level: Number(e.target.value) })}
+            value={formData.initial_level ?? ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFormData({ ...formData, initial_level: value === '' ? undefined : Number(value) });
+            }}
           />
+
         </DialogContent>
         <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
           <Button onClick={handleCloseDialog} sx={{ color: 'text.secondary' }}>Abort</Button>
