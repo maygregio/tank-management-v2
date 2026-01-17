@@ -15,20 +15,17 @@ import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
+import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
+import { DataGrid, GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles } from '@/lib/constants';
@@ -45,8 +42,13 @@ export default function MovementsPage() {
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [actualVolume, setActualVolume] = useState<number>(0);
   const [editData, setEditData] = useState<MovementUpdate>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
+  const [typeFilter, setTypeFilter] = useState<MovementType | 'all'>('all');
 
   const today = new Date().toISOString().split('T')[0];
+  const todayDate = useMemo(() => new Date(today), [today]);
   const [formData, setFormData] = useState<MovementCreate>({
     type: 'load',
     tank_id: '',
@@ -161,6 +163,18 @@ export default function MovementsPage() {
     setCompleteDialogOpen(true);
   };
 
+  const handleBulkComplete = () => {
+    const pendingMovements = (movements || []).filter(
+      (movement) => selectedRows.ids.has(movement.id) && movement.actual_volume === null
+    );
+    if (pendingMovements.length === 0) return;
+    if (!confirm(`Complete ${pendingMovements.length} movements with expected volumes?`)) return;
+    pendingMovements.forEach((movement) => {
+      completeMutation.mutate({ id: movement.id, actual_volume: movement.expected_volume });
+    });
+    setSelectedRows({ type: 'include', ids: new Set() });
+  };
+
   const handleComplete = () => {
     if (!selectedMovement || actualVolume <= 0) return;
     completeMutation.mutate({ id: selectedMovement.id, actual_volume: actualVolume });
@@ -179,6 +193,19 @@ export default function MovementsPage() {
   const handleEdit = () => {
     if (!selectedMovement) return;
     updateMutation.mutate({ id: selectedMovement.id, data: editData });
+  };
+
+  const handleBulkReschedule = () => {
+    if (!editData.scheduled_date) return;
+    const pendingMovements = (movements || []).filter(
+      (movement) => selectedRows.ids.has(movement.id) && movement.actual_volume === null
+    );
+    if (pendingMovements.length === 0) return;
+    if (!confirm(`Reschedule ${pendingMovements.length} movements to ${editData.scheduled_date}?`)) return;
+    pendingMovements.forEach((movement) => {
+      updateMutation.mutate({ id: movement.id, data: { scheduled_date: editData.scheduled_date } });
+    });
+    setSelectedRows({ type: 'include', ids: new Set() });
   };
 
   const isLoading = movementsLoading || tanksLoading;
@@ -206,6 +233,57 @@ export default function MovementsPage() {
 
   const hasTransferTargets = transferTargets.length > 0;
 
+  const summaryStats = useMemo(() => {
+    const total = movements?.length || 0;
+    const pending = movements?.filter((movement) => movement.actual_volume === null).length || 0;
+    const completed = total - pending;
+    const scheduledToday = movements?.filter((movement) => new Date(movement.scheduled_date).toDateString() === todayDate.toDateString()).length || 0;
+    return { total, pending, completed, scheduledToday };
+  }, [movements, todayDate]);
+
+  const filteredMovements = useMemo(() => {
+    const search = searchQuery.trim().toLowerCase();
+    return (movements || [])
+      .filter((movement) => (typeFilter === 'all' ? true : movement.type === typeFilter))
+      .filter((movement) => {
+        if (statusFilter === 'pending') return movement.actual_volume === null;
+        if (statusFilter === 'completed') return movement.actual_volume !== null;
+        return true;
+      })
+      .filter((movement) => {
+        if (!search) return true;
+        const source = tankMap.get(movement.tank_id)?.name || '';
+        const target = movement.target_tank_id ? tankMap.get(movement.target_tank_id)?.name || '' : '';
+        return (
+          source.toLowerCase().includes(search)
+          || target.toLowerCase().includes(search)
+          || movement.type.toLowerCase().includes(search)
+          || movement.notes?.toLowerCase().includes(search)
+        );
+      });
+  }, [movements, statusFilter, typeFilter, searchQuery, tankMap]);
+
+  const rows = useMemo(() => (
+    filteredMovements.map((movement) => {
+      const tank = tankMap.get(movement.tank_id);
+      const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
+      const isPending = movement.actual_volume === null;
+      const scheduledDate = new Date(movement.scheduled_date);
+      const isFuture = scheduledDate > todayDate;
+      return {
+        id: movement.id,
+        scheduledDate: movement.scheduled_date,
+        type: movement.type,
+        tankName: `${tank?.name || 'Unknown'}${targetTank ? ` → ${targetTank.name}` : ''}`,
+        expectedVolume: movement.expected_volume,
+        actualVolume: movement.actual_volume,
+        status: isPending,
+        isFuture,
+        notes: movement.notes || '',
+      };
+    })
+  ), [filteredMovements, tankMap, todayDate]);
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
@@ -214,14 +292,122 @@ export default function MovementsPage() {
     );
   }
 
+  const columns: GridColDef[] = [
+    {
+      field: 'scheduledDate',
+      headerName: 'Scheduled',
+      flex: 0.9,
+      valueFormatter: (params: { value?: string }) => {
+        const parsed = new Date(params.value ?? '');
+        return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
+      },
+    },
+    {
+      field: 'type',
+      headerName: 'Type',
+      flex: 0.7,
+      renderCell: (params: GridRenderCellParams) => (
+        <MovementTypeChip type={params.value as MovementType} />
+      ),
+      sortable: false,
+    },
+    {
+      field: 'tankName',
+      headerName: 'Tank',
+      flex: 1.2,
+    },
+    {
+      field: 'expectedVolume',
+      headerName: 'Expected (bbl)',
+      flex: 1,
+      type: 'number',
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography sx={{ fontWeight: 600 }}>{Number(params.value || 0).toLocaleString()} bbl</Typography>
+      ),
+    },
+    {
+      field: 'actualVolume',
+      headerName: 'Actual (bbl)',
+      flex: 1,
+      type: 'number',
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography sx={{ color: params.value === null ? 'text.disabled' : 'text.primary' }}>
+          {params.value === null ? '—' : `${Number(params.value).toLocaleString()} bbl`}
+        </Typography>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      flex: 0.8,
+      renderCell: (params: GridRenderCellParams) => (
+        <MovementStatus isPending={Boolean(params.value)} />
+      ),
+      sortable: false,
+    },
+    {
+      field: 'notes',
+      headerName: 'Notes',
+      flex: 1.6,
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      sortable: false,
+      filterable: false,
+      width: 120,
+      renderCell: (params: GridRenderCellParams) => {
+        const movement = movements?.find((item) => item.id === params.row.id);
+        if (!movement || movement.actual_volume !== null || movement.type === 'adjustment') return null;
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={() => handleOpenEdit(movement)}
+              title="Edit movement"
+              sx={{ color: '#ffab00', '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.1)' } }}
+            >
+              <EditIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => handleOpenComplete(movement)}
+              title="Complete movement"
+              sx={{ color: 'var(--color-accent-cyan)', '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.1)' } }}
+            >
+              <CheckCircleIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Box>
+        );
+      }
+    },
+  ];
+
   return (
     <Box>
-      {/* Tactical Command Bar */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
         <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
           FUEL OPERATIONS
         </Typography>
         <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+        {[
+          { label: 'Scheduled Today', value: summaryStats.scheduledToday },
+          { label: 'Pending', value: summaryStats.pending },
+          { label: 'Completed', value: summaryStats.completed },
+          { label: 'Total', value: summaryStats.total },
+        ].map((stat) => (
+          <Box key={stat.label} sx={{ p: 2, borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
+              {stat.label.toUpperCase()}
+            </Typography>
+            <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-accent-cyan)' }}>
+              {stat.value}
+            </Typography>
+          </Box>
+        ))}
       </Box>
 
       <Grid container spacing={3}>
@@ -235,6 +421,26 @@ export default function MovementsPage() {
               <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
                 SCHEDULE OPERATION
               </Typography>
+              <ToggleButtonGroup
+                value={formData.type}
+                exclusive
+                fullWidth
+                onChange={(_, value) => {
+                  if (!value) return;
+                  setFormData({
+                    ...formData,
+                    type: value as MovementType,
+                    target_tank_id: '',
+                  });
+                  setTransferTargets([]);
+                }}
+                sx={{ mb: 2, '& .MuiToggleButton-root': { color: 'text.secondary', borderColor: 'var(--color-border)' }, '& .Mui-selected': { color: 'var(--color-accent-cyan)', borderColor: 'var(--color-accent-cyan)' } }}
+              >
+                <ToggleButton value="load">Load</ToggleButton>
+                <ToggleButton value="discharge">Discharge</ToggleButton>
+                <ToggleButton value="transfer">Transfer</ToggleButton>
+                <ToggleButton value="adjustment">Adjustment</ToggleButton>
+              </ToggleButtonGroup>
               <form onSubmit={handleSubmit}>
                 {error && (
                   <Alert severity="error" sx={{ mb: 2, bgcolor: 'rgba(255, 82, 82, 0.1)', border: '1px solid rgba(255, 82, 82, 0.3)' }} onClose={() => setError(null)}>
@@ -242,22 +448,6 @@ export default function MovementsPage() {
                   </Alert>
                 )}
 
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Movement Type</InputLabel>
-                  <Select
-                    value={formData.type}
-                    label="Movement Type"
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      type: e.target.value as MovementType,
-                      target_tank_id: '',
-                    })}
-                  >
-                    <MenuItem value="load">Load (Add fuel to tank)</MenuItem>
-                    <MenuItem value="discharge">Discharge (Remove fuel from tank)</MenuItem>
-                    <MenuItem value="transfer">Transfer (Move between tanks)</MenuItem>
-                  </Select>
-                </FormControl>
 
                 <FormControl fullWidth margin="normal" required>
                   <InputLabel>
@@ -275,6 +465,11 @@ export default function MovementsPage() {
                     ))}
                   </Select>
                 </FormControl>
+                {formData.type === 'transfer' && formData.tank_id && (
+                  <Typography variant="caption" sx={{ color: remainingTransferVolume < 0 ? '#ff6b6b' : 'text.secondary' }}>
+                    Remaining after transfer: {remainingTransferVolume.toLocaleString()} bbl
+                  </Typography>
+                )}
 
                 {formData.type === 'transfer' && (
                   <Box sx={{ mt: 2 }}>
@@ -418,88 +613,131 @@ export default function MovementsPage() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 7 }}>
-          {/* Movement Log Header */}
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <SectionHeader title="OPERATION LOG" />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <TextField
+                size="small"
+                placeholder="Search tanks, notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ minWidth: 200 }}
+              />
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status"
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'completed')}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={typeFilter}
+                  label="Type"
+                  onChange={(e) => setTypeFilter(e.target.value as MovementType | 'all')}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="load">Load</MenuItem>
+                  <MenuItem value="discharge">Discharge</MenuItem>
+                  <MenuItem value="transfer">Transfer</MenuItem>
+                  <MenuItem value="adjustment">Adjustment</MenuItem>
+                </Select>
+              </FormControl>
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={selectedRows.ids.size === 0}
+                onClick={handleBulkComplete}
+                sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
+              >
+                Complete Selected
+              </Button>
+            </Stack>
           </Box>
 
-          <TableContainer component={Paper} sx={{ bgcolor: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(16px)', boxShadow: '0 22px 50px rgba(5, 10, 18, 0.55)' }}>
-            <Table size="small" sx={{ '& .MuiTableRow-root': { transition: 'background 0.25s ease' }, '& .MuiTableRow-root:hover': { bgcolor: 'rgba(0, 229, 255, 0.05)' }, '@media (prefers-reduced-motion: reduce)': { '& .MuiTableRow-root': { transition: 'none' } } }}>
-              <TableHead>
-                <TableRow sx={styles.tableHeadRow}>
-                  <TableCell>Scheduled</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Unit</TableCell>
-                  <TableCell align="right">Expected</TableCell>
-                  <TableCell align="right">Actual</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {movements?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary', fontSize: '0.75rem' }}>
-                      NO OPERATIONS SCHEDULED
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  movements?.slice(0, 20).map((movement) => {
-                    const tank = tankMap.get(movement.tank_id);
-                    const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
-                    const isPending = movement.actual_volume === null;
-                    return (
-                      <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem' } }}>
-                        <TableCell sx={{ color: 'text.secondary' }}>
-                          {new Date(movement.scheduled_date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <MovementTypeChip type={movement.type} />
-                        </TableCell>
-                        <TableCell>
-                          {tank?.name || 'Unknown'}
-                          {targetTank && <span style={{ color: 'var(--color-accent-cyan)' }}> → {targetTank.name}</span>}
-                        </TableCell>
-                        <TableCell align="right">
-                          {movement.expected_volume.toLocaleString()} bbl
-                        </TableCell>
-                        <TableCell align="right" sx={{ color: isPending ? 'text.disabled' : 'text.primary' }}>
-                          {movement.actual_volume !== null
-                            ? `${movement.actual_volume.toLocaleString()} bbl`
-                            : '—'}
-                        </TableCell>
-                        <TableCell>
-                          <MovementStatus isPending={isPending} />
-                        </TableCell>
-                        <TableCell>
-                          {isPending && movement.type !== 'adjustment' && (
-                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenEdit(movement)}
-                                title="Edit movement"
-                                sx={{ color: '#ffab00', '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.1)' } }}
-                              >
-                                <EditIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenComplete(movement)}
-                                title="Complete movement"
-                                sx={{ color: 'var(--color-accent-cyan)', '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.1)' } }}
-                              >
-                                <CheckCircleIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Box>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Selected: {selectedRows.ids.size}
+            </Typography>
+            <TextField
+              size="small"
+              type="date"
+              value={editData.scheduled_date || ''}
+              onChange={(e) => setEditData({ ...editData, scheduled_date: e.target.value })}
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={{ maxWidth: 160 }}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
+              onClick={handleBulkReschedule}
+              sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
+            >
+              Reschedule
+            </Button>
+          </Box>
+
+          <Box sx={{ height: 520, width: '100%' }}>
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              disableRowSelectionOnClick
+              checkboxSelection
+              onRowSelectionModelChange={(selection) => setSelectedRows(selection)}
+              rowSelectionModel={selectedRows}
+              pageSizeOptions={[10, 20, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+              getRowClassName={(params) => {
+                const statusClass = params.row.status ? 'row-pending' : 'row-complete';
+                const futureClass = params.row.isFuture ? 'row-future' : '';
+                return `${statusClass} ${futureClass}`.trim();
+              }}
+              sx={{
+                border: '1px solid var(--glass-border)',
+                background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+                borderRadius: '12px',
+                '& .MuiDataGrid-columnHeaders': {
+                  borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
+                  background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+                '& .MuiDataGrid-cellContent': {
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+                '& .MuiDataGrid-row:hover': {
+                  backgroundColor: 'rgba(0, 229, 255, 0.04)',
+                },
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: '1px solid rgba(0, 229, 255, 0.15)',
+                },
+                '& .row-pending': {
+                  backgroundColor: 'rgba(255, 179, 0, 0.04)',
+                },
+                '& .row-complete': {
+                  backgroundColor: 'rgba(0, 230, 118, 0.04)',
+                },
+                '& .row-future': {
+                  boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
+                },
+              }}
+            />
+          </Box>
         </Grid>
       </Grid>
 
