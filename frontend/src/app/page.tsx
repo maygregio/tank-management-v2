@@ -131,7 +131,7 @@ export default function Dashboard() {
           description="Head to the Tanks page to deploy your first unit and begin monitoring levels."
           action={{
             label: 'Go to Tanks',
-            onClick: () => window.location.href = '/tanks'
+            href: '/tanks'
           }}
         />
       ) : (

@@ -227,13 +227,14 @@ function MovementsTableSection({
   return (
     <Grid size={{ xs: 12, md: 7 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <SectionHeader title="OPERATION LOG" />
+        <SectionHeader title="Operation Log" />
         <Stack direction="row" spacing={1} alignItems="center">
           <TextField
             size="small"
-            placeholder="Search tanks, notes..."
+            placeholder="Search tanks, notes…"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
+            inputProps={{ 'aria-label': 'Search movements' }}
             sx={{ minWidth: 200 }}
           />
           <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -284,6 +285,7 @@ function MovementsTableSection({
           value={editData.scheduled_date || ''}
           onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
           slotProps={{ inputLabel: { shrink: true } }}
+          inputProps={{ 'aria-label': 'Reschedule date' }}
           sx={{ maxWidth: 160 }}
         />
         <Button
@@ -675,6 +677,7 @@ export default function MovementsPage() {
               size="small"
               onClick={() => handleOpenEdit(movement)}
               title="Edit movement"
+              aria-label="Edit movement"
               sx={{ color: '#ffab00', '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.1)' } }}
             >
               <EditIcon sx={{ fontSize: 16 }} />
@@ -683,6 +686,7 @@ export default function MovementsPage() {
               size="small"
               onClick={() => handleOpenComplete(movement)}
               title="Complete movement"
+              aria-label="Complete movement"
               sx={{ color: 'var(--color-accent-cyan)', '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.1)' } }}
             >
               <CheckCircleIcon sx={{ fontSize: 18 }} />
@@ -696,9 +700,10 @@ export default function MovementsPage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
-          FUEL OPERATIONS
-        </Typography>
+          <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
+            Fuel Operations
+          </Typography>
+
         <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
       </Box>
 
@@ -713,7 +718,7 @@ export default function MovementsPage() {
           }}>
             <CardContent>
               <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-                SCHEDULE OPERATION
+                Schedule Operation
               </Typography>
               <ToggleButtonGroup
                 value={formData.type}
@@ -905,7 +910,7 @@ export default function MovementsPage() {
                   }}
                   disabled={!formData.tank_id || createMutation.isPending || transferMutation.isPending || (formData.type !== 'transfer' && formData.expected_volume <= 0) || (formData.type === 'transfer' && !hasTransferTargets)}
                 >
-                  {createMutation.isPending ? 'INITIALIZING...' : 'EXECUTE OPERATION'}
+                  {createMutation.isPending ? 'Initializing…' : 'Execute Operation'}
                 </Button>
               </form>
             </CardContent>
@@ -996,7 +1001,7 @@ export default function MovementsPage() {
               '&:disabled': { opacity: 0.3 }
             }}
           >
-            {completeMutation.isPending ? 'PROCESSING...' : 'CONFIRM'}
+            {completeMutation.isPending ? 'Processing…' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1085,7 +1090,7 @@ export default function MovementsPage() {
               '&:disabled': { opacity: 0.3 },
             }}
           >
-            {updateMutation.isPending ? 'SAVING...' : 'SAVE'}
+            {updateMutation.isPending ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

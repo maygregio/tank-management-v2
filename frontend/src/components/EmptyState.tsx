@@ -2,6 +2,7 @@
 
 import { Box, Typography, Button } from '@mui/material';
 import { ReactNode } from 'react';
+import Link from 'next/link';
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -9,11 +10,16 @@ interface EmptyStateProps {
   description?: string;
   action?: {
     label: string;
-    onClick: () => void;
+    onClick?: () => void;
+    href?: string;
   };
 }
 
 export default function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  const actionProps = action?.href
+    ? { component: Link, href: action.href }
+    : { onClick: action?.onClick };
+
   return (
     <Box
       sx={{
@@ -63,7 +69,7 @@ export default function EmptyState({ icon, title, description, action }: EmptySt
       {action && (
         <Button
           variant="contained"
-          onClick={action.onClick}
+          {...actionProps}
           sx={{
             bgcolor: 'rgba(0, 212, 255, 0.1)',
             color: 'var(--color-accent-cyan)',

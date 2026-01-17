@@ -170,13 +170,15 @@ export default function TankDetailPage() {
     },
   ];
 
-  const sortedHistory = history ? [...history].sort(
-    (a, b) => {
-      const left = a.scheduled_date || a.created_at;
-      const right = b.scheduled_date || b.created_at;
-      return new Date(left).getTime() - new Date(right).getTime();
-    }
-  ) : [];
+  const sortedHistory = useMemo(() => (
+    history ? [...history].sort(
+      (a, b) => {
+        const left = a.scheduled_date || a.created_at;
+        const right = b.scheduled_date || b.created_at;
+        return new Date(left).getTime() - new Date(right).getTime();
+      }
+    ) : []
+  ), [history]);
 
   const startingLevel = tank?.initial_level || 0;
   const runningBalanceRows = sortedHistory.map((movement) => {
@@ -238,7 +240,7 @@ export default function TankDetailPage() {
         description="The requested storage unit could not be located."
         action={{
           label: 'Return to Registry',
-          onClick: () => router.push('/tanks')
+          href: '/tanks'
         }}
       />
     );
@@ -277,7 +279,7 @@ export default function TankDetailPage() {
         </IconButton>
         <Box sx={{ flex: 1 }}>
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.25em' }}>
-            UNIT TELEMETRY
+            Unit Telemetry
           </Typography>
           <Typography sx={{ fontSize: '1.35rem', fontWeight: 700 }}>
             {tank.name}
@@ -350,7 +352,7 @@ export default function TankDetailPage() {
             }}
           >
             <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              CAPACITY UTILIZATION
+              Capacity Utilization
             </Typography>
             <Box sx={{ mb: 3 }}>
               <TankLevelGauge percentage={tank.level_percentage} showLabel={true} />
@@ -385,7 +387,7 @@ export default function TankDetailPage() {
             }}
           >
             <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              LEVEL HISTORY
+              Level History
             </Typography>
             <AreaChart
               data={levelChartData}
@@ -435,7 +437,7 @@ export default function TankDetailPage() {
       </Grid>
 
       <Box sx={{ mt: 5, mb: 2 }}>
-        <SectionHeader title="ACTIVITY TIMELINE" />
+        <SectionHeader title="Activity Timeline" />
       </Box>
 
       <Box sx={{ height: 460, width: '100%' }}>
