@@ -156,4 +156,5 @@ export interface SignalUploadResult {
   signals: ParsedSignal[];
   errors: string[];
   created_count: number;
+  skipped_count: number;
 }

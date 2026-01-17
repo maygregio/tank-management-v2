@@ -253,6 +253,7 @@ def get_unassigned_signals():
 class SignalUploadResult(ExcelParseResult):
     """Result from uploading signals."""
     created_count: int = 0
+    skipped_count: int = 0  # Signals already in system
 
 
 @router.post("/signals/upload", response_model=SignalUploadResult)
@@ -268,9 +269,18 @@ async def upload_signals(file: UploadFile = File(...)):
     # Parse Excel
     parse_result = parse_signals_excel(content)
 
-    # Create movements for each signal
+    # Get existing signal IDs to avoid duplicates
+    existing_movements = movement_storage.get_all()
+    existing_signal_ids = {m.signal_id for m in existing_movements if m.signal_id}
+
+    # Create movements only for new signals
     created_count = 0
+    skipped_count = 0
     for signal in parse_result.signals:
+        if signal.signal_id in existing_signal_ids:
+            skipped_count += 1
+            continue
+
         movement = Movement(
             type=MovementType.LOAD,  # Signals are incoming loads
             tank_id=None,  # Unassigned
@@ -286,7 +296,8 @@ async def upload_signals(file: UploadFile = File(...)):
     return SignalUploadResult(
         signals=parse_result.signals,
         errors=parse_result.errors,
-        created_count=created_count
+        created_count=created_count,
+        skipped_count=skipped_count
     )
 
 

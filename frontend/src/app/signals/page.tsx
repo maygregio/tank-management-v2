@@ -68,7 +68,8 @@ export default function SignalsPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
       invalidateCommonQueries(queryClient);
-      setSuccessMessage(`Uploaded ${result.created_count} signal(s) successfully`);
+      const skippedMsg = result.skipped_count > 0 ? ` (${result.skipped_count} already existed)` : '';
+      setSuccessMessage(`Added ${result.created_count} new signal(s)${skippedMsg}`);
       setError(null);
       if (result.errors.length > 0) {
         setError(`Warnings: ${result.errors.join(', ')}`);
