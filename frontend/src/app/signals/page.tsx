@@ -38,6 +38,8 @@ interface SignalGridRow {
   source_tank: string;
   load_date: string;
   volume: number;
+  tank_id: string | null;
+  tank_name: string | null;
   trade_number: string | null;
   trade_line_item: string | null;
 }
@@ -183,22 +185,27 @@ export default function SignalsPage() {
 
   const isLoading = signalsLoading || tanksLoading;
 
-  const rows: SignalGridRow[] = (signals || []).map((signal) => ({
-    id: signal.id,
-    signal_id: signal.signal_id || 'N/A',
-    source_tank: signal.source_tank || 'Unknown',
-    load_date: signal.scheduled_date,
-    volume: signal.expected_volume,
-    trade_number: signal.trade_number || null,
-    trade_line_item: signal.trade_line_item || null,
-  }));
+  const rows: SignalGridRow[] = (signals || []).map((signal) => {
+    const tank = signal.tank_id ? tanks?.find((t) => t.id === signal.tank_id) : null;
+    return {
+      id: signal.id,
+      signal_id: signal.signal_id || 'N/A',
+      source_tank: signal.source_tank || 'Unknown',
+      load_date: signal.scheduled_date,
+      volume: signal.expected_volume,
+      tank_id: signal.tank_id,
+      tank_name: tank?.name || null,
+      trade_number: signal.trade_number || null,
+      trade_line_item: signal.trade_line_item || null,
+    };
+  });
 
   const columns: GridColDef[] = [
     {
       field: 'signal_id',
       headerName: 'Signal ID',
-      minWidth: 130,
-      flex: 1,
+      minWidth: 120,
+      flex: 0.9,
       renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontWeight: 600, color: 'var(--color-accent-cyan)' }} noWrap>
           {params.value}
@@ -208,14 +215,14 @@ export default function SignalsPage() {
     {
       field: 'source_tank',
       headerName: 'Refinery Tank',
-      minWidth: 140,
-      flex: 1,
+      minWidth: 120,
+      flex: 0.9,
     },
     {
       field: 'load_date',
-      headerName: 'Load Date',
-      minWidth: 100,
-      flex: 0.8,
+      headerName: 'Date',
+      minWidth: 90,
+      flex: 0.7,
       renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
           {formatDate(params.value)}
@@ -224,21 +231,38 @@ export default function SignalsPage() {
     },
     {
       field: 'volume',
-      headerName: 'Volume (bbl)',
-      minWidth: 120,
-      flex: 0.9,
+      headerName: 'Volume',
+      minWidth: 100,
+      flex: 0.7,
       type: 'number',
       renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
-          {Number(params.value || 0).toLocaleString()} bbl
+          {Number(params.value || 0).toLocaleString()}
+        </Typography>
+      ),
+    },
+    {
+      field: 'tank_name',
+      headerName: 'Tank',
+      minWidth: 100,
+      flex: 0.8,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography
+          sx={{
+            fontWeight: params.value ? 600 : 400,
+            color: params.value ? '#00e676' : 'text.disabled',
+          }}
+          noWrap
+        >
+          {params.value || '—'}
         </Typography>
       ),
     },
     {
       field: 'trade_number',
       headerName: 'Trade #',
-      minWidth: 100,
-      flex: 0.8,
+      minWidth: 90,
+      flex: 0.7,
       renderCell: (params: GridRenderCellParams) => (
         <Typography
           sx={{
@@ -253,9 +277,9 @@ export default function SignalsPage() {
     },
     {
       field: 'trade_line_item',
-      headerName: 'Line Item',
-      minWidth: 90,
-      flex: 0.7,
+      headerName: 'Line',
+      minWidth: 70,
+      flex: 0.5,
       renderCell: (params: GridRenderCellParams) => (
         <Typography
           sx={{
@@ -273,44 +297,50 @@ export default function SignalsPage() {
       headerName: '',
       sortable: false,
       filterable: false,
-      minWidth: 200,
+      minWidth: 180,
       renderCell: (params: GridRenderCellParams) => {
         const signal = signals?.find((s) => s.id === params.row.id);
         if (!signal) return null;
+        const isAssigned = signal.tank_id !== null;
+        const hasTrade = signal.trade_number && signal.trade_line_item;
         return (
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<AssignmentIcon sx={{ fontSize: 14 }} />}
-              onClick={() => handleOpenAssignDialog(signal)}
-              sx={{
-                borderColor: 'var(--color-accent-cyan)',
-                color: 'var(--color-accent-cyan)',
-                fontSize: '0.65rem',
-                py: 0.3,
-                px: 1,
-                '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.1)' },
-              }}
-            >
-              Assign
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<EditIcon sx={{ fontSize: 14 }} />}
-              onClick={() => handleOpenTradeDialog(signal)}
-              sx={{
-                borderColor: '#8b5cf6',
-                color: '#8b5cf6',
-                fontSize: '0.65rem',
-                py: 0.3,
-                px: 1,
-                '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.1)' },
-              }}
-            >
-              Trade
-            </Button>
+            {!isAssigned && (
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<AssignmentIcon sx={{ fontSize: 14 }} />}
+                onClick={() => handleOpenAssignDialog(signal)}
+                sx={{
+                  borderColor: 'var(--color-accent-cyan)',
+                  color: 'var(--color-accent-cyan)',
+                  fontSize: '0.65rem',
+                  py: 0.3,
+                  px: 1,
+                  '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.1)' },
+                }}
+              >
+                Assign
+              </Button>
+            )}
+            {!hasTrade && (
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<EditIcon sx={{ fontSize: 14 }} />}
+                onClick={() => handleOpenTradeDialog(signal)}
+                sx={{
+                  borderColor: '#8b5cf6',
+                  color: '#8b5cf6',
+                  fontSize: '0.65rem',
+                  py: 0.3,
+                  px: 1,
+                  '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.1)' },
+                }}
+              >
+                Trade
+              </Button>
+            )}
           </Box>
         );
       },
@@ -488,14 +518,14 @@ export default function SignalsPage() {
         {/* Signals Table */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <SectionHeader title="Unassigned Signals" />
+            <SectionHeader title="Pending Signals" />
           </Box>
 
           {rows.length === 0 ? (
             <EmptyState
               icon={<AssignmentIcon />}
-              title="No Pending Signals"
-              description="Upload an Excel file with refinery signals to get started."
+              title="All Signals Complete"
+              description="All signals have been assigned and have trade info. Upload more signals to continue."
             />
           ) : (
             <Box sx={{ height: 520, width: '100%' }}>

@@ -240,11 +240,19 @@ def create_adjustment(adjustment_data: AdjustmentCreate):
 
 # Signal endpoints
 @router.get("/signals", response_model=list[Movement])
-def get_unassigned_signals():
-    """Get all unassigned signals (movements with tank_id=None)."""
+def get_pending_signals():
+    """Get signals that need work (unassigned OR missing trade info)."""
     movements = movement_storage.get_all()
-    # Filter for unassigned signals (tank_id is None and signal_id is set)
-    signals = [m for m in movements if m.tank_id is None and m.signal_id is not None]
+    # Filter for signals that need attention:
+    # - Has signal_id (is a signal)
+    # - AND either: tank_id is None (unassigned) OR trade info is missing
+    signals = [
+        m for m in movements
+        if m.signal_id is not None and (
+            m.tank_id is None or  # Unassigned
+            m.trade_number is None or m.trade_line_item is None  # Missing trade info
+        )
+    ]
     # Sort by scheduled_date descending
     signals.sort(key=lambda m: m.scheduled_date, reverse=True)
     return signals
