@@ -335,6 +335,7 @@ function MovementsTableSection({
               alignItems: 'center',
               minWidth: 0,
               overflow: 'hidden',
+              color: 'text.secondary',
             },
             '& .MuiDataGrid-cellContent': {
               display: 'flex',
@@ -344,6 +345,7 @@ function MovementsTableSection({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               width: '100%',
+              color: 'inherit',
             },
             '& .MuiDataGrid-row': {
               '&:nth-of-type(even)': {
@@ -364,12 +366,6 @@ function MovementsTableSection({
             },
             '& .row-future': {
               boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
-            },
-            '& .MuiDataGrid-cell': {
-              color: 'text.secondary',
-            },
-            '& .MuiDataGrid-cellContent': {
-              color: 'inherit',
             },
           }}
         />
