@@ -1,19 +1,25 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export function usePolling(
   callback: () => void,
   interval: number = 30000,
   isActive: boolean = true
 ) {
+  const callbackRef = useRef(callback);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
   useEffect(() => {
     if (!isActive) return;
 
-    callback();
+    callbackRef.current();
 
-    const intervalId = setInterval(callback, interval);
+    const intervalId = setInterval(() => callbackRef.current(), interval);
 
     return () => clearInterval(intervalId);
-  }, [callback, interval, isActive]);
+  }, [interval, isActive]);
 }
