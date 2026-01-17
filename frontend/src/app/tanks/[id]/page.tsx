@@ -133,7 +133,7 @@ export default function TankDetailPage() {
 
               <Box>
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>MAX CAPACITY</Typography>
-                <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{tank.capacity.toLocaleString()} L</Typography>
+                <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{tank.capacity.toLocaleString()} bbl</Typography>
               </Box>
             </CardContent>
           </Card>
@@ -157,10 +157,10 @@ export default function TankDetailPage() {
                 <Typography sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-cyan)', textShadow: '0 0 20px rgba(0, 212, 255, 0.2)' }}>
                   {tank.current_level.toLocaleString()}
                 </Typography>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>L</Typography>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>bbl</Typography>
               </Box>
               <Typography sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem', mt: 1 }}>
-                {tank.level_percentage.toFixed(1)}% OF {tank.capacity.toLocaleString()} L TOTAL CAPACITY
+                {tank.level_percentage.toFixed(1)}% OF {tank.capacity.toLocaleString()} bbl TOTAL CAPACITY
               </Typography>
             </CardContent>
           </Card>
@@ -205,11 +205,11 @@ export default function TankDetailPage() {
                       <MovementTypeChip type={movement.type} />
                     </TableCell>
                     <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
-                      {sign}{movement.expected_volume.toLocaleString()} L
+                      {sign}{movement.expected_volume.toLocaleString()} bbl
                     </TableCell>
                     <TableCell align="right" sx={{ fontFamily: 'monospace', color: isPending ? 'text.disabled' : 'text.primary' }}>
                       {movement.actual_volume !== null
-                        ? `${sign}${Math.abs(movement.actual_volume).toLocaleString()} L`
+                        ? `${sign}${Math.abs(movement.actual_volume).toLocaleString()} bbl`
                         : '—'}
                     </TableCell>
                     <TableCell>

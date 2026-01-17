@@ -106,7 +106,7 @@ export default function TankCard({ tank }: TankCardProps) {
                 CURRENT_LVL
               </Typography>
               <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-accent-cyan)', fontSize: '0.8rem' }}>
-                {tank.current_level.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.disabled' }}>L</Box>
+                {tank.current_level.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.disabled' }}>bbl</Box>
               </Typography>
             </Box>
             <Box sx={{ borderLeft: '1px solid rgba(255,255,255,0.05)', pl: 1 }}>
@@ -114,7 +114,7 @@ export default function TankCard({ tank }: TankCardProps) {
                 MAX_CAPACITY
               </Typography>
               <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'text.secondary', fontSize: '0.8rem' }}>
-                {tank.capacity.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.disabled' }}>L</Box>
+                {tank.capacity.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.disabled' }}>bbl</Box>
               </Typography>
             </Box>
           </Box>

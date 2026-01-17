@@ -388,17 +388,17 @@ export default function ImportsPage() {
                         </TableCell>
                         <TableCell align="right">
                           <Typography sx={{ fontSize: '0.8rem', fontFamily: styles.monoFont }}>
-                            {movement.extracted.level_before.toLocaleString()} L
+                            {movement.extracted.level_before.toLocaleString()} bbl
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
                           <Typography sx={{ fontSize: '0.8rem', fontFamily: styles.monoFont }}>
-                            {movement.extracted.level_after.toLocaleString()} L
+                            {movement.extracted.level_after.toLocaleString()} bbl
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
                           <Typography sx={{ fontSize: '0.8rem', fontFamily: styles.monoFont, fontWeight: 600 }}>
-                            {movement.extracted.movement_qty.toLocaleString()} L
+                            {movement.extracted.movement_qty.toLocaleString()} bbl
                           </Typography>
                         </TableCell>
                         <TableCell>

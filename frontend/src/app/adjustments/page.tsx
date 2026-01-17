@@ -56,7 +56,7 @@ export default function AdjustmentsPage() {
       setNotes('');
       setSelectedTankId('');
       setError(null);
-      setSuccess(`Adjustment recorded: ${(data.actual_volume ?? 0) >= 0 ? '+' : ''}${(data.actual_volume ?? 0).toLocaleString()}L`);
+      setSuccess(`Adjustment recorded: ${(data.actual_volume ?? 0) >= 0 ? '+' : ''}${(data.actual_volume ?? 0).toLocaleString()} bbl`);
     },
     onError: (err: Error) => {
       setError(err.message);
@@ -159,7 +159,7 @@ export default function AdjustmentsPage() {
                       CALCULATED SYSTEM LEVEL
                     </Typography>
                     <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '1.25rem', fontWeight: 600 }}>
-                      {selectedTank.current_level.toLocaleString()} L
+                      {selectedTank.current_level.toLocaleString()} bbl
                     </Typography>
                     <Box sx={{ mt: 2 }}>
                       <TankLevelGauge
@@ -172,13 +172,13 @@ export default function AdjustmentsPage() {
                 <TextField
                   fullWidth
                   margin="normal"
-                  label="Physical Level (Liters)"
+                  label="Physical Level (bbl)"
                   type="number"
                   required
                   value={physicalLevel || ''}
                   onChange={(e) => setPhysicalLevel(Number(e.target.value))}
                   slotProps={{ htmlInput: { min: 0, max: selectedTank?.capacity, step: 0.01 } }}
-                  helperText={selectedTank ? `Max: ${selectedTank.capacity.toLocaleString()} L` : ''}
+                  helperText={selectedTank ? `Max: ${selectedTank.capacity.toLocaleString()} bbl` : ''}
                 />
 
                 {selectedTank && physicalLevel >= 0 && (
@@ -193,7 +193,7 @@ export default function AdjustmentsPage() {
                       DELTA ADJUSTMENT
                     </Typography>
                     <Typography sx={{ fontFamily: 'monospace', fontSize: '1.5rem', fontWeight: 700, color: difference >= 0 ? '#00e676' : '#ff5252', textShadow: difference >= 0 ? '0 0 10px rgba(0, 230, 118, 0.3)' : '0 0 10px rgba(255, 82, 82, 0.3)' }}>
-                      {difference >= 0 ? '+' : ''}{difference.toLocaleString()} L
+                      {difference >= 0 ? '+' : ''}{difference.toLocaleString()} bbl
                     </Typography>
                     <Typography sx={{ fontFamily: 'monospace', fontSize: '0.65rem', color: 'text.secondary', mt: 0.5 }}>
                       {difference >= 0 ? 'SURPLUS DETECTED' : 'DEFICIT DETECTED'}
@@ -270,7 +270,7 @@ export default function AdjustmentsPage() {
                         <TableCell sx={{ fontFamily: 'monospace' }}>{tank?.name || 'Unknown'}</TableCell>
                         <TableCell align="right">
                           <Chip
-                            label={`${isPositive ? '+' : ''}${(movement.actual_volume ?? 0).toLocaleString()} L`}
+                            label={`${isPositive ? '+' : ''}${(movement.actual_volume ?? 0).toLocaleString()} bbl`}
                             size="small"
                             sx={{
                               bgcolor: isPositive ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 82, 82, 0.1)',

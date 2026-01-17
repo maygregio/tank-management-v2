@@ -220,7 +220,7 @@ export default function MovementsPage() {
                   >
                     {tanks?.map((tank) => (
                       <MenuItem key={tank.id} value={tank.id}>
-                        {tank.name} ({tank.current_level.toLocaleString()}L / {tank.capacity.toLocaleString()}L)
+                        {tank.name} ({tank.current_level.toLocaleString()} bbl / {tank.capacity.toLocaleString()} bbl)
                       </MenuItem>
                     ))}
                   </Select>
@@ -236,7 +236,8 @@ export default function MovementsPage() {
                     >
                       {targetTanks.map((tank) => (
                         <MenuItem key={tank.id} value={tank.id}>
-                          {tank.name} ({tank.current_level.toLocaleString()}L / {tank.capacity.toLocaleString()}L)
+                        {tank.name} ({tank.current_level.toLocaleString()} bbl / {tank.capacity.toLocaleString()} bbl)
+
                         </MenuItem>
                       ))}
                     </Select>
@@ -257,7 +258,7 @@ export default function MovementsPage() {
                 <TextField
                   fullWidth
                   margin="normal"
-                  label="Expected Volume (Liters)"
+                  label="Expected Volume (bbl)"
                   type="number"
                   required
                   value={formData.expected_volume || ''}
@@ -342,11 +343,11 @@ export default function MovementsPage() {
                           {targetTank && <span style={{ color: 'var(--color-accent-cyan)' }}> → {targetTank.name}</span>}
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
-                          {movement.expected_volume.toLocaleString()} L
+                          {movement.expected_volume.toLocaleString()} bbl
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace', color: isPending ? 'text.disabled' : 'text.primary' }}>
                           {movement.actual_volume !== null
-                            ? `${movement.actual_volume.toLocaleString()} L`
+                            ? `${movement.actual_volume.toLocaleString()} bbl`
                             : '—'}
                         </TableCell>
                         <TableCell>
@@ -417,12 +418,12 @@ export default function MovementsPage() {
               </Box>
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
-                <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} L</Typography>
+                <Typography sx={{ fontFamily: 'monospace', color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} bbl</Typography>
               </Box>
               <TextField
                 fullWidth
                 margin="normal"
-                label="Actual Volume (Liters)"
+                label="Actual Volume (bbl)"
                 type="number"
                 required
                 value={actualVolume || ''}
@@ -499,7 +500,7 @@ export default function MovementsPage() {
               <TextField
                 fullWidth
                 margin="normal"
-                label="Expected Volume (Liters)"
+                label="Expected Volume (bbl)"
                 type="number"
                 value={editData.expected_volume || ''}
                 onChange={(e) => setEditData({ ...editData, expected_volume: Number(e.target.value) })}

@@ -198,18 +198,20 @@ export default function TanksPage() {
               <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            margin="dense"
-            label="Maximum Capacity (L)"
+            <TextField
+              margin="dense"
+              label="Maximum Capacity (bbl)"
+
             type="number"
             fullWidth
             required
             value={formData.capacity || ''}
             onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
           />
-          <TextField
-            margin="dense"
-            label="Initial Fill Level (L)"
+            <TextField
+              margin="dense"
+              label="Initial Fill Level (bbl)"
+
             type="number"
             fullWidth
             value={formData.initial_level || ''}
