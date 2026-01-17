@@ -6,30 +6,6 @@ export interface ExportData {
   data: Record<string, string | number>[];
 }
 
-export function exportToCSV({ filename, data }: ExportData) {
-  if (data.length === 0) {
-    throw new Error('No data to export');
-  }
-
-  const headers = Object.keys(data[0]);
-  const csvContent = [
-    headers.join(','),
-    ...data.map(row =>
-      headers.map(header => {
-        const value = row[header as keyof typeof row];
-        const stringValue = value === null || value === undefined ? '' : String(value);
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        return stringValue;
-      }).join(',')
-    )
-  ].join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  saveAs(blob, `${filename}.csv`);
-}
-
 export function exportToExcel({ filename, data }: ExportData) {
   if (data.length === 0) {
     throw new Error('No data to export');
