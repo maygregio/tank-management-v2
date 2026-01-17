@@ -237,7 +237,10 @@ export default function MovementsPage() {
     const total = movements?.length || 0;
     const pending = movements?.filter((movement) => movement.actual_volume === null).length || 0;
     const completed = total - pending;
-    const scheduledToday = movements?.filter((movement) => new Date(movement.scheduled_date).toDateString() === todayDate.toDateString()).length || 0;
+    const scheduledToday = movements?.filter((movement) => {
+      const dateValue = movement.scheduled_date || movement.created_at || '';
+      return new Date(dateValue).toDateString() === todayDate.toDateString();
+    }).length || 0;
     return { total, pending, completed, scheduledToday };
   }, [movements, todayDate]);
 
@@ -268,11 +271,12 @@ export default function MovementsPage() {
       const tank = tankMap.get(movement.tank_id);
       const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
       const isPending = movement.actual_volume === null;
-      const scheduledDate = new Date(movement.scheduled_date);
+      const dateValue = movement.scheduled_date || movement.created_at || '';
+      const scheduledDate = new Date(dateValue);
       const isFuture = scheduledDate > todayDate;
       return {
         id: movement.id,
-        scheduledDate: movement.scheduled_date,
+        date: dateValue,
         type: movement.type,
         tankName: `${tank?.name || 'Unknown'}${targetTank ? ` → ${targetTank.name}` : ''}`,
         expectedVolume: movement.expected_volume,
@@ -284,6 +288,18 @@ export default function MovementsPage() {
     })
   ), [filteredMovements, tankMap, todayDate]);
 
+  const formatDate = (value?: string | null) => {
+    if (!value) return '—';
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString();
+    }
+    if (typeof value === 'string') {
+      return value.split('T')[0];
+    }
+    return '—';
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
@@ -294,14 +310,19 @@ export default function MovementsPage() {
 
   const columns: GridColDef[] = [
     {
-      field: 'scheduledDate',
-      headerName: 'Scheduled',
+      field: 'date',
+      headerName: 'Date',
       minWidth: 120,
       flex: 0.9,
-      valueFormatter: (params: { value?: string }) => {
-        const parsed = new Date(params.value ?? '');
-        return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
-      },
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography sx={{ fontWeight: 600 }} noWrap>
+          {formatDate(
+            params.row?.date
+              ?? params.row?.scheduled_date
+              ?? params.row?.created_at
+          )}
+        </Typography>
+      )
     },
     {
       field: 'type',
