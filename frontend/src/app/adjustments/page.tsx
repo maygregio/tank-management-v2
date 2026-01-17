@@ -113,7 +113,8 @@ export default function AdjustmentsPage() {
         <Grid size={{ xs: 12, md: 5 }}>
           <Card sx={{
             background: styles.cardGradient,
-            borderLeft: '2px solid #ffab00',
+            borderLeft: '2px solid #ffb300',
+            boxShadow: '0 22px 60px rgba(5, 10, 18, 0.6)',
           }}>
             <CardContent>
               <Typography variant="overline" sx={{ color: '#ffab00', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
@@ -240,8 +241,8 @@ export default function AdjustmentsPage() {
             <SectionHeader title="CALIBRATION LOG" color="warning" />
           </Box>
 
-          <TableContainer component={Paper} sx={{ bgcolor: 'background.paper', border: '1px solid var(--color-border)' }}>
-            <Table size="small">
+          <TableContainer component={Paper} sx={{ bgcolor: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(16px)', boxShadow: '0 22px 50px rgba(5, 10, 18, 0.55)' }}>
+            <Table size="small" sx={{ '& .MuiTableRow-root': { transition: 'background 0.25s ease' }, '& .MuiTableRow-root:hover': { bgcolor: 'rgba(0, 229, 255, 0.05)' }, '@media (prefers-reduced-motion: reduce)': { '& .MuiTableRow-root': { transition: 'none' } } }}>
               <TableHead>
                 <TableRow sx={styles.tableHeadRow}>
                   <TableCell>Date</TableCell>
@@ -262,7 +263,7 @@ export default function AdjustmentsPage() {
                     const tank = tankMap.get(movement.tank_id);
                     const isPositive = (movement.actual_volume ?? 0) >= 0;
                     return (
-                      <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid var(--color-border)', fontSize: '0.75rem' } }}>
+                      <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem' } }}>
                         <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
                           {new Date(movement.created_at).toLocaleDateString()}
                         </TableCell>

@@ -99,16 +99,22 @@ export default function Dashboard() {
     <Box>
       <Grid container spacing={2} sx={{ mb: 6 }}>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <StatCard title="Locations" value={stats?.total_locations || 0} />
+          <Box className="card-hover">
+            <StatCard title="Locations" value={stats?.total_locations || 0} />
+          </Box>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <StatCard title="Active Systems" value={stats?.total_tanks || 0} />
+          <Box className="card-hover">
+            <StatCard title="Active Systems" value={stats?.total_tanks || 0} />
+          </Box>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <StatCard
-            title="Total Capacity"
-            value={`${((stats?.total_fuel_volume || 0) / 1000).toFixed(1)}k L`}
-          />
+          <Box className="card-hover">
+            <StatCard
+              title="Total Capacity"
+              value={`${((stats?.total_fuel_volume || 0) / 1000).toFixed(1)}k L`}
+            />
+          </Box>
         </Grid>
       </Grid>
 

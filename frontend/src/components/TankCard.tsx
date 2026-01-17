@@ -22,15 +22,34 @@ export default function TankCard({ tank }: TankCardProps) {
         position: 'relative',
         borderTop: '1.5px solid var(--color-accent-cyan)',
         background: styles.cardGradient,
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 18px 45px rgba(5, 10, 18, 0.55)',
+        transition: 'transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(140deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.06))',
+          opacity: 0,
+          transition: 'opacity 0.35s ease',
+          pointerEvents: 'none',
+        },
         '&:hover': {
           borderColor: 'var(--color-accent-cyan)',
-          transform: 'translateY(-2px)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+          transform: 'translateY(-4px)',
+          boxShadow: '0 24px 65px rgba(0, 229, 255, 0.12)',
+          '&::after': {
+            opacity: 1,
+          },
+        },
+        '@media (prefers-reduced-motion: reduce)': {
+          transition: 'none',
+          '&:hover': {
+            transform: 'none',
+          },
         },
       }}
     >
-      <CardActionArea component={Link} href={`/tanks/${tank.id}`} sx={{ height: '100%' }}>
+      <CardActionArea component={Link} href={`/tanks/${tank.id}`} sx={{ height: '100%', position: 'relative', zIndex: 1 }}>
         <CardContent sx={{ p: 2, pt: 1.5 }}>
           {/* Tactical Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>

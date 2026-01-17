@@ -69,8 +69,8 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
         px: 1.5,
         py: 2,
         flexGrow: 1,
-        backgroundImage: 'linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
+        backgroundImage: 'linear-gradient(rgba(0, 229, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(139, 92, 246, 0.07) 1px, transparent 1px)',
+        backgroundSize: '26px 26px',
         backgroundPosition: '-1px -1px'
       }}>
         {menuItems.map((item) => {
@@ -83,16 +83,24 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                 selected={isActive}
                 onClick={() => setMobileOpen(false)}
                 sx={{
-                  borderRadius: '4px',
-                  minHeight: 38,
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  borderRadius: '10px',
+                  minHeight: 40,
+                  transition: 'transform 0.3s ease, background 0.3s ease',
                   '&.Mui-selected': {
-                    bgcolor: 'rgba(0, 212, 255, 0.08)',
-                    '& .MuiListItemIcon-root': { color: 'primary.main', filter: 'drop-shadow(0 0 4px var(--color-accent-cyan))' },
+                    bgcolor: 'rgba(0, 229, 255, 0.12)',
+                    backgroundImage: 'linear-gradient(90deg, rgba(0, 229, 255, 0.18), rgba(139, 92, 246, 0.16))',
+                    '& .MuiListItemIcon-root': { color: 'primary.main', filter: 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.6))' },
                     '& .MuiListItemText-primary': { color: 'text.primary', fontWeight: 600 },
-                    '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.12)' }
+                    '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.18)' }
                   },
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.03)' }
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.04)',
+                    transform: 'translateX(2px)',
+                  },
+                  '@media (prefers-reduced-motion: reduce)': {
+                    transition: 'none',
+                    '&:hover': { transform: 'none' },
+                  },
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 32, transition: 'color 0.2s', '& .MuiSvgIcon-root': { fontSize: 18 } }}>
@@ -103,12 +111,12 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                   slotProps={{ primary: { sx: { fontSize: '0.8125rem', letterSpacing: '0.01em', textTransform: 'uppercase' } } }}
                 />
                 <Box sx={{
-                  width: 4,
-                  height: 4,
+                  width: 6,
+                  height: 6,
                   borderRadius: '50%',
                   bgcolor: isActive ? 'primary.main' : 'transparent',
-                  boxShadow: isActive ? '0 0 6px var(--color-accent-cyan)' : 'none',
-                  transition: 'all 0.2s'
+                  boxShadow: isActive ? '0 0 10px rgba(0, 229, 255, 0.8)' : 'none',
+                  transition: 'all 0.3s ease'
                 }} />
               </ListItemButton>
             </ListItem>

@@ -13,7 +13,7 @@ function TankLevelGauge({
   percentage,
   showLabel = true,
 }: TankLevelGaugeProps) {
-  const statusColor = '#00d4ff';
+  const statusColor = '#00e5ff';
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -57,18 +57,7 @@ function TankLevelGauge({
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
-              width: '40px',
-              height: '100%',
-              animation: 'scan 3s infinite linear',
-            },
-            '@keyframes scan': {
-              '0%': { transform: 'translateX(-100%)' },
-              '100%': { transform: 'translateX(300%)' }
-            },
-            '@media (prefers-reduced-motion: reduce)': {
-              transition: 'none',
-              '&::after': { animation: 'none' }
+              background: 'linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
             }
           }}
         />

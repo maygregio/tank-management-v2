@@ -8,7 +8,7 @@ interface MovementStatusProps {
 }
 
 export default function MovementStatus({ isPending }: MovementStatusProps) {
-  const color = isPending ? '#ffab00' : '#00e676';
+  const color = isPending ? '#ffb300' : '#00f0a8';
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

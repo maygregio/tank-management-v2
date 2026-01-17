@@ -17,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Navigation>{children}</Navigation>
+          <div className="page-shell">
+            <Navigation>{children}</Navigation>
+          </div>
         </Providers>
       </body>
     </html>

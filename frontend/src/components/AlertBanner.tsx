@@ -17,22 +17,25 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
       sx={{
         mb: 3,
         p: 1.5,
-        border: '1px solid var(--color-warning)',
-        background: 'linear-gradient(180deg, rgba(255, 171, 0, 0.08) 0%, rgba(0, 0, 0, 0.2) 100%)',
+        border: '1px solid rgba(255, 179, 0, 0.35)',
+        background: 'linear-gradient(180deg, rgba(255, 179, 0, 0.12) 0%, rgba(10, 14, 23, 0.6) 100%)',
         position: 'relative',
-        borderRadius: '2px',
+        borderRadius: '6px',
         animation: 'pulse 3s ease-in-out infinite',
         '@keyframes pulse': {
-          '0%, 100%': { boxShadow: 'inset 0 0 10px rgba(255, 171, 0, 0.1), 0 0 4px rgba(255, 171, 0, 0.2)' },
-          '50%': { boxShadow: 'inset 0 0 20px rgba(255, 171, 0, 0.2), 0 0 10px rgba(255, 171, 0, 0.4)' },
+          '0%, 100%': { boxShadow: 'inset 0 0 10px rgba(255, 179, 0, 0.12), 0 0 12px rgba(255, 179, 0, 0.2)' },
+          '50%': { boxShadow: 'inset 0 0 20px rgba(255, 179, 0, 0.2), 0 0 18px rgba(255, 179, 0, 0.32)' },
         },
         '&::after': {
           content: '""',
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255, 171, 0, 0.03) 1px, rgba(255, 171, 0, 0.03) 2px)',
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255, 179, 0, 0.05) 1px, rgba(255, 179, 0, 0.05) 2px)',
           pointerEvents: 'none',
-        }
+        },
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+        },
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>

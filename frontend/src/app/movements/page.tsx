@@ -179,6 +179,7 @@ export default function MovementsPage() {
           <Card sx={{
             background: styles.cardGradient,
             borderLeft: '2px solid var(--color-accent-cyan)',
+            boxShadow: '0 22px 60px rgba(5, 10, 18, 0.6)',
           }}>
             <CardContent>
               <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
@@ -303,8 +304,8 @@ export default function MovementsPage() {
             <SectionHeader title="OPERATION LOG" />
           </Box>
 
-          <TableContainer component={Paper} sx={{ bgcolor: 'background.paper', border: '1px solid var(--color-border)' }}>
-            <Table size="small">
+          <TableContainer component={Paper} sx={{ bgcolor: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(16px)', boxShadow: '0 22px 50px rgba(5, 10, 18, 0.55)' }}>
+            <Table size="small" sx={{ '& .MuiTableRow-root': { transition: 'background 0.25s ease' }, '& .MuiTableRow-root:hover': { bgcolor: 'rgba(0, 229, 255, 0.05)' }, '@media (prefers-reduced-motion: reduce)': { '& .MuiTableRow-root': { transition: 'none' } } }}>
               <TableHead>
                 <TableRow sx={styles.tableHeadRow}>
                   <TableCell>Scheduled</TableCell>
@@ -329,7 +330,7 @@ export default function MovementsPage() {
                     const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
                     const isPending = movement.actual_volume === null;
                     return (
-                      <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid var(--color-border)', fontSize: '0.75rem' } }}>
+                      <TableRow key={movement.id} sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(0, 229, 255, 0.1)', fontSize: '0.75rem' } }}>
                         <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
                           {new Date(movement.scheduled_date).toLocaleDateString()}
                         </TableCell>
@@ -384,21 +385,24 @@ export default function MovementsPage() {
       </Grid>
 
       {/* Complete Movement Dialog */}
-      <Dialog
-        open={completeDialogOpen}
-        onClose={() => setCompleteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'background.paper',
-              border: '1px solid var(--color-border)',
-              backgroundImage: 'none'
+        <Dialog
+          open={completeDialogOpen}
+          onClose={() => setCompleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+                boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
+                backdropFilter: 'blur(18px)',
+              }
             }
-          }
-        }}
-      >
+          }}
+        >
+
         <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em' }}>
             CONFIRM OPERATION
@@ -449,21 +453,24 @@ export default function MovementsPage() {
       </Dialog>
 
       {/* Edit Movement Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'background.paper',
-              border: '1px solid var(--color-border)',
-              backgroundImage: 'none',
+        <Dialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+                boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
+                backdropFilter: 'blur(18px)',
+              },
             },
-          },
-        }}
-      >
+          }}
+        >
+
         <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
           <Typography variant="overline" sx={{ color: '#ffab00', fontWeight: 700, letterSpacing: '0.15em' }}>
             EDIT OPERATION

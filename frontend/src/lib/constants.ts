@@ -25,19 +25,19 @@ export const fuelTypeLabels: Record<FuelType, string> = {
 
 // Color mappings for movement type chips
 export const movementTypeChipColors: Record<'success' | 'error' | 'info' | 'warning', { bg: string; text: string }> = {
-  success: { bg: 'rgba(0, 230, 118, 0.1)', text: '#00e676' },
-  error: { bg: 'rgba(255, 82, 82, 0.1)', text: '#ff5252' },
-  info: { bg: 'rgba(0, 212, 255, 0.1)', text: '#00d4ff' },
-  warning: { bg: 'rgba(255, 171, 0, 0.1)', text: '#ffab00' },
+  success: { bg: 'rgba(0, 230, 118, 0.12)', text: '#00f0a8' },
+  error: { bg: 'rgba(255, 82, 82, 0.12)', text: '#ff6b6b' },
+  info: { bg: 'rgba(0, 229, 255, 0.12)', text: '#00e5ff' },
+  warning: { bg: 'rgba(255, 179, 0, 0.12)', text: '#ffb300' },
 };
 
 // Common styling constants
 export const styles = {
   // Card gradient background
-  cardGradient: 'linear-gradient(180deg, rgba(17, 25, 33, 1) 0%, rgba(10, 14, 20, 1) 100%)',
+  cardGradient: 'linear-gradient(160deg, rgba(18, 26, 39, 0.92) 0%, rgba(10, 15, 26, 0.88) 100%)',
 
   // Section header separator gradient
-  headerSeparator: 'linear-gradient(90deg, rgba(0, 212, 255, 0.3) 0%, transparent 100%)',
+  headerSeparator: 'linear-gradient(90deg, rgba(0, 229, 255, 0.35) 0%, transparent 100%)',
   headerSeparatorCyan: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)',
 
   // Table header row styling
@@ -46,9 +46,10 @@ export const styles = {
       color: 'text.secondary',
       fontSize: '0.65rem',
       fontWeight: 700,
-      letterSpacing: '0.1em',
+      letterSpacing: '0.18em',
       textTransform: 'uppercase' as const,
       borderBottom: '1px solid var(--color-border)',
+      backgroundImage: 'linear-gradient(90deg, rgba(0, 229, 255, 0.06), rgba(139, 92, 246, 0.08))',
     },
   },
 

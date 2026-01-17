@@ -301,8 +301,8 @@ export default function ImportsPage() {
           )}
 
           {result.movements.length > 0 ? (
-            <TableContainer sx={{ border: '1px solid var(--color-border)', bgcolor: 'rgba(0,0,0,0.2)' }}>
-              <Table size="small">
+            <TableContainer sx={{ border: '1px solid var(--glass-border)', bgcolor: 'var(--glass-bg)', backdropFilter: 'blur(16px)', boxShadow: '0 20px 48px rgba(5, 10, 18, 0.55)' }}>
+              <Table size="small" sx={{ '& .MuiTableRow-root': { transition: 'background 0.25s ease' }, '& .MuiTableRow-root:hover': { bgcolor: 'rgba(0, 229, 255, 0.05)' }, '@media (prefers-reduced-motion: reduce)': { '& .MuiTableRow-root': { transition: 'none' } } }}>
                 <TableHead>
                   <TableRow sx={styles.tableHeadRow}>
                     <TableCell padding="checkbox" />
@@ -334,7 +334,7 @@ export default function ImportsPage() {
                         key={movementIndex}
                         sx={{
                           opacity: isSelected ? 1 : 0.6,
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                          '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.06)' },
                         }}
                       >
                         <TableCell padding="checkbox">
@@ -407,13 +407,15 @@ export default function ImportsPage() {
                               display: 'inline-block',
                               px: 1,
                               py: 0.25,
-                              borderRadius: '4px',
+                              borderRadius: '6px',
                               bgcolor: chipColor.bg,
                               color: chipColor.text,
                               fontSize: '0.65rem',
                               fontWeight: 700,
                               letterSpacing: '0.05em',
                               textTransform: 'uppercase',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              boxShadow: '0 8px 18px rgba(5, 10, 18, 0.4)',
                             }}
                           >
                             {movementTypeLabels[movement.movement_type]}
