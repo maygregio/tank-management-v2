@@ -72,7 +72,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
               }
             }}
           >
-            <Box component={item.Icon} sx={{ fontSize: 18, color: isActive ? 'primary.main' : 'text.disabled' }} />
+            <Box component={item.Icon} sx={{ fontSize: 18, color: isActive ? 'primary.main' : 'text.secondary' }} />
             <Typography
               variant="overline"
               sx={{

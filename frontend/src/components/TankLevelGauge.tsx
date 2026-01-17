@@ -50,6 +50,9 @@ function TankLevelGauge({
             boxShadow: `0 0 12px ${statusColor}55`,
             transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)',
             position: 'relative',
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+            },
             '&::after': {
               content: '""',
               position: 'absolute',

@@ -197,7 +197,7 @@ export default function TankDetailPage() {
             <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.7rem' }}>
               {tank.location} • {fuelTypeLabels[tank.fuel_type]} • {tank.capacity.toLocaleString()} bbl
             </Typography>
-            <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
+            <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
               ID: {tank.id.toUpperCase()}
             </Typography>
           </Box>
@@ -238,25 +238,25 @@ export default function TankDetailPage() {
           }}
         >
           <Box>
-            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
               CAPACITY
             </Typography>
             <Typography sx={{ fontWeight: 600 }}>{tank.capacity.toLocaleString()} bbl</Typography>
           </Box>
           <Box>
-            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
               CURRENT
             </Typography>
             <Typography sx={{ fontWeight: 600 }}>{tank.current_level.toLocaleString()} bbl</Typography>
           </Box>
           <Box>
-            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
               FUEL TYPE
             </Typography>
             <Typography sx={{ fontWeight: 600 }}>{fuelTypeLabels[tank.fuel_type]}</Typography>
           </Box>
           <Box>
-            <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
               LAST ACTIVITY
             </Typography>
             <Typography sx={{ fontWeight: 600 }}>
@@ -291,10 +291,16 @@ export default function TankDetailPage() {
                 textTransform: 'uppercase',
                 color: 'text.secondary',
               },
+              '& .MuiDataGrid-row': {
+                '&:nth-of-type(even)': {
+                  backgroundColor: 'rgba(0, 229, 255, 0.02)',
+                },
+              },
               '& .MuiDataGrid-cell': {
                 borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
+                color: 'text.secondary',
               },
               '& .MuiDataGrid-cellContent': {
                 display: 'flex',
@@ -305,6 +311,12 @@ export default function TankDetailPage() {
               },
               '& .MuiDataGrid-footerContainer': {
                 borderTop: '1px solid rgba(0, 229, 255, 0.15)',
+              },
+              '& .MuiDataGrid-cell': {
+                color: 'text.secondary',
+              },
+              '& .MuiDataGrid-cellContent': {
+                color: 'inherit',
               },
             }}
           />

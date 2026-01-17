@@ -76,7 +76,7 @@ export default function TankCard({ tank }: TankCardProps) {
                 {fuelTypeLabels[tank.fuel_type]}
               </Typography>
             </Box>
-            <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>
               ID: {tank.id.slice(-6).toUpperCase()}
             </Typography>
           </Box>
@@ -102,19 +102,19 @@ export default function TankCard({ tank }: TankCardProps) {
           {/* Instrument Panel Readouts */}
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
             <Box sx={{ borderLeft: '1px solid rgba(255,255,255,0.05)', pl: 1 }}>
-              <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontSize: '0.6rem', mb: 0.25, letterSpacing: '0.02em' }}>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.6rem', mb: 0.25, letterSpacing: '0.02em' }}>
                 CURRENT_LVL
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--color-accent-cyan)', fontSize: '0.8rem' }}>
-                {tank.current_level.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.disabled' }}>bbl</Box>
+                {tank.current_level.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.secondary' }}>bbl</Box>
               </Typography>
             </Box>
             <Box sx={{ borderLeft: '1px solid rgba(255,255,255,0.05)', pl: 1 }}>
-              <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', fontSize: '0.6rem', mb: 0.25, letterSpacing: '0.02em' }}>
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.6rem', mb: 0.25, letterSpacing: '0.02em' }}>
                 MAX_CAPACITY
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8rem' }}>
-                {tank.capacity.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.disabled' }}>bbl</Box>
+                {tank.capacity.toLocaleString()}<Box component="span" sx={{ fontSize: '0.6rem', ml: 0.5, color: 'text.secondary' }}>bbl</Box>
               </Typography>
             </Box>
           </Box>

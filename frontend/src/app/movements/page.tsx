@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -344,6 +345,11 @@ function MovementsTableSection({
               whiteSpace: 'nowrap',
               width: '100%',
             },
+            '& .MuiDataGrid-row': {
+              '&:nth-of-type(even)': {
+                backgroundColor: alpha('#00e5ff', 0.02),
+              },
+            },
             '& .MuiDataGrid-row:hover': {
               backgroundColor: 'rgba(0, 229, 255, 0.04)',
             },
@@ -351,13 +357,19 @@ function MovementsTableSection({
               borderTop: '1px solid rgba(0, 229, 255, 0.15)',
             },
             '& .row-pending': {
-              backgroundColor: 'rgba(255, 179, 0, 0.04)',
+              backgroundColor: alpha('#ffb300', 0.06),
             },
             '& .row-complete': {
-              backgroundColor: 'rgba(0, 230, 118, 0.04)',
+              backgroundColor: alpha('#00e676', 0.05),
             },
             '& .row-future': {
               boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
+            },
+            '& .MuiDataGrid-cell': {
+              color: 'text.secondary',
+            },
+            '& .MuiDataGrid-cellContent': {
+              color: 'inherit',
             },
           }}
         />
@@ -631,7 +643,7 @@ export default function MovementsPage() {
       flex: 1,
       type: 'number',
       renderCell: (params: GridRenderCellParams) => (
-        <Typography sx={{ color: params.value === null ? 'text.disabled' : 'text.primary' }} noWrap>
+        <Typography sx={{ color: params.value === null ? 'text.secondary' : 'text.primary' }} noWrap>
           {params.value === null ? '—' : `${Number(params.value).toLocaleString()} bbl`}
         </Typography>
       ),
@@ -763,10 +775,10 @@ export default function MovementsPage() {
                       DESTINATION TANKS
                     </Typography>
                     <Box sx={{ display: 'grid', gap: 1.5, mt: 1.5 }}>
-                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
                         Total volume: {totalTransferVolume.toLocaleString()} bbl
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
+                      <Typography variant="caption" sx={{ color: remainingTransferVolume < 0 ? 'error.main' : 'text.secondary', fontSize: '0.65rem' }}>
                         Remaining: {remainingTransferVolume.toLocaleString()} bbl
                       </Typography>
                       {transferTargets.map((target, index) => {
@@ -950,11 +962,11 @@ export default function MovementsPage() {
           {selectedMovement && (
             <Box>
               <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
                 <Typography sx={{ fontSize: '0.85rem' }}>{tankMap.get(selectedMovement.tank_id)?.name}</Typography>
               </Box>
               <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
                 <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} bbl</Typography>
               </Box>
               <TextField
@@ -1021,7 +1033,7 @@ export default function MovementsPage() {
           {selectedMovement && (
             <Box>
               <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
                   TARGET UNIT
                 </Typography>
                 <Typography sx={{ fontSize: '0.85rem' }}>

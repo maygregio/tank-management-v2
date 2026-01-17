@@ -119,7 +119,7 @@ export default function Dashboard() {
 
       {Object.keys(tanksByLocation).length === 0 ? (
         <Alert severity="info" sx={{ bgcolor: 'rgba(0, 212, 255, 0.05)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
-          System diagnostics: No tank units detected.
+          System diagnostics: No tank units detected. Head to the Tanks page to deploy your first unit.
         </Alert>
       ) : (
         Object.entries(tanksByLocation).map(([location, locationTanks]) => (

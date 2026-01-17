@@ -140,8 +140,11 @@ export default function TanksPage() {
 
       {tanks?.length === 0 && (
         <Box sx={{ textAlign: 'center', mt: 6, p: 4, border: '1px solid var(--color-border)', bgcolor: 'rgba(0,0,0,0.2)' }}>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
-            NO STORAGE UNITS DEPLOYED // INITIALIZE NEW UNIT TO BEGIN
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 1 }}>
+            NO STORAGE UNITS DEPLOYED
+          </Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+            Use &quot;Deploy Unit&quot; to register your first tank and begin monitoring levels.
           </Typography>
         </Box>
       )}

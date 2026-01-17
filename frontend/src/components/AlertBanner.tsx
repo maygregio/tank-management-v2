@@ -26,6 +26,9 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
           '0%, 100%': { boxShadow: 'inset 0 0 10px rgba(255, 179, 0, 0.12), 0 0 12px rgba(255, 179, 0, 0.2)' },
           '50%': { boxShadow: 'inset 0 0 20px rgba(255, 179, 0, 0.2), 0 0 18px rgba(255, 179, 0, 0.32)' },
         },
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+        },
         '&::after': {
           content: '""',
           position: 'absolute',
@@ -46,7 +49,10 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
             bgcolor: 'var(--color-warning)',
             borderRadius: '1px',
             animation: 'blink 1s step-end infinite',
-            '@keyframes blink': { '50%': { opacity: 0 } }
+            '@keyframes blink': { '50%': { opacity: 0 } },
+            '@media (prefers-reduced-motion: reduce)': {
+              animation: 'none',
+            },
           }}
         />
         <Typography
