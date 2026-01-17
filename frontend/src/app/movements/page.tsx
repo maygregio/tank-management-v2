@@ -17,7 +17,6 @@ import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -226,77 +225,91 @@ function MovementsTableSection({
 }: MovementsTableSectionProps) {
   return (
     <Grid size={{ xs: 12, md: 7 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      <Box sx={{ mb: 2 }}>
         <SectionHeader title="Operation Log" />
-        <Stack direction="row" spacing={1} alignItems="center">
+      </Box>
+
+      {/* Unified filter bar */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1,
+          alignItems: 'center',
+          mb: 2,
+          p: 1.5,
+          borderRadius: '8px',
+          bgcolor: 'rgba(0, 229, 255, 0.03)',
+          border: '1px solid var(--glass-border)',
+        }}
+      >
+        <TextField
+          size="small"
+          placeholder="Search tanks, notes…"
+          value={searchQuery}
+          onChange={(e) => onSearchQueryChange(e.target.value)}
+          inputProps={{ 'aria-label': 'Search movements' }}
+          sx={{ minWidth: 160, flex: '1 1 160px' }}
+        />
+        <FormControl size="small" sx={{ minWidth: 100 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={statusFilter}
+            label="Status"
+            onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'completed')}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="completed">Completed</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 100 }}>
+          <InputLabel>Type</InputLabel>
+          <Select
+            value={typeFilter}
+            label="Type"
+            onChange={(e) => onTypeFilterChange(e.target.value as MovementType | 'all')}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="load">Load</MenuItem>
+            <MenuItem value="discharge">Discharge</MenuItem>
+            <MenuItem value="transfer">Transfer</MenuItem>
+            <MenuItem value="adjustment">Adjustment</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>
+            Selected: {selectedRows.ids.size}
+          </Typography>
           <TextField
             size="small"
-            placeholder="Search tanks, notes…"
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            inputProps={{ 'aria-label': 'Search movements' }}
-            sx={{ minWidth: 200 }}
+            type="date"
+            value={editData.scheduled_date || ''}
+            onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
+            slotProps={{ inputLabel: { shrink: true } }}
+            inputProps={{ 'aria-label': 'Reschedule date' }}
+            sx={{ width: 140 }}
           />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Status"
-              onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'completed')}
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Type</InputLabel>
-            <Select
-              value={typeFilter}
-              label="Type"
-              onChange={(e) => onTypeFilterChange(e.target.value as MovementType | 'all')}
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="load">Load</MenuItem>
-              <MenuItem value="discharge">Discharge</MenuItem>
-              <MenuItem value="transfer">Transfer</MenuItem>
-              <MenuItem value="adjustment">Adjustment</MenuItem>
-            </Select>
-          </FormControl>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
+            onClick={onBulkReschedule}
+            sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)', whiteSpace: 'nowrap' }}
+          >
+            Reschedule
+          </Button>
           <Button
             variant="outlined"
             size="small"
             disabled={selectedRows.ids.size === 0}
             onClick={onBulkComplete}
-            sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
+            sx={{ borderColor: '#00e676', color: '#00e676', whiteSpace: 'nowrap' }}
           >
-            Complete Selected
+            Complete
           </Button>
-        </Stack>
-      </Box>
-
-      <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Selected: {selectedRows.ids.size}
-        </Typography>
-        <TextField
-          size="small"
-          type="date"
-          value={editData.scheduled_date || ''}
-          onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
-          slotProps={{ inputLabel: { shrink: true } }}
-          inputProps={{ 'aria-label': 'Reschedule date' }}
-          sx={{ maxWidth: 160 }}
-        />
-        <Button
-          variant="outlined"
-          size="small"
-          disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
-          onClick={onBulkReschedule}
-          sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)' }}
-        >
-          Reschedule
-        </Button>
+        </Box>
       </Box>
 
       <Box sx={{ height: 520, width: '100%' }}>

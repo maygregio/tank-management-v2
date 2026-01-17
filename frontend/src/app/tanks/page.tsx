@@ -167,7 +167,7 @@ export default function TanksPage() {
               '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.2)' },
             }}
           >
-            Deploy Unit
+            Add Tank
           </Button>
         </Box>
       </Box>
@@ -178,7 +178,7 @@ export default function TanksPage() {
           title="No Storage Units Deployed"
           description="Deploy your first storage unit to begin monitoring feedstock levels."
           action={{
-            label: 'Deploy Unit',
+            label: 'Add Tank',
             onClick: handleOpenDialog
           }}
         />

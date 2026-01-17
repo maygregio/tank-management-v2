@@ -146,7 +146,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                 Tank Management
               </Typography>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                {menuItems.find((item) => item.href === pathname)?.text || 'Dashboard'}
+                {menuItems.find((item) => item.href === pathname)?.text || (pathname.startsWith('/tanks/') ? 'Tank Details' : 'Dashboard')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

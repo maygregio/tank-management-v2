@@ -526,6 +526,10 @@ export default function SignalsPage() {
               icon={<AssignmentIcon />}
               title="All Signals Complete"
               description="All signals have been assigned and have trade info. Upload more signals to continue."
+              action={{
+                label: 'Upload Signals',
+                onClick: () => fileInputRef.current?.click()
+              }}
             />
           ) : (
             <Box sx={{ height: 520, width: '100%' }}>
