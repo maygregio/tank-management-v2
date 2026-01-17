@@ -7,10 +7,8 @@ import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
-import { dashboardApi, tanksApi, movementsApi } from '@/lib/api';
+import { dashboardApi, tanksApi } from '@/lib/api';
 import TankCard from '@/components/TankCard';
-import PieChart from '@/components/charts/PieChart';
-import BarChart from '@/components/charts/BarChart';
 import StatCardSkeleton from '@/components/skeletons/StatCardSkeleton';
 import EmptyState from '@/components/EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -80,11 +78,6 @@ export default function Dashboard() {
     queryFn: () => tanksApi.getAll(),
   });
 
-  const { data: movements } = useQuery({
-    queryKey: ['movements'],
-    queryFn: () => movementsApi.getAll(),
-  });
-
   const isLoading = statsLoading || tanksLoading;
 
   const tanksByLocation = useMemo(() => (tanks?.reduce((acc, tank) => {
@@ -93,31 +86,6 @@ export default function Dashboard() {
     acc[location].push(tank);
     return acc;
   }, {} as Record<string, TankWithLevel[]>) || {}), [tanks]);
-
-  const fuelVolumeByType = useMemo(() => {
-    if (!tanks) return [];
-    const volumeByType: Record<string, number> = { diesel: 0, gasoline: 0, other: 0 };
-    tanks.forEach(tank => {
-      if (volumeByType[tank.fuel_type] !== undefined) {
-        volumeByType[tank.fuel_type] += tank.current_level;
-      }
-    });
-    return [
-      { name: 'Diesel', y: volumeByType.diesel, color: '#00e676' },
-      { name: 'Gasoline', y: volumeByType.gasoline, color: '#00e5ff' },
-      { name: 'Other', y: volumeByType.other, color: '#8b5cf6' }
-    ];
-  }, [tanks]);
-
-  const movementVolumeByType = useMemo(() => {
-    if (!movements) return { load: 0, discharge: 0, transfer: 0, adjustment: 0 };
-    const volumeByType = { load: 0, discharge: 0, transfer: 0, adjustment: 0 };
-    movements.forEach(movement => {
-      const volume = Math.abs(movement.actual_volume ?? movement.expected_volume);
-      volumeByType[movement.type] += volume;
-    });
-    return volumeByType;
-  }, [movements]);
 
   if (isLoading) {
     return (
@@ -151,46 +119,6 @@ export default function Dashboard() {
             <StatCard
               title="Total Capacity"
               value={`${((stats?.total_fuel_volume || 0) / 1000).toFixed(1)}k bbl`}
-            />
-          </Box>
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box sx={{
-            p: 3,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))'
-          }}>
-            <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              FUEL VOLUME BY TYPE
-            </Typography>
-            <PieChart data={fuelVolumeByType} height={250} title="Current Fuel Volume" />
-          </Box>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box sx={{
-            p: 3,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))'
-          }}>
-            <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              MOVEMENT ACTIVITY BY TYPE
-            </Typography>
-            <BarChart
-              categories={['Load', 'Discharge', 'Transfer', 'Adjustment']}
-              data={[
-                movementVolumeByType.load,
-                movementVolumeByType.discharge,
-                movementVolumeByType.transfer,
-                movementVolumeByType.adjustment
-              ]}
-              height={250}
-              name="Volume (bbl)"
             />
           </Box>
         </Grid>

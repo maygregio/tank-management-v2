@@ -22,6 +22,7 @@ export default function AreaChart({
 }: AreaChartProps) {
   const options: Highcharts.Options = {
     title: { text: title },
+    xAxis: { type: 'datetime' },
     yAxis: { title: { text: yAxisTitle } },
     series: [{
       type: 'areaspline',
