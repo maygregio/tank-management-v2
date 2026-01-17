@@ -22,6 +22,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import EditIcon from '@mui/icons-material/Edit';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
@@ -29,7 +30,7 @@ import { styles } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import SectionHeader from '@/components/SectionHeader';
 import EmptyState from '@/components/EmptyState';
-import type { Movement, SignalAssignment, TankWithLevel } from '@/lib/types';
+import type { Movement, SignalAssignment, TankWithLevel, TradeInfoUpdate } from '@/lib/types';
 
 interface SignalGridRow {
   id: string;
@@ -37,6 +38,8 @@ interface SignalGridRow {
   source_tank: string;
   load_date: string;
   volume: number;
+  trade_number: string | null;
+  trade_line_item: string | null;
 }
 
 export default function SignalsPage() {
@@ -51,6 +54,12 @@ export default function SignalsPage() {
     expected_volume: 0,
     scheduled_date: new Date().toISOString().split('T')[0],
     notes: '',
+  });
+  const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+  const [selectedTradeSignal, setSelectedTradeSignal] = useState<Movement | null>(null);
+  const [tradeData, setTradeData] = useState<TradeInfoUpdate>({
+    trade_number: '',
+    trade_line_item: '',
   });
 
   const { data: signals, isLoading: signalsLoading } = useQuery({
@@ -96,6 +105,21 @@ export default function SignalsPage() {
     },
   });
 
+  const tradeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: TradeInfoUpdate }) =>
+      movementsApi.updateTradeInfo(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['signals'] });
+      invalidateCommonQueries(queryClient);
+      setSuccessMessage('Trade information updated');
+      setError(null);
+      handleCloseTradeDialog();
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -134,6 +158,29 @@ export default function SignalsPage() {
     assignMutation.mutate({ id: selectedSignal.id, data: assignmentData });
   };
 
+  const handleOpenTradeDialog = (signal: Movement) => {
+    setSelectedTradeSignal(signal);
+    setTradeData({
+      trade_number: signal.trade_number || '',
+      trade_line_item: signal.trade_line_item || '',
+    });
+    setTradeDialogOpen(true);
+  };
+
+  const handleCloseTradeDialog = () => {
+    setTradeDialogOpen(false);
+    setSelectedTradeSignal(null);
+    setTradeData({
+      trade_number: '',
+      trade_line_item: '',
+    });
+  };
+
+  const handleSaveTrade = () => {
+    if (!selectedTradeSignal || !tradeData.trade_number || !tradeData.trade_line_item) return;
+    tradeMutation.mutate({ id: selectedTradeSignal.id, data: tradeData });
+  };
+
   const isLoading = signalsLoading || tanksLoading;
 
   const rows: SignalGridRow[] = (signals || []).map((signal) => ({
@@ -142,13 +189,15 @@ export default function SignalsPage() {
     source_tank: signal.source_tank || 'Unknown',
     load_date: signal.scheduled_date,
     volume: signal.expected_volume,
+    trade_number: signal.trade_number || null,
+    trade_line_item: signal.trade_line_item || null,
   }));
 
   const columns: GridColDef[] = [
     {
       field: 'signal_id',
       headerName: 'Signal ID',
-      minWidth: 150,
+      minWidth: 130,
       flex: 1,
       renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontWeight: 600, color: 'var(--color-accent-cyan)' }} noWrap>
@@ -159,14 +208,14 @@ export default function SignalsPage() {
     {
       field: 'source_tank',
       headerName: 'Refinery Tank',
-      minWidth: 180,
-      flex: 1.2,
+      minWidth: 140,
+      flex: 1,
     },
     {
       field: 'load_date',
       headerName: 'Load Date',
-      minWidth: 120,
-      flex: 0.9,
+      minWidth: 100,
+      flex: 0.8,
       renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
           {formatDate(params.value)}
@@ -176,8 +225,8 @@ export default function SignalsPage() {
     {
       field: 'volume',
       headerName: 'Volume (bbl)',
-      minWidth: 140,
-      flex: 1,
+      minWidth: 120,
+      flex: 0.9,
       type: 'number',
       renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
@@ -186,30 +235,83 @@ export default function SignalsPage() {
       ),
     },
     {
+      field: 'trade_number',
+      headerName: 'Trade #',
+      minWidth: 100,
+      flex: 0.8,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography
+          sx={{
+            fontWeight: params.value ? 600 : 400,
+            color: params.value ? '#8b5cf6' : 'text.disabled',
+          }}
+          noWrap
+        >
+          {params.value || '—'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'trade_line_item',
+      headerName: 'Line Item',
+      minWidth: 90,
+      flex: 0.7,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography
+          sx={{
+            fontWeight: params.value ? 600 : 400,
+            color: params.value ? '#8b5cf6' : 'text.disabled',
+          }}
+          noWrap
+        >
+          {params.value || '—'}
+        </Typography>
+      ),
+    },
+    {
       field: 'actions',
       headerName: '',
       sortable: false,
       filterable: false,
-      width: 120,
+      minWidth: 200,
       renderCell: (params: GridRenderCellParams) => {
         const signal = signals?.find((s) => s.id === params.row.id);
         if (!signal) return null;
         return (
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<AssignmentIcon sx={{ fontSize: 16 }} />}
-            onClick={() => handleOpenAssignDialog(signal)}
-            sx={{
-              borderColor: 'var(--color-accent-cyan)',
-              color: 'var(--color-accent-cyan)',
-              fontSize: '0.7rem',
-              py: 0.5,
-              '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.1)' },
-            }}
-          >
-            Assign
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<AssignmentIcon sx={{ fontSize: 14 }} />}
+              onClick={() => handleOpenAssignDialog(signal)}
+              sx={{
+                borderColor: 'var(--color-accent-cyan)',
+                color: 'var(--color-accent-cyan)',
+                fontSize: '0.65rem',
+                py: 0.3,
+                px: 1,
+                '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.1)' },
+              }}
+            >
+              Assign
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditIcon sx={{ fontSize: 14 }} />}
+              onClick={() => handleOpenTradeDialog(signal)}
+              sx={{
+                borderColor: '#8b5cf6',
+                color: '#8b5cf6',
+                fontSize: '0.65rem',
+                py: 0.3,
+                px: 1,
+                '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.1)' },
+              }}
+            >
+              Trade
+            </Button>
+          </Box>
         );
       },
     },
@@ -573,6 +675,94 @@ export default function SignalsPage() {
             }}
           >
             {assignMutation.isPending ? 'Assigning...' : 'Assign'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Trade Info Dialog */}
+      <Dialog
+        open={tradeDialogOpen}
+        onClose={handleCloseTradeDialog}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: 'var(--glass-bg)',
+              border: '1px solid var(--glass-border)',
+              backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+              boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
+              backdropFilter: 'blur(18px)',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
+          <Typography variant="overline" sx={{ color: '#8b5cf6', fontWeight: 700, letterSpacing: '0.15em' }}>
+            EDIT TRADE INFO
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedTradeSignal && (
+            <Box>
+              <Box sx={{ mb: 2.5, p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                      SIGNAL ID
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.85rem', color: 'var(--color-accent-cyan)', fontWeight: 600 }}>
+                      {selectedTradeSignal.signal_id}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                      REFINERY TANK
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.85rem' }}>{selectedTradeSignal.source_tank}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Trade Number"
+                required
+                value={tradeData.trade_number}
+                onChange={(e) => setTradeData({ ...tradeData, trade_number: e.target.value })}
+                placeholder="e.g., TR-123"
+              />
+
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Trade Line Item"
+                required
+                value={tradeData.trade_line_item}
+                onChange={(e) => setTradeData({ ...tradeData, trade_line_item: e.target.value })}
+                placeholder="e.g., 01"
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
+          <Button onClick={handleCloseTradeDialog} sx={{ color: 'text.secondary' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveTrade}
+            variant="contained"
+            disabled={!tradeData.trade_number || !tradeData.trade_line_item || tradeMutation.isPending}
+            sx={{
+              bgcolor: 'rgba(139, 92, 246, 0.1)',
+              color: '#8b5cf6',
+              border: '1px solid #8b5cf6',
+              '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.2)' },
+              '&:disabled': { opacity: 0.3 },
+            }}
+          >
+            {tradeMutation.isPending ? 'Saving...' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

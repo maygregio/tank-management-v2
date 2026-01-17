@@ -29,6 +29,9 @@ export interface Movement {
   // Signal metadata
   signal_id?: string;
   source_tank?: string;
+  // Trade information
+  trade_number?: string;
+  trade_line_item?: string;
 }
 
 export interface DashboardStats {
@@ -143,6 +146,11 @@ export interface SignalAssignment {
   expected_volume: number;
   scheduled_date: string;
   notes?: string;
+}
+
+export interface TradeInfoUpdate {
+  trade_number: string;
+  trade_line_item: string;
 }
 
 export interface ParsedSignal {
