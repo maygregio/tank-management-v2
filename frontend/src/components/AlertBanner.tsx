@@ -36,9 +36,6 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
           backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255, 179, 0, 0.05) 1px, rgba(255, 179, 0, 0.05) 2px)',
           pointerEvents: 'none',
         },
-        '@media (prefers-reduced-motion: reduce)': {
-          animation: 'none',
-        },
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>

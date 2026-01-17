@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Providers from "@/components/Providers";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Navigation from "@/components/Navigation";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,11 +18,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>
-          <div className="page-shell">
-            <Navigation>{children}</Navigation>
-          </div>
-        </Providers>
+        <ThemeProvider>
+          <Providers>
+            <ErrorBoundary>
+              <div className="page-shell">
+                <Navigation>{children}</Navigation>
+              </div>
+            </ErrorBoundary>
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

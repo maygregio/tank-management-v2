@@ -1,5 +1,10 @@
 'use client';
 
+import { tankCreateSchema, type TankCreateInput } from '@/lib/validation';
+import { useToast } from '@/contexts/ToastContext';
+import { tanksApi } from '@/lib/api';
+import TankCard from '@/components/TankCard';
+import EmptyState from '@/components/EmptyState';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
@@ -15,42 +20,43 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
 import AddIcon from '@mui/icons-material/Add';
-import { tanksApi } from '@/lib/api';
-import TankCard from '@/components/TankCard';
-import type { TankCreate, FuelType } from '@/lib/types';
+import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 
 export default function TanksPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filterLocation, setFilterLocation] = useState<string>('');
-  const [formData, setFormData] = useState<TankCreate>({
+  const [formData, setFormData] = useState<TankCreateInput>({
     name: '',
     location: '',
     fuel_type: 'diesel',
     capacity: 0,
     initial_level: undefined,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { success, error: showError } = useToast();
 
-  // Fetch all tanks once, filter client-side
   const { data: allTanks, isLoading } = useQuery({
     queryKey: ['tanks'],
     queryFn: () => tanksApi.getAll(),
   });
 
-  // Filter tanks client-side and extract unique locations
   const tanks = filterLocation
     ? allTanks?.filter((t) => t.location === filterLocation)
     : allTanks;
   const uniqueLocations = [...new Set(allTanks?.map((t) => t.location) || [])].sort();
 
   const createMutation = useMutation({
-    mutationFn: tanksApi.create,
+    mutationFn: (data: TankCreateInput) => tanksApi.create(data),
     onSuccess: () => {
+      success('Storage unit deployed successfully');
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       handleCloseDialog();
+    },
+    onError: () => {
+      showError('Failed to deploy storage unit');
     },
   });
 
@@ -62,32 +68,66 @@ export default function TanksPage() {
       capacity: 0,
       initial_level: undefined,
     });
+    setErrors({});
     setDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
+    setErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    try {
+      tankCreateSchema.parse({
+        ...formData,
+        initial_level: formData.initial_level ?? undefined
+      });
+      setErrors({});
+      return true;
+    } catch {
+      setErrors({});
+      return false;
+    }
   };
 
   const handleSubmit = () => {
-    if (!formData.name.trim() || !formData.location.trim() || formData.capacity <= 0) return;
+    if (!validateForm()) return;
     createMutation.mutate({
       ...formData,
       initial_level: formData.initial_level || 0,
     });
   };
 
+  const handleChange = (field: keyof TankCreateInput, value: string | number | undefined) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
+  };
+
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-        <CircularProgress size={24} sx={{ color: 'var(--color-accent-cyan)' }} />
-      </Box>
+      <Grid container spacing={2}>
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
+            <Box
+              sx={{
+                height: 220,
+                borderRadius: '12px',
+                border: '1px solid rgba(0, 229, 255, 0.18)',
+                background: 'linear-gradient(160deg, rgba(18, 26, 39, 0.92) 0%, rgba(10, 15, 26, 0.88) 100%)',
+                animation: 'pulse 1.5s ease-in-out infinite'
+              }}
+            />
+          </Grid>
+        ))}
+      </Grid>
     );
   }
 
   return (
     <Box>
-      {/* Tactical Command Bar */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
@@ -104,6 +144,7 @@ export default function TanksPage() {
                 label="Location Filter"
                 onChange={(e) => setFilterLocation(e.target.value)}
                 sx={{ fontSize: '0.8rem' }}
+                aria-label="Filter by location"
               >
                 <MenuItem value="">All Locations</MenuItem>
                 {uniqueLocations.map((loc) => (
@@ -118,6 +159,7 @@ export default function TanksPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenDialog}
+            aria-label="Deploy new storage unit"
             sx={{
               bgcolor: 'rgba(0, 212, 255, 0.1)',
               color: 'var(--color-accent-cyan)',
@@ -130,23 +172,24 @@ export default function TanksPage() {
         </Box>
       </Box>
 
-      <Grid container spacing={2}>
-        {tanks?.map((tank) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={tank.id}>
-            <TankCard tank={tank} />
-          </Grid>
-        ))}
-      </Grid>
-
-      {tanks?.length === 0 && (
-        <Box sx={{ textAlign: 'center', mt: 6, p: 4, border: '1px solid var(--color-border)', bgcolor: 'rgba(0,0,0,0.2)' }}>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 1 }}>
-            NO STORAGE UNITS DEPLOYED
-          </Typography>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-            Use &quot;Deploy Unit&quot; to register your first tank and begin monitoring levels.
-          </Typography>
-        </Box>
+      {!tanks || tanks.length === 0 ? (
+        <EmptyState
+          icon={<PropaneTankIcon />}
+          title="No Storage Units Deployed"
+          description="Deploy your first storage unit to begin monitoring fuel levels."
+          action={{
+            label: 'Deploy Unit',
+            onClick: handleOpenDialog
+          }}
+        />
+      ) : (
+        <Grid container spacing={2}>
+          {tanks.map((tank) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={tank.id}>
+              <TankCard tank={tank} />
+            </Grid>
+          ))}
+        </Grid>
       )}
 
       <Dialog
@@ -179,7 +222,10 @@ export default function TanksPage() {
             fullWidth
             required
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => handleChange('name', e.target.value)}
+            error={!!errors.name}
+            helperText={errors.name}
+            aria-label="Tank name"
           />
           <TextField
             margin="dense"
@@ -187,15 +233,19 @@ export default function TanksPage() {
             fullWidth
             required
             value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            onChange={(e) => handleChange('location', e.target.value)}
+            error={!!errors.location}
+            helperText={errors.location}
             placeholder="e.g., Main Depot, Warehouse A"
+            aria-label="Tank location"
           />
           <FormControl fullWidth margin="dense" required>
             <InputLabel>Fuel Classification</InputLabel>
             <Select
               value={formData.fuel_type}
               label="Fuel Classification"
-              onChange={(e) => setFormData({ ...formData, fuel_type: e.target.value as FuelType })}
+              onChange={(e) => handleChange('fuel_type', e.target.value)}
+              aria-label="Fuel type"
             >
               <MenuItem value="diesel">Diesel</MenuItem>
               <MenuItem value="gasoline">Gasoline</MenuItem>
@@ -209,10 +259,11 @@ export default function TanksPage() {
             fullWidth
             required
             value={formData.capacity || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData({ ...formData, capacity: value === '' ? 0 : Number(value) });
-            }}
+            onChange={(e) => handleChange('capacity', e.target.value === '' ? 0 : Number(e.target.value))}
+            error={!!errors.capacity}
+            helperText={errors.capacity}
+            aria-label="Tank capacity"
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
           />
           <TextField
             margin="dense"
@@ -220,19 +271,19 @@ export default function TanksPage() {
             type="number"
             fullWidth
             value={formData.initial_level ?? ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData({ ...formData, initial_level: value === '' ? undefined : Number(value) });
-            }}
+            onChange={(e) => handleChange('initial_level', e.target.value === '' ? undefined : Number(e.target.value))}
+            error={!!errors.initial_level}
+            helperText={errors.initial_level}
+            aria-label="Initial fill level"
+            slotProps={{ htmlInput: { min: 0, step: 1 } }}
           />
-
         </DialogContent>
         <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
           <Button onClick={handleCloseDialog} sx={{ color: 'text.secondary' }}>Abort</Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={!formData.name.trim() || !formData.location.trim() || formData.capacity <= 0}
+            disabled={!formData.name.trim() || !formData.location.trim() || formData.capacity <= 0 || createMutation.isPending}
             sx={{
               bgcolor: 'rgba(0, 212, 255, 0.1)',
               color: 'var(--color-accent-cyan)',
