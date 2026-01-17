@@ -296,6 +296,7 @@ export default function MovementsPage() {
     {
       field: 'scheduledDate',
       headerName: 'Scheduled',
+      minWidth: 120,
       flex: 0.9,
       valueFormatter: (params: { value?: string }) => {
         const parsed = new Date(params.value ?? '');
@@ -305,6 +306,7 @@ export default function MovementsPage() {
     {
       field: 'type',
       headerName: 'Type',
+      minWidth: 110,
       flex: 0.7,
       renderCell: (params: GridRenderCellParams) => (
         <MovementTypeChip type={params.value as MovementType} />
@@ -314,24 +316,29 @@ export default function MovementsPage() {
     {
       field: 'tankName',
       headerName: 'Tank',
+      minWidth: 180,
       flex: 1.2,
     },
     {
       field: 'expectedVolume',
       headerName: 'Expected (bbl)',
+      minWidth: 140,
       flex: 1,
       type: 'number',
       renderCell: (params: GridRenderCellParams) => (
-        <Typography sx={{ fontWeight: 600 }}>{Number(params.value || 0).toLocaleString()} bbl</Typography>
+        <Typography sx={{ fontWeight: 600 }} noWrap>
+          {Number(params.value || 0).toLocaleString()} bbl
+        </Typography>
       ),
     },
     {
       field: 'actualVolume',
       headerName: 'Actual (bbl)',
+      minWidth: 140,
       flex: 1,
       type: 'number',
       renderCell: (params: GridRenderCellParams) => (
-        <Typography sx={{ color: params.value === null ? 'text.disabled' : 'text.primary' }}>
+        <Typography sx={{ color: params.value === null ? 'text.disabled' : 'text.primary' }} noWrap>
           {params.value === null ? '—' : `${Number(params.value).toLocaleString()} bbl`}
         </Typography>
       ),
@@ -339,6 +346,7 @@ export default function MovementsPage() {
     {
       field: 'status',
       headerName: 'Status',
+      minWidth: 120,
       flex: 0.8,
       renderCell: (params: GridRenderCellParams) => (
         <MovementStatus isPending={Boolean(params.value)} />
@@ -348,6 +356,7 @@ export default function MovementsPage() {
     {
       field: 'notes',
       headerName: 'Notes',
+      minWidth: 200,
       flex: 1.6,
     },
     {
@@ -711,14 +720,26 @@ export default function MovementsPage() {
                   textTransform: 'uppercase',
                   color: 'text.secondary',
                 },
+                '& .MuiDataGrid-columnHeaderTitle': {
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
                 '& .MuiDataGrid-cell': {
                   borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
                   display: 'flex',
                   alignItems: 'center',
+                  minWidth: 0,
+                  overflow: 'hidden',
                 },
                 '& .MuiDataGrid-cellContent': {
                   display: 'flex',
                   alignItems: 'center',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  width: '100%',
                 },
                 '& .MuiDataGrid-row:hover': {
                   backgroundColor: 'rgba(0, 229, 255, 0.04)',
