@@ -118,7 +118,7 @@ export default function Dashboard() {
           <Box className="card-hover">
             <StatCard
               title="Total Capacity"
-              value={`${((stats?.total_fuel_volume || 0) / 1000).toFixed(1)}k bbl`}
+              value={`${((stats?.total_feedstock_volume || 0) / 1000).toFixed(1)}k bbl`}
             />
           </Box>
         </Grid>

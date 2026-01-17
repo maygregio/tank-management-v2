@@ -5,7 +5,7 @@ from routers import tanks, movements, imports
 
 app = FastAPI(
     title="Tank Management API",
-    description="API for managing fuel tank levels through movements",
+    description="API for managing feedstock tank levels through movements",
     version="1.0.0"
 )
 

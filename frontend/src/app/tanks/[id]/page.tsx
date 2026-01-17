@@ -24,7 +24,7 @@ import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
 import { tanksApi } from '@/lib/api';
-import { fuelTypeLabels } from '@/lib/constants';
+import { feedstockTypeLabels } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { exportToExcel, formatDataForExport } from '@/lib/export';
 import { useToast } from '@/contexts/ToastContext';
@@ -285,7 +285,7 @@ export default function TankDetailPage() {
             {tank.name}
           </Typography>
           <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.7rem' }}>
-            {tank.location} • {fuelTypeLabels[tank.fuel_type]} • {tank.capacity.toLocaleString()} bbl
+            {tank.location} • {feedstockTypeLabels[tank.feedstock_type]} • {tank.capacity.toLocaleString()} bbl
           </Typography>
           <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
             ID: {tank.id.toUpperCase()}
@@ -416,9 +416,9 @@ export default function TankDetailPage() {
             </Box>
             <Box>
               <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
-                FUEL TYPE
+                FEEDSTOCK TYPE
               </Typography>
-              <Typography sx={{ fontWeight: 600 }}>{fuelTypeLabels[tank.fuel_type]}</Typography>
+              <Typography sx={{ fontWeight: 600 }}>{feedstockTypeLabels[tank.feedstock_type]}</Typography>
             </Box>
             <Box>
               <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>

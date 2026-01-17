@@ -75,7 +75,7 @@ def create_movement(movement_data: MovementCreate):
         if movement_data.expected_volume > current_level:
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient fuel. Current level: {current_level:.2f}L"
+                detail=f"Insufficient feedstock. Current level: {current_level:.2f}L"
             )
 
     # Create movement with expected_volume, actual_volume starts as None
@@ -111,7 +111,7 @@ def create_transfer(movement_data: TransferCreate):
     if total_volume > current_level:
         raise HTTPException(
             status_code=400,
-            detail=f"Insufficient fuel. Current level: {current_level:.2f}L"
+            detail=f"Insufficient feedstock. Current level: {current_level:.2f}L"
         )
 
     created_movements: list[Movement] = []
@@ -160,7 +160,7 @@ def update_movement(movement_id: str, data: MovementUpdate):
             if data.expected_volume > available:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Insufficient fuel. Available: {available:.2f}L"
+                    detail=f"Insufficient feedstock. Available: {available:.2f}L"
                 )
         update_data["expected_volume"] = data.expected_volume
     if data.notes is not None:

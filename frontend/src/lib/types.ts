@@ -1,11 +1,11 @@
-export type FuelType = 'carbon_black_oil' | 'other';
+export type FeedstockType = 'carbon_black_oil' | 'other';
 export type MovementType = 'load' | 'discharge' | 'transfer' | 'adjustment';
 
 export interface Tank {
   id: string;
   name: string;
   location: string;
-  fuel_type: FuelType;
+  feedstock_type: FeedstockType;
   capacity: number;
   initial_level: number;
   created_at: string;
@@ -34,14 +34,14 @@ export interface Movement {
 export interface DashboardStats {
   total_tanks: number;
   total_locations: number;
-  total_fuel_volume: number;
+  total_feedstock_volume: number;
 }
 
 // Form types
 export interface TankCreate {
   name: string;
   location: string;
-  fuel_type: FuelType;
+  feedstock_type: FeedstockType;
   capacity: number;
   initial_level?: number;
 }
