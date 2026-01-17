@@ -7,6 +7,17 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+
+interface MovementRow {
+  id: string;
+  dateLabel: string;
+  type: 'load' | 'discharge' | 'transfer' | 'adjustment';
+  status: boolean;
+  movementVolume: number;
+  tankAfter: number;
+  notes: string | null;
+}
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -15,7 +26,7 @@ import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
 import { tanksApi } from '@/lib/api';
-import { fuelTypeLabels, styles } from '@/lib/constants';
+import { fuelTypeLabels } from '@/lib/constants';
 
 export default function TankDetailPage() {
   const params = useParams();
@@ -68,6 +79,104 @@ export default function TankDetailPage() {
       </Box>
     );
   }
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return '—';
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString();
+    }
+    if (typeof value === 'string') {
+      return value.split('T')[0];
+    }
+    return '—';
+  };
+
+  const columns: GridColDef<MovementRow>[] = [
+    {
+      field: 'dateLabel',
+      headerName: 'Date',
+      flex: 0.8,
+      sortable: false,
+    },
+    {
+      field: 'type',
+      headerName: 'Type',
+      flex: 0.9,
+      renderCell: (params: GridRenderCellParams<MovementRow>) => (
+        <MovementTypeChip type={params.row.type} />
+      ),
+      sortable: false,
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      flex: 0.8,
+      renderCell: (params: GridRenderCellParams<MovementRow>) => (
+        <MovementStatus isPending={params.row.status} />
+      ),
+      sortable: false,
+    },
+    {
+      field: 'movementVolume',
+      headerName: 'Movement (bbl)',
+      flex: 1,
+      type: 'number',
+      renderCell: (params: GridRenderCellParams<MovementRow, MovementRow['movementVolume']>) => (
+        <Typography sx={{ fontWeight: 600 }}>{(params.value ?? 0).toLocaleString()} bbl</Typography>
+      ),
+    },
+    {
+      field: 'tankAfter',
+      headerName: 'Tank After (bbl)',
+      flex: 1,
+      type: 'number',
+      renderCell: (params: GridRenderCellParams<MovementRow, MovementRow['tankAfter']>) => (
+        <Typography sx={{ fontWeight: 600, color: 'var(--color-accent-cyan)' }}>{(params.value ?? 0).toLocaleString()} bbl</Typography>
+      ),
+    },
+    {
+      field: 'notes',
+      headerName: 'Notes',
+      flex: 1.6,
+      renderCell: (params: GridRenderCellParams<MovementRow, MovementRow['notes']>) => (
+        <Typography sx={{ color: 'text.secondary' }}>{params.value || '—'}</Typography>
+      ),
+    },
+  ];
+
+  const sortedHistory = history ? [...history].sort(
+    (a, b) => {
+      const left = a.scheduled_date || a.created_at;
+      const right = b.scheduled_date || b.created_at;
+      return new Date(left).getTime() - new Date(right).getTime();
+    }
+  ) : [];
+
+  const runningBalanceRows = sortedHistory.map((movement) => {
+    const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
+    const sign = isOutgoing ? -1 : 1;
+    const movementVolume = Math.abs(movement.actual_volume ?? movement.expected_volume);
+    const movementDate = movement.scheduled_date || movement.created_at;
+
+    return {
+      id: movement.id,
+      dateLabel: formatDate(movementDate),
+      type: movement.type,
+      status: movement.actual_volume === null,
+      movementVolume: sign * movementVolume,
+      tankAfter: 0,
+      notes: movement.notes || null,
+    };
+  });
+
+  const startingLevel = tank.initial_level || 0;
+  const rows = runningBalanceRows.reduce<MovementRow[]>((acc, row) => {
+    const previousTotal = acc.length ? acc[acc.length - 1].tankAfter : startingLevel;
+    const tankAfter = Math.max(previousTotal + row.movementVolume, 0);
+    acc.push({ ...row, tankAfter });
+    return acc;
+  }, []);
 
   return (
       <Box>
@@ -172,61 +281,42 @@ export default function TankDetailPage() {
           <SectionHeader title="ACTIVITY TIMELINE" />
         </Box>
 
-        <Box sx={{ display: 'grid', gap: 2 }}>
-          {history?.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-              NO MOVEMENT RECORDS FOUND
-            </Box>
-          ) : (
-            history?.map((movement) => {
-              const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
-              const sign = isOutgoing ? '-' : '+';
-              const isPending = movement.actual_volume === null;
-              const volume = movement.actual_volume ?? movement.expected_volume;
-
-              return (
-                <Box
-                  key={movement.id}
-                  sx={{
-                    p: 2,
-                    borderRadius: '12px',
-                    border: '1px solid rgba(0, 229, 255, 0.12)',
-                    background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
-                    display: 'grid',
-                    gap: 1,
-                    gridTemplateColumns: { xs: '1fr', md: '120px 1fr auto' },
-                    alignItems: { md: 'center' },
-                  }}
-                >
-                  <Box>
-                    <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
-                      DATE
-                    </Typography>
-                    <Typography sx={{ fontWeight: 600 }}>
-                      {new Date(movement.scheduled_date).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                      <MovementTypeChip type={movement.type} />
-                      <MovementStatus isPending={isPending} />
-                      <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                        {movement.notes || 'No notes'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                    <Typography variant="caption" sx={{ color: 'text.disabled', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
-                      VOLUME
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700, color: isOutgoing ? '#ff6b6b' : '#00f0a8' }}>
-                      {sign}{Math.abs(volume).toLocaleString()} bbl
-                    </Typography>
-                  </Box>
-                </Box>
-              );
-            })
-          )}
+        <Box sx={{ height: 460, width: '100%' }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            disableRowSelectionOnClick
+            pageSizeOptions={[5, 10, 20]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+            sx={{
+              border: '1px solid var(--glass-border)',
+              background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+              borderRadius: '12px',
+              '& .MuiDataGrid-columnHeaders': {
+                borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
+                background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
+                fontSize: '0.7rem',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+              },
+              '& .MuiDataGrid-cell': {
+                borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+              },
+              '& .MuiDataGrid-cellContent': {
+                display: 'flex',
+                alignItems: 'center',
+              },
+              '& .MuiDataGrid-row:hover': {
+                backgroundColor: 'rgba(0, 229, 255, 0.04)',
+              },
+              '& .MuiDataGrid-footerContainer': {
+                borderTop: '1px solid rgba(0, 229, 255, 0.15)',
+              },
+            }}
+          />
         </Box>
       </Box>
 
