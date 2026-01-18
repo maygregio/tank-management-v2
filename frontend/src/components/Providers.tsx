@@ -20,13 +20,13 @@ function getSnackbarStyles(variant: 'success' | 'error' | 'warning' | 'info', mo
   const configs = {
     success: {
       dark: {
-        background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 230, 118, 0.1))',
+        background: 'rgba(0, 230, 118, 0.12)',
         border: '1px solid rgba(0, 230, 118, 0.3)',
         color: '#00e676',
         boxShadow: '0 4px 12px rgba(0, 230, 118, 0.15)',
       },
       light: {
-        background: 'linear-gradient(135deg, rgba(46, 125, 50, 0.15), rgba(46, 125, 50, 0.1))',
+        background: 'rgba(46, 125, 50, 0.12)',
         border: '1px solid rgba(46, 125, 50, 0.3)',
         color: '#2e7d32',
         boxShadow: '0 4px 12px rgba(46, 125, 50, 0.15)',
@@ -34,13 +34,13 @@ function getSnackbarStyles(variant: 'success' | 'error' | 'warning' | 'info', mo
     },
     error: {
       dark: {
-        background: 'linear-gradient(135deg, rgba(255, 82, 82, 0.15), rgba(255, 82, 82, 0.1))',
+        background: 'rgba(255, 82, 82, 0.12)',
         border: '1px solid rgba(255, 82, 82, 0.3)',
         color: '#ff5252',
         boxShadow: '0 4px 12px rgba(255, 82, 82, 0.15)',
       },
       light: {
-        background: 'linear-gradient(135deg, rgba(211, 47, 47, 0.15), rgba(211, 47, 47, 0.1))',
+        background: 'rgba(211, 47, 47, 0.12)',
         border: '1px solid rgba(211, 47, 47, 0.3)',
         color: '#d32f2f',
         boxShadow: '0 4px 12px rgba(211, 47, 47, 0.15)',
@@ -48,13 +48,13 @@ function getSnackbarStyles(variant: 'success' | 'error' | 'warning' | 'info', mo
     },
     warning: {
       dark: {
-        background: 'linear-gradient(135deg, rgba(255, 179, 0, 0.15), rgba(255, 179, 0, 0.1))',
+        background: 'rgba(255, 179, 0, 0.12)',
         border: '1px solid rgba(255, 179, 0, 0.3)',
         color: '#ffb300',
         boxShadow: '0 4px 12px rgba(255, 179, 0, 0.15)',
       },
       light: {
-        background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.1))',
+        background: 'rgba(255, 152, 0, 0.12)',
         border: '1px solid rgba(255, 152, 0, 0.3)',
         color: '#ff9800',
         boxShadow: '0 4px 12px rgba(255, 152, 0, 0.15)',
@@ -62,13 +62,13 @@ function getSnackbarStyles(variant: 'success' | 'error' | 'warning' | 'info', mo
     },
     info: {
       dark: {
-        background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.1))',
+        background: 'rgba(0, 229, 255, 0.12)',
         border: '1px solid rgba(0, 229, 255, 0.3)',
         color: '#00e5ff',
         boxShadow: '0 4px 12px rgba(0, 229, 255, 0.15)',
       },
       light: {
-        background: 'linear-gradient(135deg, rgba(0, 179, 204, 0.15), rgba(0, 179, 204, 0.1))',
+        background: 'rgba(0, 179, 204, 0.12)',
         border: '1px solid rgba(0, 179, 204, 0.3)',
         color: '#00b3cc',
         boxShadow: '0 4px 12px rgba(0, 179, 204, 0.15)',

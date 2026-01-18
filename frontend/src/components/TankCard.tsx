@@ -25,22 +25,10 @@ export default function TankCard({ tank }: TankCardProps) {
         boxShadow: '0 18px 45px rgba(5, 10, 18, 0.55)',
         cursor: 'pointer',
         transition: 'transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(140deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.06))',
-          opacity: 0,
-          transition: 'opacity 0.35s ease',
-          pointerEvents: 'none',
-        },
         '&:hover': {
           borderColor: 'var(--color-accent-cyan)',
           transform: 'translateY(-4px)',
           boxShadow: '0 24px 65px rgba(0, 229, 255, 0.12)',
-          '&::after': {
-            opacity: 1,
-          },
         },
         '@media (prefers-reduced-motion: reduce)': {
           transition: 'none',

@@ -18,7 +18,7 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
   const accent = 'var(--color-accent-cyan)';
   return (
     <Card sx={{
-      background: 'linear-gradient(135deg, rgba(17, 25, 33, 0.9) 0%, rgba(10, 14, 20, 1) 100%)',
+      backgroundColor: 'rgba(14, 20, 27, 0.95)',
       border: `1px solid ${accent}33`,
       position: 'relative',
       overflow: 'hidden',
@@ -32,14 +32,6 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
         backgroundColor: accent,
         boxShadow: `0 0 8px ${accent}66`,
       },
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.02) 1px, transparent 0)',
-        backgroundSize: '16px 16px',
-        pointerEvents: 'none',
-      }
     }}>
       <CardContent sx={{ p: '12px 16px !important' }}>
         <Typography variant="overline" sx={{
@@ -146,7 +138,7 @@ export default function Dashboard() {
               }}>
                 LOCATION: {location.toUpperCase()}
               </Typography>
-              <Box sx={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(0, 212, 255, 0.3) 0%, transparent 100%)' }} />
+              <Box sx={{ flex: 1, height: '1px', backgroundColor: 'rgba(0, 212, 255, 0.3)' }} />
               <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.5 }}>
                 {locationTanks.length} UNIT{locationTanks.length !== 1 ? 'S' : ''}
               </Typography>

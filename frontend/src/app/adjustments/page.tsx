@@ -104,7 +104,7 @@ export default function AdjustmentsPage() {
         <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
           CALIBRATION PROTOCOL
         </Typography>
-        <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
+        <Box sx={{ width: 60, height: '1px', backgroundColor: 'rgba(0, 229, 255, 0.35)' }} />
       </Box>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4, fontSize: '0.75rem' }}>
         RECONCILE PHYSICAL READINGS WITH CALCULATED SYSTEM LEVELS

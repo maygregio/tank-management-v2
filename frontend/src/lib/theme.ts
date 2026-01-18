@@ -113,7 +113,7 @@ const commonThemeOptions: ThemeOptions = {
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundImage: 'linear-gradient(135deg, rgba(15, 22, 34, 0.92) 0%, rgba(12, 18, 30, 0.88) 100%)',
+          backgroundColor: 'rgba(15, 22, 34, 0.92)',
           border: '1px solid rgba(0, 229, 255, 0.18)',
           boxShadow: '0 20px 60px rgba(5, 10, 18, 0.55)',
           backdropFilter: 'blur(16px)',
@@ -139,7 +139,7 @@ const commonThemeOptions: ThemeOptions = {
     MuiTableHead: {
       styleOverrides: {
         root: {
-          backgroundImage: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
+          backgroundColor: 'rgba(0, 229, 255, 0.08)',
         },
       },
     },

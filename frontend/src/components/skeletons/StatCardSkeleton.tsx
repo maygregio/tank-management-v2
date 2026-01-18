@@ -7,7 +7,7 @@ import Skeleton from '@mui/material/Skeleton';
 export default function StatCardSkeleton() {
   return (
     <Card sx={{
-      background: 'linear-gradient(135deg, rgba(17, 25, 33, 0.9) 0%, rgba(10, 14, 20, 1) 100%)',
+      backgroundColor: 'rgba(14, 20, 27, 0.95)',
       border: '1px solid rgba(0, 229, 255, 0.2)',
       position: 'relative',
       overflow: 'hidden',

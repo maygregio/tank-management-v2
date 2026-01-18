@@ -279,7 +279,7 @@ export default function TankDetailPage() {
           p: 2,
           borderRadius: '14px',
           border: '1px solid var(--glass-border)',
-          background: 'linear-gradient(120deg, rgba(14, 21, 34, 0.92), rgba(9, 14, 23, 0.9))',
+          backgroundColor: 'rgba(12, 18, 29, 0.92)',
           boxShadow: '0 20px 50px rgba(5, 10, 18, 0.55)',
           backdropFilter: 'blur(18px)',
         }}
@@ -357,7 +357,7 @@ export default function TankDetailPage() {
               p: 3,
               borderRadius: '12px',
               border: '1px solid var(--glass-border)',
-              background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))',
+              backgroundColor: 'rgba(12, 18, 29, 0.88)',
               mb: 3
             }}
           >
@@ -392,7 +392,7 @@ export default function TankDetailPage() {
               p: 3,
               borderRadius: '12px',
               border: '1px solid var(--glass-border)',
-              background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))',
+              backgroundColor: 'rgba(12, 18, 29, 0.88)',
               mb: 3
             }}
           >
@@ -411,7 +411,7 @@ export default function TankDetailPage() {
               p: 2,
               borderRadius: '12px',
               border: '1px solid var(--glass-border)',
-              background: 'linear-gradient(140deg, rgba(14, 21, 34, 0.88), rgba(9, 14, 23, 0.85))',
+              backgroundColor: 'rgba(12, 18, 29, 0.88)',
               display: 'grid',
               gap: 1.5,
               gridTemplateColumns: '1fr 1fr'
@@ -459,7 +459,7 @@ export default function TankDetailPage() {
               justifyContent: 'center',
               border: '1px solid var(--glass-border)',
               borderRadius: '12px',
-              background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))'
+              backgroundColor: 'rgba(10, 15, 26, 0.9)'
             }}
           >
             <EmptyState
@@ -477,11 +477,11 @@ export default function TankDetailPage() {
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
             sx={{
               border: '1px solid var(--glass-border)',
-              background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+              backgroundColor: 'rgba(10, 15, 26, 0.9)',
               borderRadius: '12px',
               '& .MuiDataGrid-columnHeaders': {
                 borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-                background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
+                backgroundColor: 'rgba(0, 229, 255, 0.08)',
                 fontSize: '0.7rem',
                 letterSpacing: '0.15em',
                 textTransform: 'uppercase',

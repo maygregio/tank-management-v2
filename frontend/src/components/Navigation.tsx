@@ -84,15 +84,15 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
               color: isActive ? 'text.primary' : 'text.secondary',
               border: '1px solid',
               borderColor: isActive ? 'rgba(0, 229, 255, 0.5)' : 'transparent',
-              backgroundImage: isActive
-                ? 'linear-gradient(90deg, rgba(0, 229, 255, 0.16), rgba(139, 92, 246, 0.12))'
-                : 'linear-gradient(120deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.0))',
+              backgroundColor: isActive
+                ? 'rgba(0, 229, 255, 0.12)'
+                : 'transparent',
               boxShadow: isActive ? '0 0 16px rgba(0, 229, 255, 0.25)' : 'none',
               transition: 'all 0.25s ease',
               '&:hover': {
                 color: 'text.primary',
                 borderColor: 'rgba(0, 229, 255, 0.35)',
-                backgroundImage: 'linear-gradient(90deg, rgba(0, 229, 255, 0.14), rgba(139, 92, 246, 0.1))'
+                backgroundColor: 'rgba(0, 229, 255, 0.1)'
               },
               '&:focus-visible': {
                 outline: '2px solid var(--color-accent-cyan)',
