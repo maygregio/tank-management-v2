@@ -1,375 +1,105 @@
-from datetime import date
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File
+"""Movement management API endpoints."""
+import logging
 from typing import Optional
-from models.schemas import (
-    Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
-    Tank, AdjustmentCreate, TransferCreate, SignalAssignment, TradeInfoUpdate
-)
-from services.storage import CosmosStorage
-from services.calculations import calculate_tank_level, calculate_adjustment
-from services.excel_parser import parse_signals_excel, ExcelParseResult
 
+from fastapi import APIRouter, HTTPException, Query, Depends
+
+from models import (
+    Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
+    AdjustmentCreate, TransferCreate
+)
+from services.movement_service import MovementService, MovementServiceError, get_movement_service
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
-movement_storage = CosmosStorage("movements", Movement)
-tank_storage = CosmosStorage("tanks", Tank)
 
 
 @router.get("", response_model=list[Movement])
 def get_movements(
-    tank_id: Optional[str] = Query(None),
-    type: Optional[MovementType] = Query(None),
+    tank_id: Optional[str] = Query(None, description="Filter by tank ID"),
+    type: Optional[MovementType] = Query(None, description="Filter by movement type"),
     status: Optional[str] = Query(None, description="Filter by status: pending or completed"),
-    limit: int = Query(100, ge=1, le=1000)
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    service: MovementService = Depends(get_movement_service)
 ):
     """Get all movements with optional filters."""
-    movements = movement_storage.get_all()
-
-    if tank_id:
-        movements = [
-            m for m in movements
-            if m.tank_id == tank_id or m.target_tank_id == tank_id
-        ]
-
-    if type:
-        movements = [m for m in movements if m.type == type]
-
-    if status:
-        if status == "pending":
-            movements = [m for m in movements if m.actual_volume is None]
-        elif status == "completed":
-            movements = [m for m in movements if m.actual_volume is not None]
-
-    # Sort by scheduled_date descending
-    movements.sort(key=lambda m: m.scheduled_date, reverse=True)
-    return movements[:limit]
+    return service.get_all(
+        tank_id=tank_id,
+        movement_type=type,
+        status=status,
+        skip=skip,
+        limit=limit
+    )
 
 
 @router.post("", response_model=Movement, status_code=201)
-def create_movement(movement_data: MovementCreate):
+def create_movement(
+    movement_data: MovementCreate,
+    service: MovementService = Depends(get_movement_service)
+):
     """Create a new scheduled movement (load, discharge, transfer)."""
-    # Validate tank exists
-    tank = tank_storage.get_by_id(movement_data.tank_id)
-    if not tank:
-        raise HTTPException(status_code=400, detail="Tank not found")
-
-    # Validate transfer target tank
-    if movement_data.type == MovementType.TRANSFER:
-        if not movement_data.target_tank_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Target tank is required for transfers"
-            )
-        target_tank = tank_storage.get_by_id(movement_data.target_tank_id)
-        if not target_tank:
-            raise HTTPException(status_code=400, detail="Target tank not found")
-        if movement_data.tank_id == movement_data.target_tank_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Source and target tank cannot be the same"
-            )
-
-    # For discharge/transfer, verify sufficient fuel (using expected volume)
-    if movement_data.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
-        movements = movement_storage.get_all()
-        current_level = calculate_tank_level(tank, movements)
-        if movement_data.expected_volume > current_level:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Insufficient feedstock. Current level: {current_level:.2f}L"
-            )
-
-    # Create movement with expected_volume, actual_volume starts as None
-    movement = Movement(
-        type=movement_data.type,
-        tank_id=movement_data.tank_id,
-        target_tank_id=movement_data.target_tank_id,
-        expected_volume=movement_data.expected_volume,
-        actual_volume=None,
-        scheduled_date=movement_data.scheduled_date,
-        notes=movement_data.notes
-    )
-    return movement_storage.create(movement)
+    try:
+        return service.create(movement_data)
+    except MovementServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.post("/transfer", response_model=list[Movement], status_code=201)
-def create_transfer(movement_data: TransferCreate):
+def create_transfer(
+    movement_data: TransferCreate,
+    service: MovementService = Depends(get_movement_service)
+):
     """Create a transfer from one source tank to multiple targets."""
-    source_tank = tank_storage.get_by_id(movement_data.source_tank_id)
-    if not source_tank:
-        raise HTTPException(status_code=400, detail="Source tank not found")
-
-    if not movement_data.targets:
-        raise HTTPException(status_code=400, detail="At least one target is required")
-
-    target_ids = [target.tank_id for target in movement_data.targets]
-    if movement_data.source_tank_id in target_ids:
-        raise HTTPException(status_code=400, detail="Source and target tank cannot be the same")
-
-    total_volume = sum(target.volume for target in movement_data.targets)
-    movements = movement_storage.get_all()
-    current_level = calculate_tank_level(source_tank, movements)
-    if total_volume > current_level:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Insufficient feedstock. Current level: {current_level:.2f}L"
-        )
-
-    created_movements: list[Movement] = []
-    for target in movement_data.targets:
-        target_tank = tank_storage.get_by_id(target.tank_id)
-        if not target_tank:
-            raise HTTPException(status_code=400, detail=f"Target tank not found: {target.tank_id}")
-        movement = Movement(
-            type=MovementType.TRANSFER,
-            tank_id=movement_data.source_tank_id,
-            target_tank_id=target.tank_id,
-            expected_volume=target.volume,
-            actual_volume=None,
-            scheduled_date=movement_data.scheduled_date,
-            notes=movement_data.notes,
-        )
-        created_movements.append(movement_storage.create(movement))
-
-    return created_movements
+    try:
+        return service.create_transfer(movement_data)
+    except MovementServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.put("/{movement_id}", response_model=Movement)
-def update_movement(movement_id: str, data: MovementUpdate):
+def update_movement(
+    movement_id: str,
+    data: MovementUpdate,
+    service: MovementService = Depends(get_movement_service)
+):
     """Update a pending movement's date, expected volume, or notes."""
-    movement = movement_storage.get_by_id(movement_id)
-    if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
-
-    if movement.actual_volume is not None:
-        raise HTTPException(status_code=400, detail="Cannot edit completed movements")
-
-    # Build update dict with only provided fields
-    update_data = {}
-    if data.scheduled_date is not None:
-        update_data["scheduled_date"] = data.scheduled_date
-    if data.expected_volume is not None:
-        # Validate sufficient fuel for discharge/transfer
-        if movement.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
-            tank = tank_storage.get_by_id(movement.tank_id)
-            if not tank:
-                raise HTTPException(status_code=400, detail="Tank not found")
-            movements = movement_storage.get_all()
-            current_level = calculate_tank_level(tank, movements)
-            # Add back the old expected volume since it was already "reserved"
-            available = current_level + movement.expected_volume
-            if data.expected_volume > available:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Insufficient feedstock. Available: {available:.2f}L"
-                )
-        update_data["expected_volume"] = data.expected_volume
-    if data.notes is not None:
-        update_data["notes"] = data.notes
-
-    if not update_data:
-        return movement
-
-    updated = movement_storage.update(movement_id, update_data)
-    if not updated:
-        raise HTTPException(status_code=500, detail="Failed to update movement")
-
-    return updated
+    try:
+        return service.update(movement_id, data)
+    except MovementServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.put("/{movement_id}/complete", response_model=Movement)
-def complete_movement(movement_id: str, data: MovementComplete):
+def complete_movement(
+    movement_id: str,
+    data: MovementComplete,
+    service: MovementService = Depends(get_movement_service)
+):
     """Record actual volume for a scheduled movement."""
-    movement = movement_storage.get_by_id(movement_id)
-    if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
-
-    if movement.actual_volume is not None:
-        raise HTTPException(status_code=400, detail="Movement already completed")
-
-    # Update with actual volume
-    updated = movement_storage.update(movement_id, {"actual_volume": data.actual_volume})
-    if not updated:
-        raise HTTPException(status_code=500, detail="Failed to update movement")
-
-    return updated
+    try:
+        return service.complete(movement_id, data)
+    except MovementServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.post("/adjustment", response_model=Movement, status_code=201)
-def create_adjustment(adjustment_data: AdjustmentCreate):
-    """
-    Create an adjustment movement based on physical reading.
-    Calculates the difference between current calculated level and physical reading.
-    """
-    # Validate tank exists
-    tank = tank_storage.get_by_id(adjustment_data.tank_id)
-    if not tank:
-        raise HTTPException(status_code=400, detail="Tank not found")
-
-    # Validate physical level doesn't exceed capacity
-    if adjustment_data.physical_level > tank.capacity:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Physical level cannot exceed tank capacity ({tank.capacity}L)"
-        )
-
-    # Calculate current level
-    movements = movement_storage.get_all()
-    current_level = calculate_tank_level(tank, movements)
-
-    # Calculate adjustment quantity
-    adjustment_quantity = calculate_adjustment(current_level, adjustment_data.physical_level)
-
-    # Create adjustment movement (adjustments are immediately complete)
-    notes = adjustment_data.notes or f"Physical reading adjustment. Previous: {current_level:.2f}L, Physical: {adjustment_data.physical_level:.2f}L"
-    if adjustment_quantity < 0:
-        notes = f"(Loss) {notes}"
-    else:
-        notes = f"(Gain) {notes}"
-
-    movement = Movement(
-        type=MovementType.ADJUSTMENT,
-        tank_id=adjustment_data.tank_id,
-        expected_volume=abs(adjustment_quantity),
-        actual_volume=adjustment_quantity,  # Adjustments are immediately complete with signed value
-        scheduled_date=date.today(),
-        notes=notes
-    )
-
-    return movement_storage.create(movement)
-
-
-# Signal endpoints
-@router.get("/signals", response_model=list[Movement])
-def get_pending_signals():
-    """Get signals that need work (unassigned OR missing trade info)."""
-    movements = movement_storage.get_all()
-    # Filter for signals that need attention:
-    # - Has signal_id (is a signal)
-    # - AND either: tank_id is None (unassigned) OR trade info is missing
-    signals = [
-        m for m in movements
-        if m.signal_id is not None and (
-            m.tank_id is None or  # Unassigned
-            m.trade_number is None or m.trade_line_item is None  # Missing trade info
-        )
-    ]
-    # Sort by scheduled_date descending
-    signals.sort(key=lambda m: m.scheduled_date, reverse=True)
-    return signals
-
-
-class SignalUploadResult(ExcelParseResult):
-    """Result from uploading signals."""
-    created_count: int = 0
-    skipped_count: int = 0  # Signals already in system
-
-
-@router.post("/signals/upload", response_model=SignalUploadResult)
-async def upload_signals(file: UploadFile = File(...)):
-    """Upload an Excel file with refinery signals and create movements."""
-    # Validate file type (only .xlsx supported - openpyxl doesn't support legacy .xls)
-    if not file.filename or not file.filename.endswith('.xlsx'):
-        raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx)")
-
-    # Read file content
-    content = await file.read()
-
-    # Parse Excel
-    parse_result = parse_signals_excel(content)
-
-    # Get existing signal IDs to avoid duplicates
-    existing_movements = movement_storage.get_all()
-    existing_signal_ids = {m.signal_id for m in existing_movements if m.signal_id}
-
-    # Create movements only for new signals
-    created_count = 0
-    skipped_count = 0
-    for signal in parse_result.signals:
-        if signal.signal_id in existing_signal_ids:
-            skipped_count += 1
-            continue
-
-        movement = Movement(
-            type=MovementType.LOAD,  # Signals are incoming loads
-            tank_id=None,  # Unassigned
-            expected_volume=signal.volume,
-            scheduled_date=signal.load_date,
-            signal_id=signal.signal_id,
-            source_tank=signal.source_tank,
-            notes=f"Signal from refinery tank: {signal.source_tank}"
-        )
-        movement_storage.create(movement)
-        created_count += 1
-
-    return SignalUploadResult(
-        signals=parse_result.signals,
-        errors=parse_result.errors,
-        created_count=created_count,
-        skipped_count=skipped_count
-    )
-
-
-@router.put("/{movement_id}/assign", response_model=Movement)
-def assign_signal(movement_id: str, data: SignalAssignment):
-    """Assign an unassigned signal to a tank."""
-    movement = movement_storage.get_by_id(movement_id)
-    if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
-
-    # Verify this is an unassigned signal
-    if movement.tank_id is not None:
-        raise HTTPException(status_code=400, detail="Movement is already assigned to a tank")
-
-    if movement.signal_id is None:
-        raise HTTPException(status_code=400, detail="Movement is not a signal")
-
-    # Validate tank exists
-    tank = tank_storage.get_by_id(data.tank_id)
-    if not tank:
-        raise HTTPException(status_code=400, detail="Tank not found")
-
-    # Update the movement with assignment data
-    update_data = {
-        "tank_id": data.tank_id,
-        "expected_volume": data.expected_volume,
-        "scheduled_date": data.scheduled_date,
-    }
-    if data.notes is not None:
-        update_data["notes"] = data.notes
-
-    updated = movement_storage.update(movement_id, update_data)
-    if not updated:
-        raise HTTPException(status_code=500, detail="Failed to assign signal")
-
-    return updated
-
-
-@router.put("/{movement_id}/trade", response_model=Movement)
-def update_trade_info(movement_id: str, data: TradeInfoUpdate):
-    """Update trade information on a movement."""
-    movement = movement_storage.get_by_id(movement_id)
-    if not movement:
-        raise HTTPException(status_code=404, detail="Movement not found")
-
-    # Verify this is a signal
-    if movement.signal_id is None:
-        raise HTTPException(status_code=400, detail="Movement is not a signal")
-
-    # Update trade information
-    update_data = {
-        "trade_number": data.trade_number,
-        "trade_line_item": data.trade_line_item,
-    }
-
-    updated = movement_storage.update(movement_id, update_data)
-    if not updated:
-        raise HTTPException(status_code=500, detail="Failed to update trade info")
-
-    return updated
+def create_adjustment(
+    adjustment_data: AdjustmentCreate,
+    service: MovementService = Depends(get_movement_service)
+):
+    """Create an adjustment movement based on physical reading."""
+    try:
+        return service.create_adjustment(adjustment_data)
+    except MovementServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.delete("/{movement_id}", status_code=204)
-def delete_movement(movement_id: str):
+def delete_movement(
+    movement_id: str,
+    service: MovementService = Depends(get_movement_service)
+):
     """Delete a movement."""
-    if not movement_storage.delete(movement_id):
+    if not service.delete(movement_id):
         raise HTTPException(status_code=404, detail="Movement not found")

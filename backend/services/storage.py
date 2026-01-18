@@ -1,12 +1,15 @@
 import os
-from datetime import datetime, date
-from typing import TypeVar, Generic, Type
+import logging
+from datetime import datetime, date, timezone
+from typing import TypeVar, Generic, Type, Any
 from pydantic import BaseModel
 from azure.cosmos import CosmosClient, PartitionKey
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -74,11 +77,20 @@ class CosmosStorage(Generic[T]):
             )
         return self._container
 
-    def get_all(self) -> list[T]:
-        """Get all items from the container."""
+    def get_all(self, skip: int = 0, limit: int | None = None) -> list[T]:
+        """Get all items from the container with optional pagination."""
         query = "SELECT * FROM c"
+        if limit is not None:
+            query = f"SELECT * FROM c OFFSET {skip} LIMIT {limit}"
         items = list(self.container.query_items(query=query, enable_cross_partition_query=True))
+        logger.debug(f"Retrieved {len(items)} items from {self.container_name}")
         return [self.model_class.model_validate(item) for item in items]
+
+    def count(self) -> int:
+        """Get total count of items in the container."""
+        query = "SELECT VALUE COUNT(1) FROM c"
+        result = list(self.container.query_items(query=query, enable_cross_partition_query=True))
+        return result[0] if result else 0
 
     def get_by_id(self, id: str) -> T | None:
         """Get a single item by ID."""
@@ -116,19 +128,75 @@ class CosmosStorage(Generic[T]):
         except CosmosResourceNotFoundError:
             return False
 
-    def filter(self, **kwargs) -> list[T]:
-        """Filter items by field values."""
-        items = self.get_all()
-        result = []
-        for item in items:
-            match = True
-            for key, value in kwargs.items():
-                if getattr(item, key, None) != value:
-                    match = False
-                    break
-            if match:
-                result.append(item)
-        return result
+    def filter(
+        self,
+        skip: int = 0,
+        limit: int | None = None,
+        order_by: str | None = None,
+        order_desc: bool = False,
+        **kwargs
+    ) -> list[T]:
+        """Filter items by field values using Cosmos DB query."""
+        conditions = []
+        parameters: list[dict[str, Any]] = []
+
+        for key, value in kwargs.items():
+            if value is None:
+                conditions.append(f"IS_NULL(c.{key})")
+            else:
+                param_name = f"@{key}"
+                conditions.append(f"c.{key} = {param_name}")
+                # Handle date serialization
+                if isinstance(value, (datetime, date)):
+                    parameters.append({"name": param_name, "value": value.isoformat()})
+                else:
+                    parameters.append({"name": param_name, "value": value})
+
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        query = f"SELECT * FROM c WHERE {where_clause}"
+
+        if order_by:
+            direction = "DESC" if order_desc else "ASC"
+            query += f" ORDER BY c.{order_by} {direction}"
+
+        if limit is not None:
+            query += f" OFFSET {skip} LIMIT {limit}"
+
+        logger.debug(f"Executing query: {query} with params: {parameters}")
+        items = list(self.container.query_items(
+            query=query,
+            parameters=parameters if parameters else None,
+            enable_cross_partition_query=True
+        ))
+        return [self.model_class.model_validate(item) for item in items]
+
+    def query(
+        self,
+        conditions: list[str],
+        parameters: list[dict[str, Any]] | None = None,
+        skip: int = 0,
+        limit: int | None = None,
+        order_by: str | None = None,
+        order_desc: bool = False
+    ) -> list[T]:
+        """Execute a custom query with conditions."""
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        query = f"SELECT * FROM c WHERE {where_clause}"
+
+        if order_by:
+            direction = "DESC" if order_desc else "ASC"
+            query += f" ORDER BY c.{order_by} {direction}"
+
+        if limit is not None:
+            query += f" OFFSET {skip} LIMIT {limit}"
+
+        logger.debug(f"Executing custom query: {query}")
+        items = list(self.container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+        return [self.model_class.model_validate(item) for item in items]
 
 
 # Alias for backward compatibility

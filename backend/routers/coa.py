@@ -1,9 +1,10 @@
+"""Certificate of Analysis (COA) API endpoints."""
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from typing import Optional
-from models.schemas import (
-    Movement, CertificateOfAnalysis, COALinkRequest, COAWithSignal
-)
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+
+from models import Movement, CertificateOfAnalysis, COALinkRequest, COAWithSignal
 from services.storage import CosmosStorage
 from services.blob_storage import PDFBlobStorage
 from services.coa_extraction import extract_text_from_pdf, process_coa_pdf

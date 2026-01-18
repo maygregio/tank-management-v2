@@ -1,7 +1,10 @@
+"""PDF import API endpoints."""
 import logging
-from fastapi import APIRouter, UploadFile, File
 from typing import List
-from models.schemas import (
+
+from fastapi import APIRouter, UploadFile, File
+
+from models import (
     Tank, Movement,
     PDFExtractionResult, PDFImportRequest, PDFImportResult
 )
