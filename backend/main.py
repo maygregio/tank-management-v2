@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import tanks, movements, imports
+from routers import tanks, movements, imports, coa
 
 app = FastAPI(
     title="Tank Management API",
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(tanks.router, prefix="/api/tanks", tags=["Tanks"])
 app.include_router(movements.router, prefix="/api/movements", tags=["Movements"])
 app.include_router(imports.router, prefix="/api/imports", tags=["Imports"])
+app.include_router(coa.router, prefix="/api/coa", tags=["Certificate of Analysis"])
 
 
 @app.get("/")

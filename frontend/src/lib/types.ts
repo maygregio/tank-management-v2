@@ -32,6 +32,8 @@ export interface Movement {
   // Trade information
   trade_number?: string;
   trade_line_item?: string;
+  // Nomination key for COA linking
+  nomination_key?: string;
 }
 
 export interface DashboardStats {
@@ -165,4 +167,38 @@ export interface SignalUploadResult {
   errors: string[];
   created_count: number;
   skipped_count: number;
+}
+
+// Certificate of Analysis (COA) Types
+export interface CertificateOfAnalysis {
+  id: string;
+  signal_id?: string;
+  nomination_key?: string;
+  pdf_url: string;
+  extraction_date: string;
+  analysis_date?: string;
+  refinery_equipment?: string;
+  lab_name?: string;
+  // Chemical properties
+  bmci?: number;
+  api_gravity?: number;
+  specific_gravity?: number;
+  viscosity?: number;
+  viscosity_temp?: string;
+  sulfur_content?: number;
+  flash_point?: number;
+  ash_content?: number;
+  moisture_content?: number;
+  toluene_insoluble?: number;
+  sodium_content?: number;
+  raw_extraction?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface COAWithSignal extends CertificateOfAnalysis {
+  signal?: Movement;
+}
+
+export interface COALinkRequest {
+  signal_id: string;
 }

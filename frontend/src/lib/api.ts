@@ -2,7 +2,8 @@ import type {
   Tank, TankWithLevel, TankCreate,
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
   DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
-  SignalAssignment, SignalUploadResult, TradeInfoUpdate
+  SignalAssignment, SignalUploadResult, TradeInfoUpdate,
+  COAWithSignal, COALinkRequest
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -136,4 +137,40 @@ export const importsApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+};
+
+// Certificate of Analysis (COA)
+export const coaApi = {
+  getAll: () => fetchAPI<COAWithSignal[]>('/coa'),
+
+  getById: (id: string) => fetchAPI<COAWithSignal>(`/coa/${id}`),
+
+  getBySignalId: (signalId: string) => fetchAPI<COAWithSignal | null>(`/coa/signal/${signalId}`),
+
+  upload: async (file: File, signalId?: string): Promise<COAWithSignal> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const params = signalId ? `?signal_id=${encodeURIComponent(signalId)}` : '';
+
+    const response = await fetch(`${API_BASE}/coa/upload${params}`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || 'Upload failed');
+    }
+
+    return response.json();
+  },
+
+  link: (coaId: string, data: COALinkRequest) =>
+    fetchAPI<COAWithSignal>(`/coa/${coaId}/link`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) => fetchAPI<void>(`/coa/${id}`, { method: 'DELETE' }),
 };

@@ -11,6 +11,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CellTowerIcon from '@mui/icons-material/CellTower';
+import ScienceIcon from '@mui/icons-material/Science';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -19,6 +20,7 @@ const menuItems = [
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
   { text: 'Movements', href: '/movements', Icon: SwapHorizIcon },
   { text: 'Signals', href: '/signals', Icon: CellTowerIcon },
+  { text: 'COA', href: '/coa', Icon: ScienceIcon },
   { text: 'Adjustments', href: '/adjustments', Icon: TuneIcon },
   { text: 'Import', href: '/imports', Icon: UploadFileIcon },
 ];

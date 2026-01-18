@@ -13,6 +13,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CellTowerIcon from '@mui/icons-material/CellTower';
+import ScienceIcon from '@mui/icons-material/Science';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import Tooltip from '@mui/material/Tooltip';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -27,6 +28,7 @@ const menuItems = [
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
   { text: 'Movements', href: '/movements', Icon: SwapHorizIcon },
   { text: 'Signals', href: '/signals', Icon: CellTowerIcon },
+  { text: 'COA', href: '/coa', Icon: ScienceIcon },
   { text: 'Adjustments', href: '/adjustments', Icon: TuneIcon },
   { text: 'Import PDF', href: '/imports', Icon: UploadFileIcon },
 ];
@@ -41,8 +43,9 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
     { key: '2', description: 'Go to Tanks', action: () => router.push('/tanks') },
     { key: '3', description: 'Go to Movements', action: () => router.push('/movements') },
     { key: '4', description: 'Go to Signals', action: () => router.push('/signals') },
-    { key: '5', description: 'Go to Adjustments', action: () => router.push('/adjustments') },
-    { key: '6', description: 'Go to Import PDF', action: () => router.push('/imports') },
+    { key: '5', description: 'Go to COA', action: () => router.push('/coa') },
+    { key: '6', description: 'Go to Adjustments', action: () => router.push('/adjustments') },
+    { key: '7', description: 'Go to Import PDF', action: () => router.push('/imports') },
     { key: '?', description: 'Show keyboard shortcuts', action: () => setShortcutsOpen(true) },
   ]);
 
@@ -122,8 +125,9 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
     { key: '2', description: 'Go to Tanks' },
     { key: '3', description: 'Go to Movements' },
     { key: '4', description: 'Go to Signals' },
-    { key: '5', description: 'Go to Adjustments' },
-    { key: '6', description: 'Go to Import PDF' },
+    { key: '5', description: 'Go to COA' },
+    { key: '6', description: 'Go to Adjustments' },
+    { key: '7', description: 'Go to Import PDF' },
     { key: '?', description: 'Show this dialog' },
   ];
 
