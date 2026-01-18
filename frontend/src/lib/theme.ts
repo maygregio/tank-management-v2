@@ -2,7 +2,7 @@
 
 import { createTheme, ThemeOptions } from '@mui/material/styles';
 
-const darkTheme: ThemeOptions = {
+const themeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
@@ -40,49 +40,6 @@ const darkTheme: ThemeOptions = {
     },
     divider: 'rgba(0, 229, 255, 0.16)',
   },
-};
-
-const lightTheme: ThemeOptions = {
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#00b3cc',
-      light: '#5cd4f4',
-      dark: '#008399',
-    },
-    secondary: {
-      main: '#8b5cf6',
-      light: '#b794ff',
-      dark: '#5a34c7',
-    },
-    warning: {
-      main: '#ff9800',
-      light: '#ffc947',
-      dark: '#c66900',
-    },
-    error: {
-      main: '#d32f2f',
-      light: '#ff6659',
-      dark: '#9a0007',
-    },
-    success: {
-      main: '#2e7d32',
-      light: '#60ad5e',
-      dark: '#005005',
-    },
-    background: {
-      default: '#f5f7fa',
-      paper: '#ffffff',
-    },
-    text: {
-      primary: '#1a1a1a',
-      secondary: '#666666',
-    },
-    divider: 'rgba(0, 179, 204, 0.2)',
-  },
-};
-
-const commonThemeOptions: ThemeOptions = {
   typography: {
     fontFamily: '"Plus Jakarta Sans", "Inter", "Roboto", sans-serif',
     h4: {
@@ -146,17 +103,6 @@ const commonThemeOptions: ThemeOptions = {
   },
 };
 
-function createCustomTheme(mode: 'dark' | 'light') {
-  const baseTheme = mode === 'dark' ? darkTheme : lightTheme;
+const theme = createTheme(themeOptions);
 
-  return createTheme({
-    ...baseTheme,
-    ...commonThemeOptions,
-    palette: {
-      ...baseTheme.palette,
-      ...commonThemeOptions.palette,
-    },
-  });
-}
-
-export default createCustomTheme;
+export default theme;

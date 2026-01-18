@@ -64,9 +64,7 @@ export default function BaseChart({ options, height = 300, containerProps }: Bas
       }
     },
     tooltip: {
-      backgroundColor: theme.palette.mode === 'dark'
-        ? 'rgba(11, 16, 24, 0.95)'
-        : 'rgba(255, 255, 255, 0.95)',
+      backgroundColor: 'rgba(11, 16, 24, 0.95)',
       borderColor: theme.palette.divider,
       borderRadius: 8,
       style: {

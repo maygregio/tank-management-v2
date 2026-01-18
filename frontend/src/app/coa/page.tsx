@@ -535,10 +535,10 @@ export default function COAPage() {
         open={deleteDialogOpen}
         title="Delete Certificate"
         message={`Are you sure you want to delete this Certificate of Analysis${selectedCOA?.nomination_key ? ` (${selectedCOA.nomination_key})` : ''}? This action cannot be undone.`}
-        confirmLabel="Delete"
-        confirmColor="error"
+        confirmText="Delete"
+        variant="danger"
         onConfirm={handleDelete}
-        onCancel={() => {
+        onClose={() => {
           setDeleteDialogOpen(false);
           setSelectedCOA(null);
         }}

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Providers from "@/components/Providers";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import Navigation from "@/components/Navigation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
@@ -18,15 +17,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeProvider>
-          <Providers>
-            <ErrorBoundary>
-              <div className="page-shell">
-                <Navigation>{children}</Navigation>
-              </div>
-            </ErrorBoundary>
-          </Providers>
-        </ThemeProvider>
+        <Providers>
+          <ErrorBoundary>
+            <div className="page-shell">
+              <Navigation>{children}</Navigation>
+            </div>
+          </ErrorBoundary>
+        </Providers>
       </body>
     </html>
   );

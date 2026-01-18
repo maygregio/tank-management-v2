@@ -16,7 +16,6 @@ import CellTowerIcon from '@mui/icons-material/CellTower';
 import ScienceIcon from '@mui/icons-material/Science';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import Tooltip from '@mui/material/Tooltip';
-import ThemeToggle from '@/components/ThemeToggle';
 import KeyboardShortcutsDialog from '@/components/KeyboardShortcutsDialog';
 import MobileNavigation from '@/components/MobileNavigation';
 import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
@@ -155,7 +154,6 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {tabMenu}
-              <ThemeToggle />
               <Tooltip title="Keyboard Shortcuts">
                 <IconButton
                   onClick={() => setShortcutsOpen(true)}
