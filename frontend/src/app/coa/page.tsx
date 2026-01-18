@@ -2,14 +2,12 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
@@ -19,31 +17,20 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { coaApi, movementsApi } from '@/lib/api';
-import { styles } from '@/lib/constants';
+import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
+import { useToast } from '@/contexts/ToastContext';
 import SectionHeader from '@/components/SectionHeader';
 import EmptyState from '@/components/EmptyState';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import COAPropertiesDialog from '@/components/COAPropertiesDialog';
 import COAUploadDialog from '@/components/COAUploadDialog';
 import COALinkDialog from '@/components/COALinkDialog';
-import type { COAWithSignal, Movement } from '@/lib/types';
-
-interface COAGridRow {
-  id: string;
-  nomination_key: string | null;
-  signal_id: string | null;
-  signal_name: string | null;
-  analysis_date: string | null;
-  bmci: number | null;
-  sulfur_content: number | null;
-  created_at: string;
-}
+import type { COAWithSignal, Movement, COAGridRow } from '@/lib/types';
 
 export default function COAPage() {
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { success: showSuccess, error: showError } = useToast();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [propertiesDialogOpen, setPropertiesDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -56,7 +43,7 @@ export default function COAPage() {
   });
 
   const { data: signals } = useQuery({
-    queryKey: ['all-movements'],
+    queryKey: ['movements'],
     queryFn: () => movementsApi.getAll(),
   });
 
@@ -66,12 +53,10 @@ export default function COAPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['coas'] });
       const linkedMsg = result.signal_id ? ` and linked to signal ${result.signal?.signal_id || result.signal_id}` : '';
-      setSuccessMessage(`COA uploaded successfully${linkedMsg}`);
-      setError(null);
+      showSuccess(`COA uploaded successfully${linkedMsg}`);
     },
     onError: (err: Error) => {
-      setError(err.message);
-      setSuccessMessage(null);
+      showError(err.message);
     },
   });
 
@@ -80,12 +65,11 @@ export default function COAPage() {
       coaApi.link(coaId, { signal_id: signalId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coas'] });
-      setSuccessMessage('COA linked to signal successfully');
-      setError(null);
+      showSuccess('COA linked to signal successfully');
       setLinkDialogOpen(false);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -93,13 +77,12 @@ export default function COAPage() {
     mutationFn: (id: string) => coaApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coas'] });
-      setSuccessMessage('COA deleted successfully');
-      setError(null);
+      showSuccess('COA deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedCOA(null);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -320,14 +303,7 @@ export default function COAPage() {
 
       {/* Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-          }}
-        >
+        <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             TOTAL COAs
           </Typography>
@@ -335,14 +311,7 @@ export default function COAPage() {
             {coas?.length || 0}
           </Typography>
         </Box>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-          }}
-        >
+        <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             LINKED
           </Typography>
@@ -350,14 +319,7 @@ export default function COAPage() {
             {linkedCount}
           </Typography>
         </Box>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-          }}
-        >
+        <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             UNLINKED
           </Typography>
@@ -366,27 +328,6 @@ export default function COAPage() {
           </Typography>
         </Box>
       </Box>
-
-      {/* Alerts */}
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 2, bgcolor: 'rgba(255, 82, 82, 0.1)', border: '1px solid rgba(255, 82, 82, 0.3)' }}
-          onClose={() => setError(null)}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2, bgcolor: 'rgba(0, 230, 118, 0.1)', border: '1px solid rgba(0, 230, 118, 0.3)' }}
-          onClose={() => setSuccessMessage(null)}
-        >
-          {successMessage}
-        </Alert>
-      )}
 
       {/* Main Content */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -453,53 +394,7 @@ export default function COAPage() {
                   disableRowSelectionOnClick
                   pageSizeOptions={[10, 20, 50]}
                   initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                  sx={{
-                    border: '1px solid var(--glass-border)',
-                    backgroundColor: 'rgba(10, 15, 26, 0.9)',
-                    borderRadius: '12px',
-                    '& .MuiDataGrid-columnHeaders': {
-                      borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-                      backgroundColor: 'rgba(0, 229, 255, 0.08)',
-                      fontSize: '0.7rem',
-                      letterSpacing: '0.15em',
-                      textTransform: 'uppercase',
-                      color: 'text.secondary',
-                    },
-                    '& .MuiDataGrid-columnHeaderTitle': {
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    },
-                    '& .MuiDataGrid-cell': {
-                      borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      color: 'text.secondary',
-                    },
-                    '& .MuiDataGrid-cellContent': {
-                      display: 'flex',
-                      alignItems: 'center',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      width: '100%',
-                      color: 'inherit',
-                    },
-                    '& .MuiDataGrid-row': {
-                      '&:nth-of-type(even)': {
-                        backgroundColor: alpha('#00e5ff', 0.02),
-                      },
-                    },
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: 'rgba(0, 229, 255, 0.04)',
-                    },
-                    '& .MuiDataGrid-footerContainer': {
-                      borderTop: '1px solid rgba(0, 229, 255, 0.15)',
-                    },
-                  }}
+                  sx={dataGridWithRowStylesSx}
                 />
               </Box>
             )}

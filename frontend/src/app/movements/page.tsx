@@ -7,10 +7,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
@@ -28,11 +24,13 @@ import EditIcon from '@mui/icons-material/Edit';
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
-import { styles } from '@/lib/constants';
+import { styles, dataGridSx } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
+import { useToast } from '@/contexts/ToastContext';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
+import GlassDialog from '@/components/GlassDialog';
 import type {
   MovementCreate,
   Movement,
@@ -40,26 +38,9 @@ import type {
   MovementUpdate,
   TransferTargetCreate,
   TankWithLevel,
+  MovementGridRow,
+  MovementSummaryStats,
 } from '@/lib/types';
-
-interface MovementGridRow {
-  id: string;
-  date: string;
-  type: MovementType;
-  tankName: string;
-  expectedVolume: number;
-  actualVolume: number | null;
-  status: boolean;
-  isFuture: boolean;
-  notes: string;
-}
-
-interface MovementSummaryStats {
-  total: number;
-  pending: number;
-  completed: number;
-  scheduledToday: number;
-}
 
 interface MovementsViewModelInput {
   movements?: Movement[];
@@ -177,7 +158,7 @@ function MovementSummaryCards({ summaryStats }: { summaryStats: MovementSummaryS
         { label: 'Completed', value: summaryStats.completed },
         { label: 'Total', value: summaryStats.total },
       ].map((stat) => (
-        <Box key={stat.label} sx={{ p: 2, borderRadius: '12px', border: '1px solid var(--glass-border)', backgroundColor: 'rgba(10, 15, 26, 0.9)' }}>
+        <Box key={stat.label} sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             {stat.label.toUpperCase()}
           </Typography>
@@ -328,40 +309,7 @@ function MovementsTableSection({
             return `${statusClass} ${futureClass}`.trim();
           }}
           sx={{
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-            borderRadius: '12px',
-            '& .MuiDataGrid-columnHeaders': {
-              borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-              backgroundColor: 'rgba(0, 229, 255, 0.08)',
-              fontSize: '0.7rem',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: 'text.secondary',
-            },
-            '& .MuiDataGrid-columnHeaderTitle': {
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            },
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: 0,
-              overflow: 'hidden',
-              color: 'text.secondary',
-            },
-            '& .MuiDataGrid-cellContent': {
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              width: '100%',
-              color: 'inherit',
-            },
+            ...dataGridSx,
             '& .MuiDataGrid-row': {
               '&:nth-of-type(even)': {
                 backgroundColor: alpha('#00e5ff', 0.02),
@@ -369,9 +317,6 @@ function MovementsTableSection({
             },
             '& .MuiDataGrid-row:hover': {
               backgroundColor: 'rgba(0, 229, 255, 0.04)',
-            },
-            '& .MuiDataGrid-footerContainer': {
-              borderTop: '1px solid rgba(0, 229, 255, 0.15)',
             },
             '& .row-pending': {
               backgroundColor: alpha('#ffb300', 0.06),
@@ -391,7 +336,7 @@ function MovementsTableSection({
 
 export default function MovementsPage() {
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
+  const { error: showError } = useToast();
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
@@ -437,10 +382,9 @@ export default function MovementsPage() {
         notes: '',
       });
       setTransferTargets([]);
-      setError(null);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -457,10 +401,9 @@ export default function MovementsPage() {
         notes: '',
       });
       setTransferTargets([]);
-      setError(null);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -478,7 +421,7 @@ export default function MovementsPage() {
       resetCompleteState();
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -496,7 +439,7 @@ export default function MovementsPage() {
       resetEditState();
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -754,13 +697,6 @@ export default function MovementsPage() {
                 <ToggleButton value="adjustment">Adjustment</ToggleButton>
               </ToggleButtonGroup>
               <form onSubmit={handleSubmit}>
-                {error && (
-                  <Alert severity="error" sx={{ mb: 2, bgcolor: 'rgba(255, 82, 82, 0.1)', border: '1px solid rgba(255, 82, 82, 0.3)' }} onClose={() => setError(null)}>
-                    {error}
-                  </Alert>
-                )}
-
-
                 <FormControl fullWidth margin="normal" required>
                   <InputLabel>
                     {formData.type === 'load' ? 'Target Tank' : 'Source Tank'}
@@ -949,164 +885,133 @@ export default function MovementsPage() {
       </Grid>
 
       {/* Complete Movement Dialog */}
-        <Dialog
-          open={completeDialogOpen}
-          onClose={resetCompleteState}
-          maxWidth="sm"
-          fullWidth
-          slotProps={{
-            paper: {
-              sx: {
-                bgcolor: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
-                backgroundColor: 'rgba(18, 26, 39, 0.95)',
-                boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-                backdropFilter: 'blur(18px)',
-              }
-            }
-          }}
-        >
-
-        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-          <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em' }}>
-            CONFIRM OPERATION
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedMovement && (
-            <Box>
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
-                <Typography sx={{ fontSize: '0.85rem' }}>{selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}</Typography>
-              </Box>
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
-                <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} bbl</Typography>
-              </Box>
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Actual Volume (bbl)"
-                type="number"
-                required
-                value={actualVolume || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setActualVolume(value === '' ? 0 : Number(value));
-                }}
-                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                autoFocus
-              />
+      <GlassDialog
+        open={completeDialogOpen}
+        onClose={resetCompleteState}
+        maxWidth="sm"
+        fullWidth
+        title="CONFIRM OPERATION"
+        actions={
+          <>
+            <Button onClick={() => setCompleteDialogOpen(false)} sx={{ color: 'text.secondary' }}>Abort</Button>
+            <Button
+              onClick={handleComplete}
+              variant="contained"
+              disabled={actualVolume <= 0 || completeMutation.isPending}
+              sx={{
+                bgcolor: 'rgba(0, 230, 118, 0.1)',
+                color: '#00e676',
+                border: '1px solid #00e676',
+                '&:hover': { bgcolor: 'rgba(0, 230, 118, 0.2)' },
+                '&:disabled': { opacity: 0.3 }
+              }}
+            >
+              {completeMutation.isPending ? 'Processing…' : 'Confirm'}
+            </Button>
+          </>
+        }
+      >
+        {selectedMovement && (
+          <Box>
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
+              <Typography sx={{ fontSize: '0.85rem' }}>{selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}</Typography>
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-          <Button onClick={() => setCompleteDialogOpen(false)} sx={{ color: 'text.secondary' }}>Abort</Button>
-          <Button
-            onClick={handleComplete}
-            variant="contained"
-            disabled={actualVolume <= 0 || completeMutation.isPending}
-            sx={{
-              bgcolor: 'rgba(0, 230, 118, 0.1)',
-              color: '#00e676',
-              border: '1px solid #00e676',
-              '&:hover': { bgcolor: 'rgba(0, 230, 118, 0.2)' },
-              '&:disabled': { opacity: 0.3 }
-            }}
-          >
-            {completeMutation.isPending ? 'Processing…' : 'Confirm'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
+              <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{selectedMovement.expected_volume.toLocaleString()} bbl</Typography>
+            </Box>
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Actual Volume (bbl)"
+              type="number"
+              required
+              value={actualVolume || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setActualVolume(value === '' ? 0 : Number(value));
+              }}
+              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+              autoFocus
+            />
+          </Box>
+        )}
+      </GlassDialog>
 
       {/* Edit Movement Dialog */}
-        <Dialog
-          open={editDialogOpen}
-          onClose={resetEditState}
-          maxWidth="sm"
-          fullWidth
-          slotProps={{
-            paper: {
-              sx: {
-                bgcolor: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
-                backgroundColor: 'rgba(18, 26, 39, 0.95)',
-                boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-                backdropFilter: 'blur(18px)',
-              },
-            },
-          }}
-        >
-
-        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-          <Typography variant="overline" sx={{ color: '#ffab00', fontWeight: 700, letterSpacing: '0.15em' }}>
-            EDIT OPERATION
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedMovement && (
-            <Box>
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                  TARGET UNIT
-                </Typography>
-                <Typography sx={{ fontSize: '0.85rem' }}>
-                  {selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}
-                </Typography>
-              </Box>
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Scheduled Date"
-                type="date"
-                value={editData.scheduled_date || ''}
-                onChange={(e) => setEditData({ ...editData, scheduled_date: e.target.value })}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Expected Volume (bbl)"
-                type="number"
-                value={editData.expected_volume || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setEditData({ ...editData, expected_volume: value === '' ? undefined : Number(value) });
-                }}
-                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-              />
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Notes"
-                multiline
-                rows={2}
-                value={editData.notes || ''}
-                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-              />
+      <GlassDialog
+        open={editDialogOpen}
+        onClose={resetEditState}
+        maxWidth="sm"
+        fullWidth
+        title="EDIT OPERATION"
+        titleColor="#ffab00"
+        actions={
+          <>
+            <Button onClick={() => setEditDialogOpen(false)} sx={{ color: 'text.secondary' }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              variant="contained"
+              disabled={updateMutation.isPending}
+              sx={{
+                bgcolor: 'rgba(255, 171, 0, 0.1)',
+                color: '#ffab00',
+                border: '1px solid #ffab00',
+                '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.2)' },
+                '&:disabled': { opacity: 0.3 },
+              }}
+            >
+              {updateMutation.isPending ? 'Saving…' : 'Save'}
+            </Button>
+          </>
+        }
+      >
+        {selectedMovement && (
+          <Box>
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                TARGET UNIT
+              </Typography>
+              <Typography sx={{ fontSize: '0.85rem' }}>
+                {selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}
+              </Typography>
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-          <Button onClick={() => setEditDialogOpen(false)} sx={{ color: 'text.secondary' }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleEdit}
-            variant="contained"
-            disabled={updateMutation.isPending}
-            sx={{
-              bgcolor: 'rgba(255, 171, 0, 0.1)',
-              color: '#ffab00',
-              border: '1px solid #ffab00',
-              '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.2)' },
-              '&:disabled': { opacity: 0.3 },
-            }}
-          >
-            {updateMutation.isPending ? 'Saving…' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Scheduled Date"
+              type="date"
+              value={editData.scheduled_date || ''}
+              onChange={(e) => setEditData({ ...editData, scheduled_date: e.target.value })}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Expected Volume (bbl)"
+              type="number"
+              value={editData.expected_volume || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setEditData({ ...editData, expected_volume: value === '' ? undefined : Number(value) });
+              }}
+              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+            />
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Notes"
+              multiline
+              rows={2}
+              value={editData.notes || ''}
+              onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+            />
+          </Box>
+        )}
+      </GlassDialog>
     </Box>
   );
 }

@@ -5,14 +5,11 @@ import { useToast } from '@/contexts/ToastContext';
 import { tanksApi } from '@/lib/api';
 import TankCard from '@/components/TankCard';
 import EmptyState from '@/components/EmptyState';
+import GlassDialog from '@/components/GlassDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
 import InputLabel from '@mui/material/InputLabel';
@@ -78,17 +75,20 @@ export default function TanksPage() {
   };
 
   const validateForm = (): boolean => {
-    try {
-      tankCreateSchema.parse({
-        ...formData,
-        initial_level: formData.initial_level ?? undefined
+    const result = tankCreateSchema.safeParse({
+      ...formData,
+      initial_level: formData.initial_level ?? undefined
+    });
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        newErrors[issue.path[0] as string] = issue.message;
       });
-      setErrors({});
-      return true;
-    } catch {
-      setErrors({});
+      setErrors(newErrors);
       return false;
     }
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = () => {
@@ -192,109 +192,94 @@ export default function TanksPage() {
         </Grid>
       )}
 
-      <Dialog
+      <GlassDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-              backgroundColor: 'rgba(18, 26, 39, 0.95)',
-              boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-              backdropFilter: 'blur(18px)',
-            },
-          },
-        }}
-      >
-        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-          <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em' }}>
-            DEPLOY STORAGE UNIT
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Unit Designation"
-            fullWidth
-            required
-            value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
-            error={!!errors.name}
-            helperText={errors.name}
-            aria-label="Tank name"
-          />
-          <TextField
-            margin="dense"
-            label="Location"
-            fullWidth
-            required
-            value={formData.location}
-            onChange={(e) => handleChange('location', e.target.value)}
-            error={!!errors.location}
-            helperText={errors.location}
-            placeholder="e.g., Main Depot, Warehouse A"
-            aria-label="Tank location"
-          />
-          <FormControl fullWidth margin="dense" required>
-            <InputLabel>Feedstock Classification</InputLabel>
-            <Select
-              value={formData.feedstock_type}
-              label="Feedstock Classification"
-              onChange={(e) => handleChange('feedstock_type', e.target.value)}
-              aria-label="Feedstock type"
+        title="DEPLOY STORAGE UNIT"
+        actions={
+          <>
+            <Button onClick={handleCloseDialog} sx={{ color: 'text.secondary' }}>Abort</Button>
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              disabled={!formData.name.trim() || !formData.location.trim() || formData.capacity <= 0 || createMutation.isPending}
+              sx={{
+                bgcolor: 'rgba(0, 212, 255, 0.1)',
+                color: 'var(--color-accent-cyan)',
+                border: '1px solid var(--color-accent-cyan)',
+                '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.2)' },
+                '&:disabled': { opacity: 0.3 }
+              }}
             >
-              <MenuItem value="carbon_black_oil">Carbon Black Oil</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField
-            margin="dense"
-            label="Maximum Capacity (bbl)"
-            type="number"
-            fullWidth
-            required
-            value={formData.capacity || ''}
-            onChange={(e) => handleChange('capacity', e.target.value === '' ? 0 : Number(e.target.value))}
-            error={!!errors.capacity}
-            helperText={errors.capacity}
-            aria-label="Tank capacity"
-            slotProps={{ htmlInput: { min: 1, step: 1 } }}
-          />
-          <TextField
-            margin="dense"
-            label="Initial Fill Level (bbl)"
-            type="number"
-            fullWidth
-            value={formData.initial_level ?? ''}
-            onChange={(e) => handleChange('initial_level', e.target.value === '' ? undefined : Number(e.target.value))}
-            error={!!errors.initial_level}
-            helperText={errors.initial_level}
-            aria-label="Initial fill level"
-            slotProps={{ htmlInput: { min: 0, step: 1 } }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-          <Button onClick={handleCloseDialog} sx={{ color: 'text.secondary' }}>Abort</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={!formData.name.trim() || !formData.location.trim() || formData.capacity <= 0 || createMutation.isPending}
-            sx={{
-              bgcolor: 'rgba(0, 212, 255, 0.1)',
-              color: 'var(--color-accent-cyan)',
-              border: '1px solid var(--color-accent-cyan)',
-              '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.2)' },
-              '&:disabled': { opacity: 0.3 }
-            }}
+              Deploy
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Unit Designation"
+          fullWidth
+          required
+          value={formData.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          error={!!errors.name}
+          helperText={errors.name}
+          aria-label="Tank name"
+        />
+        <TextField
+          margin="dense"
+          label="Location"
+          fullWidth
+          required
+          value={formData.location}
+          onChange={(e) => handleChange('location', e.target.value)}
+          error={!!errors.location}
+          helperText={errors.location}
+          placeholder="e.g., Main Depot, Warehouse A"
+          aria-label="Tank location"
+        />
+        <FormControl fullWidth margin="dense" required>
+          <InputLabel>Feedstock Classification</InputLabel>
+          <Select
+            value={formData.feedstock_type}
+            label="Feedstock Classification"
+            onChange={(e) => handleChange('feedstock_type', e.target.value)}
+            aria-label="Feedstock type"
           >
-            Deploy
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <MenuItem value="carbon_black_oil">Carbon Black Oil</MenuItem>
+            <MenuItem value="other">Other</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          margin="dense"
+          label="Maximum Capacity (bbl)"
+          type="number"
+          fullWidth
+          required
+          value={formData.capacity || ''}
+          onChange={(e) => handleChange('capacity', e.target.value === '' ? 0 : Number(e.target.value))}
+          error={!!errors.capacity}
+          helperText={errors.capacity}
+          aria-label="Tank capacity"
+          slotProps={{ htmlInput: { min: 1, step: 1 } }}
+        />
+        <TextField
+          margin="dense"
+          label="Initial Fill Level (bbl)"
+          type="number"
+          fullWidth
+          value={formData.initial_level ?? ''}
+          onChange={(e) => handleChange('initial_level', e.target.value === '' ? undefined : Number(e.target.value))}
+          error={!!errors.initial_level}
+          helperText={errors.initial_level}
+          aria-label="Initial fill level"
+          slotProps={{ htmlInput: { min: 0, step: 1 } }}
+        />
+      </GlassDialog>
     </Box>
   );
 }

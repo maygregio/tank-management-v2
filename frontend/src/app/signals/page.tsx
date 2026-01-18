@@ -2,15 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
 import InputLabel from '@mui/material/InputLabel';
@@ -19,36 +14,24 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EditIcon from '@mui/icons-material/Edit';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
-import { styles } from '@/lib/constants';
+import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
+import { useToast } from '@/contexts/ToastContext';
 import SectionHeader from '@/components/SectionHeader';
 import EmptyState from '@/components/EmptyState';
-import type { Movement, SignalAssignment, TankWithLevel, TradeInfoUpdate } from '@/lib/types';
-
-interface SignalGridRow {
-  id: string;
-  signal_id: string;
-  source_tank: string;
-  load_date: string;
-  volume: number;
-  tank_id: string | null;
-  tank_name: string | null;
-  trade_number: string | null;
-  trade_line_item: string | null;
-}
+import GlassDialog from '@/components/GlassDialog';
+import type { Movement, SignalAssignment, TankWithLevel, TradeInfoUpdate, SignalGridRow } from '@/lib/types';
 
 export default function SignalsPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { success: showSuccess, error: showError, warning: showWarning } = useToast();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<Movement | null>(null);
   const [assignmentData, setAssignmentData] = useState<SignalAssignment>({
@@ -80,15 +63,13 @@ export default function SignalsPage() {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
       invalidateCommonQueries(queryClient);
       const skippedMsg = result.skipped_count > 0 ? ` (${result.skipped_count} already existed)` : '';
-      setSuccessMessage(`Added ${result.created_count} new signal(s)${skippedMsg}`);
-      setError(null);
+      showSuccess(`Added ${result.created_count} new signal(s)${skippedMsg}`);
       if (result.errors.length > 0) {
-        setError(`Warnings: ${result.errors.join(', ')}`);
+        showWarning(`Warnings: ${result.errors.join(', ')}`);
       }
     },
     onError: (err: Error) => {
-      setError(err.message);
-      setSuccessMessage(null);
+      showError(err.message);
     },
   });
 
@@ -98,12 +79,11 @@ export default function SignalsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
       invalidateCommonQueries(queryClient);
-      setSuccessMessage('Signal assigned successfully');
-      setError(null);
+      showSuccess('Signal assigned successfully');
       handleCloseAssignDialog();
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -113,12 +93,11 @@ export default function SignalsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
       invalidateCommonQueries(queryClient);
-      setSuccessMessage('Trade information updated');
-      setError(null);
+      showSuccess('Trade information updated');
       handleCloseTradeDialog();
     },
     onError: (err: Error) => {
-      setError(err.message);
+      showError(err.message);
     },
   });
 
@@ -371,14 +350,7 @@ export default function SignalsPage() {
 
       {/* Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-          }}
-        >
+        <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             PENDING SIGNALS
           </Typography>
@@ -386,14 +358,7 @@ export default function SignalsPage() {
             {signals?.length || 0}
           </Typography>
         </Box>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-          }}
-        >
+        <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             TOTAL VOLUME
           </Typography>
@@ -401,14 +366,7 @@ export default function SignalsPage() {
             {(signals?.reduce((sum, s) => sum + s.expected_volume, 0) || 0).toLocaleString()} bbl
           </Typography>
         </Box>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(10, 15, 26, 0.9)',
-          }}
-        >
+        <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
             AVAILABLE TANKS
           </Typography>
@@ -442,26 +400,6 @@ export default function SignalsPage() {
               >
                 Upload Signals
               </Typography>
-
-              {error && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 2, bgcolor: 'rgba(255, 82, 82, 0.1)', border: '1px solid rgba(255, 82, 82, 0.3)' }}
-                  onClose={() => setError(null)}
-                >
-                  {error}
-                </Alert>
-              )}
-
-              {successMessage && (
-                <Alert
-                  severity="success"
-                  sx={{ mb: 2, bgcolor: 'rgba(0, 230, 118, 0.1)', border: '1px solid rgba(0, 230, 118, 0.3)' }}
-                  onClose={() => setSuccessMessage(null)}
-                >
-                  {successMessage}
-                </Alert>
-              )}
 
               <Box
                 sx={{
@@ -539,53 +477,7 @@ export default function SignalsPage() {
                 disableRowSelectionOnClick
                 pageSizeOptions={[10, 20, 50]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                sx={{
-                  border: '1px solid var(--glass-border)',
-                  backgroundColor: 'rgba(10, 15, 26, 0.9)',
-                  borderRadius: '12px',
-                  '& .MuiDataGrid-columnHeaders': {
-                    borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-                    backgroundColor: 'rgba(0, 229, 255, 0.08)',
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: 'text.secondary',
-                  },
-                  '& .MuiDataGrid-columnHeaderTitle': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  },
-                  '& .MuiDataGrid-cell': {
-                    borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    color: 'text.secondary',
-                  },
-                  '& .MuiDataGrid-cellContent': {
-                    display: 'flex',
-                    alignItems: 'center',
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    width: '100%',
-                    color: 'inherit',
-                  },
-                  '& .MuiDataGrid-row': {
-                    '&:nth-of-type(even)': {
-                      backgroundColor: alpha('#00e5ff', 0.02),
-                    },
-                  },
-                  '& .MuiDataGrid-row:hover': {
-                    backgroundColor: 'rgba(0, 229, 255, 0.04)',
-                  },
-                  '& .MuiDataGrid-footerContainer': {
-                    borderTop: '1px solid rgba(0, 229, 255, 0.15)',
-                  },
-                }}
+                sx={dataGridWithRowStylesSx}
               />
             </Box>
           )}
@@ -593,213 +485,184 @@ export default function SignalsPage() {
       </Grid>
 
       {/* Assignment Dialog */}
-      <Dialog
+      <GlassDialog
         open={assignDialogOpen}
         onClose={handleCloseAssignDialog}
         maxWidth="sm"
         fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-              backgroundColor: 'rgba(18, 26, 39, 0.95)',
-              boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-              backdropFilter: 'blur(18px)',
-            },
-          },
-        }}
+        title="ASSIGN SIGNAL"
+        actions={
+          <>
+            <Button onClick={handleCloseAssignDialog} sx={{ color: 'text.secondary' }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssign}
+              variant="contained"
+              disabled={!assignmentData.tank_id || assignmentData.expected_volume <= 0 || assignMutation.isPending}
+              sx={{
+                bgcolor: 'rgba(0, 230, 118, 0.1)',
+                color: '#00e676',
+                border: '1px solid #00e676',
+                '&:hover': { bgcolor: 'rgba(0, 230, 118, 0.2)' },
+                '&:disabled': { opacity: 0.3 },
+              }}
+            >
+              {assignMutation.isPending ? 'Assigning...' : 'Assign'}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-          <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em' }}>
-            ASSIGN SIGNAL
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedSignal && (
-            <Box>
-              <Box sx={{ mb: 2.5, p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                      SIGNAL ID
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.85rem', color: 'var(--color-accent-cyan)', fontWeight: 600 }}>
-                      {selectedSignal.signal_id}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                      REFINERY TANK
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.85rem' }}>{selectedSignal.source_tank}</Typography>
-                  </Box>
+        {selectedSignal && (
+          <Box>
+            <Box sx={{ mb: 2.5, p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px' }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                    SIGNAL ID
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.85rem', color: 'var(--color-accent-cyan)', fontWeight: 600 }}>
+                    {selectedSignal.signal_id}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                    REFINERY TANK
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.85rem' }}>{selectedSignal.source_tank}</Typography>
                 </Box>
               </Box>
-
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Destination Tank</InputLabel>
-                <Select
-                  value={assignmentData.tank_id}
-                  label="Destination Tank"
-                  onChange={(e) => setAssignmentData({ ...assignmentData, tank_id: e.target.value })}
-                >
-                  {tanks?.map((tank: TankWithLevel) => (
-                    <MenuItem key={tank.id} value={tank.id}>
-                      {tank.name} ({tank.current_level.toLocaleString()} / {tank.capacity.toLocaleString()} bbl)
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Expected Volume (bbl)"
-                type="number"
-                required
-                value={assignmentData.expected_volume || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setAssignmentData({
-                    ...assignmentData,
-                    expected_volume: value === '' ? 0 : Number(value),
-                  });
-                }}
-                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-              />
-
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Scheduled Date"
-                type="date"
-                required
-                value={assignmentData.scheduled_date}
-                onChange={(e) => setAssignmentData({ ...assignmentData, scheduled_date: e.target.value })}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Notes"
-                multiline
-                rows={2}
-                value={assignmentData.notes || ''}
-                onChange={(e) => setAssignmentData({ ...assignmentData, notes: e.target.value })}
-              />
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-          <Button onClick={handleCloseAssignDialog} sx={{ color: 'text.secondary' }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAssign}
-            variant="contained"
-            disabled={!assignmentData.tank_id || assignmentData.expected_volume <= 0 || assignMutation.isPending}
-            sx={{
-              bgcolor: 'rgba(0, 230, 118, 0.1)',
-              color: '#00e676',
-              border: '1px solid #00e676',
-              '&:hover': { bgcolor: 'rgba(0, 230, 118, 0.2)' },
-              '&:disabled': { opacity: 0.3 },
-            }}
-          >
-            {assignMutation.isPending ? 'Assigning...' : 'Assign'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel>Destination Tank</InputLabel>
+              <Select
+                value={assignmentData.tank_id}
+                label="Destination Tank"
+                onChange={(e) => setAssignmentData({ ...assignmentData, tank_id: e.target.value })}
+              >
+                {tanks?.map((tank: TankWithLevel) => (
+                  <MenuItem key={tank.id} value={tank.id}>
+                    {tank.name} ({tank.current_level.toLocaleString()} / {tank.capacity.toLocaleString()} bbl)
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Expected Volume (bbl)"
+              type="number"
+              required
+              value={assignmentData.expected_volume || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setAssignmentData({
+                  ...assignmentData,
+                  expected_volume: value === '' ? 0 : Number(value),
+                });
+              }}
+              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+            />
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Scheduled Date"
+              type="date"
+              required
+              value={assignmentData.scheduled_date}
+              onChange={(e) => setAssignmentData({ ...assignmentData, scheduled_date: e.target.value })}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Notes"
+              multiline
+              rows={2}
+              value={assignmentData.notes || ''}
+              onChange={(e) => setAssignmentData({ ...assignmentData, notes: e.target.value })}
+            />
+          </Box>
+        )}
+      </GlassDialog>
 
       {/* Trade Info Dialog */}
-      <Dialog
+      <GlassDialog
         open={tradeDialogOpen}
         onClose={handleCloseTradeDialog}
         maxWidth="sm"
         fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              bgcolor: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-              backgroundColor: 'rgba(18, 26, 39, 0.95)',
-              boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-              backdropFilter: 'blur(18px)',
-            },
-          },
-        }}
+        title="EDIT TRADE INFO"
+        titleColor="#8b5cf6"
+        actions={
+          <>
+            <Button onClick={handleCloseTradeDialog} sx={{ color: 'text.secondary' }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveTrade}
+              variant="contained"
+              disabled={!tradeData.trade_number || !tradeData.trade_line_item || tradeMutation.isPending}
+              sx={{
+                bgcolor: 'rgba(139, 92, 246, 0.1)',
+                color: '#8b5cf6',
+                border: '1px solid #8b5cf6',
+                '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.2)' },
+                '&:disabled': { opacity: 0.3 },
+              }}
+            >
+              {tradeMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-          <Typography variant="overline" sx={{ color: '#8b5cf6', fontWeight: 700, letterSpacing: '0.15em' }}>
-            EDIT TRADE INFO
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedTradeSignal && (
-            <Box>
-              <Box sx={{ mb: 2.5, p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                      SIGNAL ID
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.85rem', color: 'var(--color-accent-cyan)', fontWeight: 600 }}>
-                      {selectedTradeSignal.signal_id}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                      REFINERY TANK
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.85rem' }}>{selectedTradeSignal.source_tank}</Typography>
-                  </Box>
+        {selectedTradeSignal && (
+          <Box>
+            <Box sx={{ mb: 2.5, p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px' }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                    SIGNAL ID
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.85rem', color: 'var(--color-accent-cyan)', fontWeight: 600 }}>
+                    {selectedTradeSignal.signal_id}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                    REFINERY TANK
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.85rem' }}>{selectedTradeSignal.source_tank}</Typography>
                 </Box>
               </Box>
-
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Trade Number"
-                required
-                value={tradeData.trade_number}
-                onChange={(e) => setTradeData({ ...tradeData, trade_number: e.target.value })}
-                placeholder="e.g., TR-123"
-              />
-
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Trade Line Item"
-                required
-                value={tradeData.trade_line_item}
-                onChange={(e) => setTradeData({ ...tradeData, trade_line_item: e.target.value })}
-                placeholder="e.g., 01"
-              />
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-          <Button onClick={handleCloseTradeDialog} sx={{ color: 'text.secondary' }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveTrade}
-            variant="contained"
-            disabled={!tradeData.trade_number || !tradeData.trade_line_item || tradeMutation.isPending}
-            sx={{
-              bgcolor: 'rgba(139, 92, 246, 0.1)',
-              color: '#8b5cf6',
-              border: '1px solid #8b5cf6',
-              '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.2)' },
-              '&:disabled': { opacity: 0.3 },
-            }}
-          >
-            {tradeMutation.isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Trade Number"
+              required
+              value={tradeData.trade_number}
+              onChange={(e) => setTradeData({ ...tradeData, trade_number: e.target.value })}
+              placeholder="e.g., TR-123"
+            />
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Trade Line Item"
+              required
+              value={tradeData.trade_line_item}
+              onChange={(e) => setTradeData({ ...tradeData, trade_line_item: e.target.value })}
+              placeholder="e.g., 01"
+            />
+          </Box>
+        )}
+      </GlassDialog>
     </Box>
   );
 }

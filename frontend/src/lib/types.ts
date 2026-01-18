@@ -202,3 +202,46 @@ export interface COAWithSignal extends CertificateOfAnalysis {
 export interface COALinkRequest {
   signal_id: string;
 }
+
+// Grid row types for DataGrid components
+export interface SignalGridRow {
+  id: string;
+  signal_id: string;
+  source_tank: string;
+  load_date: string;
+  volume: number;
+  tank_id: string | null;
+  tank_name: string | null;
+  trade_number: string | null;
+  trade_line_item: string | null;
+}
+
+export interface COAGridRow {
+  id: string;
+  nomination_key: string | null;
+  signal_id: string | null;
+  signal_name: string | null;
+  analysis_date: string | null;
+  bmci: number | null;
+  sulfur_content: number | null;
+  created_at: string;
+}
+
+export interface MovementGridRow {
+  id: string;
+  date: string;
+  type: MovementType;
+  tankName: string;
+  expectedVolume: number;
+  actualVolume: number | null;
+  status: boolean;
+  isFuture: boolean;
+  notes: string;
+}
+
+export interface MovementSummaryStats {
+  total: number;
+  pending: number;
+  completed: number;
+  scheduledToday: number;
+}
