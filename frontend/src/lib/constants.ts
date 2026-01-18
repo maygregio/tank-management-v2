@@ -32,12 +32,12 @@ export const movementTypeChipColors: Record<'success' | 'error' | 'info' | 'warn
 
 // Common styling constants
 export const styles = {
-  // Card gradient background
-  cardGradient: 'linear-gradient(160deg, rgba(18, 26, 39, 0.92) 0%, rgba(10, 15, 26, 0.88) 100%)',
+  // Card solid background
+  cardGradient: 'rgba(14, 21, 33, 0.92)',
 
-  // Section header separator gradient
-  headerSeparator: 'linear-gradient(90deg, rgba(0, 229, 255, 0.35) 0%, transparent 100%)',
-  headerSeparatorCyan: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)',
+  // Section header separator color
+  headerSeparator: 'rgba(0, 229, 255, 0.35)',
+  headerSeparatorCyan: 'var(--color-accent-cyan)',
 
   // Table header row styling
   tableHeadRow: {
@@ -48,7 +48,7 @@ export const styles = {
       letterSpacing: '0.18em',
       textTransform: 'uppercase' as const,
       borderBottom: '1px solid var(--color-border)',
-      backgroundImage: 'linear-gradient(90deg, rgba(0, 229, 255, 0.06), rgba(139, 92, 246, 0.08))',
+      backgroundColor: 'rgba(0, 229, 255, 0.06)',
     },
   },
 

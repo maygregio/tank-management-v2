@@ -365,7 +365,7 @@ export default function SignalsPage() {
           Refinery Signals
         </Typography>
         <Box
-          sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }}
+          sx={{ width: 60, height: '1px', backgroundColor: 'rgba(0, 229, 255, 0.35)' }}
         />
       </Box>
 
@@ -376,7 +376,7 @@ export default function SignalsPage() {
             p: 2,
             borderRadius: '12px',
             border: '1px solid var(--glass-border)',
-            background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+            backgroundColor: 'rgba(10, 15, 26, 0.9)',
           }}
         >
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
@@ -391,7 +391,7 @@ export default function SignalsPage() {
             p: 2,
             borderRadius: '12px',
             border: '1px solid var(--glass-border)',
-            background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+            backgroundColor: 'rgba(10, 15, 26, 0.9)',
           }}
         >
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
@@ -406,7 +406,7 @@ export default function SignalsPage() {
             p: 2,
             borderRadius: '12px',
             border: '1px solid var(--glass-border)',
-            background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+            backgroundColor: 'rgba(10, 15, 26, 0.9)',
           }}
         >
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
@@ -541,11 +541,11 @@ export default function SignalsPage() {
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 sx={{
                   border: '1px solid var(--glass-border)',
-                  background: 'linear-gradient(140deg, rgba(12, 18, 30, 0.9), rgba(8, 12, 21, 0.85))',
+                  backgroundColor: 'rgba(10, 15, 26, 0.9)',
                   borderRadius: '12px',
                   '& .MuiDataGrid-columnHeaders': {
                     borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-                    background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(139, 92, 246, 0.12))',
+                    backgroundColor: 'rgba(0, 229, 255, 0.08)',
                     fontSize: '0.7rem',
                     letterSpacing: '0.15em',
                     textTransform: 'uppercase',
@@ -603,7 +603,7 @@ export default function SignalsPage() {
             sx: {
               bgcolor: 'var(--glass-bg)',
               border: '1px solid var(--glass-border)',
-              backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+              backgroundColor: 'rgba(18, 26, 39, 0.95)',
               boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
               backdropFilter: 'blur(18px)',
             },
@@ -724,7 +724,7 @@ export default function SignalsPage() {
             sx: {
               bgcolor: 'var(--glass-bg)',
               border: '1px solid var(--glass-border)',
-              backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+              backgroundColor: 'rgba(18, 26, 39, 0.95)',
               boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
               backdropFilter: 'blur(18px)',
             },

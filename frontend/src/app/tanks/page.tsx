@@ -116,7 +116,7 @@ export default function TanksPage() {
                 height: 220,
                 borderRadius: '12px',
                 border: '1px solid rgba(0, 229, 255, 0.18)',
-                background: 'linear-gradient(160deg, rgba(18, 26, 39, 0.92) 0%, rgba(10, 15, 26, 0.88) 100%)',
+                backgroundColor: 'rgba(14, 21, 33, 0.92)',
                 animation: 'pulse 1.5s ease-in-out infinite'
               }}
             />
@@ -133,7 +133,7 @@ export default function TanksPage() {
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
             STORAGE UNITS
           </Typography>
-          <Box sx={{ width: 60, height: '1px', background: 'linear-gradient(90deg, var(--color-accent-cyan) 0%, transparent 100%)' }} />
+          <Box sx={{ width: 60, height: '1px', backgroundColor: 'rgba(0, 229, 255, 0.35)' }} />
         </Box>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           {uniqueLocations.length > 0 && (
@@ -202,7 +202,7 @@ export default function TanksPage() {
             sx: {
               bgcolor: 'var(--glass-bg)',
               border: '1px solid var(--glass-border)',
-              backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+              backgroundColor: 'rgba(18, 26, 39, 0.95)',
               boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
               backdropFilter: 'blur(18px)',
             },

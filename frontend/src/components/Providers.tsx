@@ -3,11 +3,10 @@
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, forwardRef, useMemo } from 'react';
+import { useState, forwardRef } from 'react';
 import { SnackbarProvider, CustomContentProps } from 'notistack';
-import { useThemeMode } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/contexts/ToastContext';
-import createCustomTheme from '@/lib/theme';
+import theme from '@/lib/theme';
 
 interface SnackbarStyleConfig {
   background: string;
@@ -16,72 +15,37 @@ interface SnackbarStyleConfig {
   boxShadow: string;
 }
 
-function getSnackbarStyles(variant: 'success' | 'error' | 'warning' | 'info', mode: 'light' | 'dark'): SnackbarStyleConfig {
-  const configs = {
-    success: {
-      dark: {
-        background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 230, 118, 0.1))',
-        border: '1px solid rgba(0, 230, 118, 0.3)',
-        color: '#00e676',
-        boxShadow: '0 4px 12px rgba(0, 230, 118, 0.15)',
-      },
-      light: {
-        background: 'linear-gradient(135deg, rgba(46, 125, 50, 0.15), rgba(46, 125, 50, 0.1))',
-        border: '1px solid rgba(46, 125, 50, 0.3)',
-        color: '#2e7d32',
-        boxShadow: '0 4px 12px rgba(46, 125, 50, 0.15)',
-      },
-    },
-    error: {
-      dark: {
-        background: 'linear-gradient(135deg, rgba(255, 82, 82, 0.15), rgba(255, 82, 82, 0.1))',
-        border: '1px solid rgba(255, 82, 82, 0.3)',
-        color: '#ff5252',
-        boxShadow: '0 4px 12px rgba(255, 82, 82, 0.15)',
-      },
-      light: {
-        background: 'linear-gradient(135deg, rgba(211, 47, 47, 0.15), rgba(211, 47, 47, 0.1))',
-        border: '1px solid rgba(211, 47, 47, 0.3)',
-        color: '#d32f2f',
-        boxShadow: '0 4px 12px rgba(211, 47, 47, 0.15)',
-      },
-    },
-    warning: {
-      dark: {
-        background: 'linear-gradient(135deg, rgba(255, 179, 0, 0.15), rgba(255, 179, 0, 0.1))',
-        border: '1px solid rgba(255, 179, 0, 0.3)',
-        color: '#ffb300',
-        boxShadow: '0 4px 12px rgba(255, 179, 0, 0.15)',
-      },
-      light: {
-        background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.1))',
-        border: '1px solid rgba(255, 152, 0, 0.3)',
-        color: '#ff9800',
-        boxShadow: '0 4px 12px rgba(255, 152, 0, 0.15)',
-      },
-    },
-    info: {
-      dark: {
-        background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.1))',
-        border: '1px solid rgba(0, 229, 255, 0.3)',
-        color: '#00e5ff',
-        boxShadow: '0 4px 12px rgba(0, 229, 255, 0.15)',
-      },
-      light: {
-        background: 'linear-gradient(135deg, rgba(0, 179, 204, 0.15), rgba(0, 179, 204, 0.1))',
-        border: '1px solid rgba(0, 179, 204, 0.3)',
-        color: '#00b3cc',
-        boxShadow: '0 4px 12px rgba(0, 179, 204, 0.15)',
-      },
-    },
-  };
-  return configs[variant][mode];
-}
+const snackbarStyles: Record<'success' | 'error' | 'warning' | 'info', SnackbarStyleConfig> = {
+  success: {
+    background: 'rgba(0, 230, 118, 0.12)',
+    border: '1px solid rgba(0, 230, 118, 0.3)',
+    color: '#00e676',
+    boxShadow: '0 4px 12px rgba(0, 230, 118, 0.15)',
+  },
+  error: {
+    background: 'rgba(255, 82, 82, 0.12)',
+    border: '1px solid rgba(255, 82, 82, 0.3)',
+    color: '#ff5252',
+    boxShadow: '0 4px 12px rgba(255, 82, 82, 0.15)',
+  },
+  warning: {
+    background: 'rgba(255, 179, 0, 0.12)',
+    border: '1px solid rgba(255, 179, 0, 0.3)',
+    color: '#ffb300',
+    boxShadow: '0 4px 12px rgba(255, 179, 0, 0.15)',
+  },
+  info: {
+    background: 'rgba(0, 229, 255, 0.12)',
+    border: '1px solid rgba(0, 229, 255, 0.3)',
+    color: '#00e5ff',
+    boxShadow: '0 4px 12px rgba(0, 229, 255, 0.15)',
+  },
+};
 
-const createSnackbarComponent = (variant: 'success' | 'error' | 'warning' | 'info', mode: 'light' | 'dark') => {
+const createSnackbarComponent = (variant: 'success' | 'error' | 'warning' | 'info') => {
   const SnackbarComponent = forwardRef<HTMLDivElement, CustomContentProps>(
     ({ message }, ref) => {
-      const styles = getSnackbarStyles(variant, mode);
+      const styles = snackbarStyles[variant];
       return (
         <div
           ref={ref}
@@ -104,33 +68,12 @@ const createSnackbarComponent = (variant: 'success' | 'error' | 'warning' | 'inf
   return SnackbarComponent;
 };
 
-function ThemeProviders({ children }: { children: React.ReactNode }) {
-  const { mode } = useThemeMode();
-  const theme = createCustomTheme(mode);
-
-  const snackbarComponents = useMemo(() => ({
-    success: createSnackbarComponent('success', mode),
-    error: createSnackbarComponent('error', mode),
-    warning: createSnackbarComponent('warning', mode),
-    info: createSnackbarComponent('info', mode),
-  }), [mode]);
-
-  return (
-    <ThemeProvider theme={theme}>
-      <SnackbarProvider
-        maxSnack={3}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        autoHideDuration={4000}
-        Components={snackbarComponents}
-      >
-        <ToastProvider>
-          <CssBaseline />
-          {children}
-        </ToastProvider>
-      </SnackbarProvider>
-    </ThemeProvider>
-  );
-}
+const snackbarComponents = {
+  success: createSnackbarComponent('success'),
+  error: createSnackbarComponent('error'),
+  warning: createSnackbarComponent('warning'),
+  info: createSnackbarComponent('info'),
+};
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -147,7 +90,19 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProviders>{children}</ThemeProviders>
+      <ThemeProvider theme={theme}>
+        <SnackbarProvider
+          maxSnack={3}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          autoHideDuration={4000}
+          Components={snackbarComponents}
+        >
+          <ToastProvider>
+            <CssBaseline />
+            {children}
+          </ToastProvider>
+        </SnackbarProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

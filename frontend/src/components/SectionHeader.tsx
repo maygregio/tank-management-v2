@@ -11,9 +11,9 @@ interface SectionHeaderProps {
 
 export default function SectionHeader({ title, color = 'cyan' }: SectionHeaderProps) {
   const accentColor = color === 'cyan' ? 'var(--color-accent-cyan)' : '#ffb300';
-  const gradientColor = color === 'cyan'
-    ? styles.headerSeparator
-    : 'linear-gradient(90deg, rgba(255, 179, 0, 0.35) 0%, transparent 100%)';
+  const lineColor = color === 'cyan'
+    ? 'rgba(0, 229, 255, 0.35)'
+    : 'rgba(255, 179, 0, 0.35)';
 
   return (
     <Box
@@ -41,19 +41,7 @@ export default function SectionHeader({ title, color = 'cyan' }: SectionHeaderPr
         sx={{
           flex: 1,
           height: '1px',
-          background: gradientColor,
-          position: 'relative',
-          overflow: 'hidden',
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: -1,
-            right: 0,
-            width: 140,
-            height: 3,
-            background: 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.4))',
-            opacity: color === 'cyan' ? 0.6 : 0.3,
-          },
+          backgroundColor: lineColor,
         }}
       />
     </Box>

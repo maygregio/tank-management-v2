@@ -73,7 +73,7 @@ export default function ConfirmationDialog({
           sx: {
             bgcolor: 'var(--glass-bg)',
             border: '1px solid var(--glass-border)',
-            backgroundImage: 'linear-gradient(135deg, rgba(18, 26, 39, 0.92), rgba(10, 14, 23, 0.9))',
+            backgroundColor: 'rgba(18, 26, 39, 0.95)',
             boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
             backdropFilter: 'blur(18px)',
             borderRadius: '16px'

@@ -20,7 +20,6 @@
   --glass-bg-strong: rgba(10, 14, 23, 0.85);
   --glass-border: rgba(0, 229, 255, 0.18);
   --glass-shadow: 0 20px 60px rgba(5, 10, 18, 0.6);
-  --accent-gradient: linear-gradient(135deg, rgba(0, 229, 255, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%);
 }
 
 * {
@@ -35,12 +34,6 @@ html {
 
 body {
   background: var(--color-bg-primary);
-  background-image:
-    radial-gradient(circle at 10% 10%, rgba(0, 229, 255, 0.12), transparent 45%),
-    radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.18), transparent 40%),
-    radial-gradient(circle at 20% 80%, rgba(0, 229, 255, 0.08), transparent 45%),
-    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.12), transparent 45%),
-    linear-gradient(180deg, #0b1018 0%, #0a0f18 40%, #0a0e16 100%);
   min-height: 100vh;
   color: var(--color-text-primary);
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -92,12 +85,9 @@ a {
   }
 }
 
-/* Tactical grid overlay effect */
+/* Tactical grid overlay effect - disabled */
 .tactical-grid {
-  background-image:
-    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
+  /* Grid pattern removed */
 }
 
 /* Glass surfaces */

@@ -53,15 +53,6 @@ function TankLevelGauge({
             '@media (prefers-reduced-motion: reduce)': {
               transition: 'none',
             },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
-            }
           }}
         />
       </Box>
