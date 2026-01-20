@@ -1,0 +1,193 @@
+import { alpha } from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { dataGridSx } from '@/lib/constants';
+import SectionHeader from '@/components/SectionHeader';
+import type { MovementType, MovementUpdate } from '@/lib/types';
+import type { MovementGridRowExtended, MovementSource } from './useMovementsViewModel';
+
+interface MovementsTableSectionProps {
+  rows: MovementGridRowExtended[];
+  columns: GridColDef[];
+  selectedRows: GridRowSelectionModel;
+  onSelectedRowsChange: (selection: GridRowSelectionModel) => void;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+  statusFilter: 'all' | 'pending' | 'completed';
+  onStatusFilterChange: (value: 'all' | 'pending' | 'completed') => void;
+  typeFilter: MovementType | 'all';
+  onTypeFilterChange: (value: MovementType | 'all') => void;
+  sourceFilter: MovementSource | 'all';
+  onSourceFilterChange: (value: MovementSource | 'all') => void;
+  editData: MovementUpdate;
+  onEditDataChange: (data: MovementUpdate) => void;
+  onBulkComplete: () => void;
+  onBulkReschedule: () => void;
+}
+
+export default function MovementsTableSection({
+  rows,
+  columns,
+  selectedRows,
+  onSelectedRowsChange,
+  searchQuery,
+  onSearchQueryChange,
+  statusFilter,
+  onStatusFilterChange,
+  typeFilter,
+  onTypeFilterChange,
+  sourceFilter,
+  onSourceFilterChange,
+  editData,
+  onEditDataChange,
+  onBulkComplete,
+  onBulkReschedule,
+}: MovementsTableSectionProps) {
+  return (
+    <Grid size={{ xs: 12, md: 7 }}>
+      <Box sx={{ mb: 2 }}>
+        <SectionHeader title="Operation Log" />
+      </Box>
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1,
+          alignItems: 'center',
+          mb: 2,
+          p: 1.5,
+          borderRadius: '8px',
+          bgcolor: 'rgba(0, 229, 255, 0.03)',
+          border: '1px solid var(--glass-border)',
+        }}
+      >
+        <TextField
+          size="small"
+          placeholder="Search tanks, notes…"
+          value={searchQuery}
+          onChange={(e) => onSearchQueryChange(e.target.value)}
+          inputProps={{ 'aria-label': 'Search movements' }}
+          sx={{ minWidth: 140, flex: '1 1 140px' }}
+        />
+        <FormControl size="small" sx={{ minWidth: 90 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={statusFilter}
+            label="Status"
+            onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'completed')}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="completed">Completed</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 90 }}>
+          <InputLabel>Type</InputLabel>
+          <Select
+            value={typeFilter}
+            label="Type"
+            onChange={(e) => onTypeFilterChange(e.target.value as MovementType | 'all')}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="load">Load</MenuItem>
+            <MenuItem value="discharge">Discharge</MenuItem>
+            <MenuItem value="transfer">Transfer</MenuItem>
+            <MenuItem value="adjustment">Adjustment</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 90 }}>
+          <InputLabel>Source</InputLabel>
+          <Select
+            value={sourceFilter}
+            label="Source"
+            onChange={(e) => onSourceFilterChange(e.target.value as MovementSource | 'all')}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="manual">Manual</MenuItem>
+            <MenuItem value="pdf">PDF</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>
+            Selected: {selectedRows.ids.size}
+          </Typography>
+          <TextField
+            size="small"
+            type="date"
+            value={editData.scheduled_date || ''}
+            onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
+            slotProps={{ inputLabel: { shrink: true } }}
+            inputProps={{ 'aria-label': 'Reschedule date' }}
+            sx={{ width: 140 }}
+          />
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
+            onClick={onBulkReschedule}
+            sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)', whiteSpace: 'nowrap' }}
+          >
+            Reschedule
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={selectedRows.ids.size === 0}
+            onClick={onBulkComplete}
+            sx={{ borderColor: '#00e676', color: '#00e676', whiteSpace: 'nowrap' }}
+          >
+            Complete
+          </Button>
+        </Box>
+      </Box>
+
+      <Box sx={{ height: 520, width: '100%' }}>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          disableRowSelectionOnClick
+          checkboxSelection
+          onRowSelectionModelChange={onSelectedRowsChange}
+          rowSelectionModel={selectedRows}
+          pageSizeOptions={[10, 20, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+          getRowClassName={(params) => {
+            const statusClass = params.row.status ? 'row-pending' : 'row-complete';
+            const futureClass = params.row.isFuture ? 'row-future' : '';
+            return `${statusClass} ${futureClass}`.trim();
+          }}
+          sx={{
+            ...dataGridSx,
+            '& .MuiDataGrid-row': {
+              '&:nth-of-type(even)': {
+                backgroundColor: alpha('#00e5ff', 0.02),
+              },
+            },
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(0, 229, 255, 0.04)',
+            },
+            '& .row-pending': {
+              backgroundColor: alpha('#ffb300', 0.06),
+            },
+            '& .row-complete': {
+              backgroundColor: alpha('#00e676', 0.05),
+            },
+            '& .row-future': {
+              boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
+            },
+          }}
+        />
+      </Box>
+    </Grid>
+  );
+}
