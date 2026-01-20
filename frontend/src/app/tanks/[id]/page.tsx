@@ -64,13 +64,13 @@ export default function TankDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: tanksApi.delete,
     onSuccess: () => {
-      success('Tank decommissioned successfully');
+      success('Tank deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       router.push('/tanks');
     },
     onError: () => {
-      error('Failed to decommission tank');
+      error('Failed to delete tank');
     },
   });
 
@@ -244,8 +244,8 @@ export default function TankDetailPage() {
     return (
       <EmptyState
         icon={<StorageIcon />}
-        title="Unit Not Found"
-        description="The requested storage unit could not be located."
+        title="Tank Not Found"
+        description="The requested tank could not be located."
         action={{
           label: 'Return to Registry',
           href: '/tanks'
@@ -260,9 +260,9 @@ export default function TankDetailPage() {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Decommission Storage Unit"
-        message={`Are you sure you want to decommission "${tank.name}"? This action cannot be undone, and the tank will be removed from the registry. Movement history will be preserved.`}
-        confirmText="Decommission"
+        title="Delete Tank"
+        message={`Are you sure you want to delete "${tank.name}"? This action cannot be undone, and the tank will be removed from the registry. Movement history will be preserved.`}
+        confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
         loading={deleteMutation.isPending}
@@ -287,7 +287,7 @@ export default function TankDetailPage() {
         </IconButton>
         <Box sx={{ flex: 1 }}>
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.25em' }}>
-            Unit Telemetry
+            Tank Details
           </Typography>
           <Typography sx={{ fontSize: '1.35rem', fontWeight: 700 }}>
             {tank.name}
@@ -341,9 +341,9 @@ export default function TankDetailPage() {
             startIcon={<DeleteIcon sx={{ fontSize: 16 }} />}
             onClick={handleDelete}
             sx={{ color: '#ff5252', borderColor: '#ff5252', fontSize: '0.75rem', '&:hover': { bgcolor: 'rgba(255, 82, 82, 0.1)', borderColor: '#ff5252' } }}
-            aria-label="Decommission tank"
+            aria-label="Delete tank"
           >
-            Decommission
+            Delete
           </Button>
         </Box>
       </Box>

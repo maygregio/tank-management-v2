@@ -934,7 +934,7 @@ export default function MovementsPage() {
         {selectedMovement && (
           <Box>
             <Box sx={{ mb: 2.5 }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET UNIT</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>TARGET TANK</Typography>
               <Typography sx={{ fontSize: '0.85rem' }}>{selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}</Typography>
             </Box>
             <Box sx={{ mb: 2.5 }}>
@@ -993,7 +993,7 @@ export default function MovementsPage() {
           <Box>
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                TARGET UNIT
+                TARGET TANK
               </Typography>
               <Typography sx={{ fontSize: '0.85rem' }}>
                 {selectedMovement.tank_id ? tankMap.get(selectedMovement.tank_id)?.name : 'Unassigned'}

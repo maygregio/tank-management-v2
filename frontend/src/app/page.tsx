@@ -119,8 +119,8 @@ export default function Dashboard() {
       {Object.keys(tanksByLocation).length === 0 ? (
         <EmptyState
           icon={<StorageIcon />}
-          title="No Storage Units Deployed"
-          description="Head to the Tanks page to deploy your first unit and begin monitoring levels."
+          title="No Tanks Added Yet"
+          description="Head to the Tanks page to deploy your first tank and begin monitoring levels."
           action={{
             label: 'Go to Tanks',
             href: '/tanks'
@@ -140,7 +140,7 @@ export default function Dashboard() {
               </Typography>
               <Box sx={{ flex: 1, height: '1px', backgroundColor: 'rgba(0, 212, 255, 0.3)' }} />
               <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.5 }}>
-                {locationTanks.length} UNIT{locationTanks.length !== 1 ? 'S' : ''}
+                {locationTanks.length} TANK{locationTanks.length !== 1 ? 'S' : ''}
               </Typography>
             </Box>
             <Grid container spacing={2}>

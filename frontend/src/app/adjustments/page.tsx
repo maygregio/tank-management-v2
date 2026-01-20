@@ -250,7 +250,7 @@ export default function AdjustmentsPage() {
               <TableHead>
                 <TableRow sx={styles.tableHeadRow}>
                   <TableCell>Date</TableCell>
-                  <TableCell>Unit</TableCell>
+                  <TableCell>Tank</TableCell>
                   <TableCell align="right">Delta</TableCell>
                   <TableCell>Notes</TableCell>
                 </TableRow>

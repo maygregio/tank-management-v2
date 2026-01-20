@@ -47,13 +47,13 @@ export default function TanksPage() {
   const createMutation = useMutation({
     mutationFn: (data: TankCreateInput) => tanksApi.create(data),
     onSuccess: () => {
-      success('Storage unit deployed successfully');
+      success('Tank added successfully');
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       handleCloseDialog();
     },
     onError: () => {
-      showError('Failed to deploy storage unit');
+      showError('Failed to deploy tank');
     },
   });
 
@@ -131,7 +131,7 @@ export default function TanksPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.2em' }}>
-            STORAGE UNITS
+            TANKS
           </Typography>
           <Box sx={{ width: 60, height: '1px', backgroundColor: 'rgba(0, 229, 255, 0.35)' }} />
         </Box>
@@ -159,7 +159,7 @@ export default function TanksPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenDialog}
-            aria-label="Deploy new storage unit"
+            aria-label="Add new tank"
             sx={{
               bgcolor: 'rgba(0, 212, 255, 0.1)',
               color: 'var(--color-accent-cyan)',
@@ -175,8 +175,8 @@ export default function TanksPage() {
       {!tanks || tanks.length === 0 ? (
         <EmptyState
           icon={<PropaneTankIcon />}
-          title="No Storage Units Deployed"
-          description="Deploy your first storage unit to begin monitoring feedstock levels."
+          title="No Tanks Added Yet"
+          description="Add your first tank to begin monitoring feedstock levels."
           action={{
             label: 'Add Tank',
             onClick: handleOpenDialog
@@ -197,7 +197,7 @@ export default function TanksPage() {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
-        title="DEPLOY STORAGE UNIT"
+        title="ADD TANK"
         actions={
           <>
             <Button onClick={handleCloseDialog} sx={{ color: 'text.secondary' }}>Abort</Button>
@@ -221,7 +221,7 @@ export default function TanksPage() {
         <TextField
           autoFocus
           margin="dense"
-          label="Unit Designation"
+          label="Tank Designation"
           fullWidth
           required
           value={formData.name}
