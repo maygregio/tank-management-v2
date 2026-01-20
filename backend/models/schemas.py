@@ -68,6 +68,8 @@ class MovementBase(BaseModel):
     trade_line_item: Optional[str] = None
     # Nomination key (derived from trade_number + trade_line_item for COA linking)
     nomination_key: Optional[str] = None
+    # PDF reference (for adjustments imported from PDFs)
+    pdf_url: Optional[str] = None
 
 
 class MovementCreate(BaseModel):

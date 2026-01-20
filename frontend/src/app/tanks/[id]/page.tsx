@@ -16,6 +16,8 @@ import Grid from '@mui/material/Grid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import Tooltip from '@mui/material/Tooltip';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
@@ -24,7 +26,7 @@ import { DynamicTankActivityChart } from '@/components/charts/DynamicCharts';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
-import { tanksApi } from '@/lib/api';
+import { tanksApi, adjustmentsApi } from '@/lib/api';
 import { feedstockTypeLabels } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { exportToExcel, formatDataForExport } from '@/lib/export';
@@ -38,6 +40,7 @@ interface MovementRow {
   movementVolume: number;
   tankAfter: number;
   notes: string | null;
+  pdfUrl: string | null;
 }
 
 export default function TankDetailPage() {
@@ -158,10 +161,35 @@ export default function TankDetailPage() {
     {
       field: 'notes',
       headerName: 'Notes',
-      flex: 1.6,
+      flex: 1.4,
       renderCell: (params: GridRenderCellParams<MovementRow, MovementRow['notes']>) => (
         <Typography sx={{ color: 'text.secondary' }}>{params.value || '—'}</Typography>
       ),
+    },
+    {
+      field: 'pdfUrl',
+      headerName: 'PDF',
+      width: 60,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<MovementRow, MovementRow['pdfUrl']>) => {
+        if (!params.value) return <Typography sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>—</Typography>;
+        return (
+          <Tooltip title="View source PDF">
+            <IconButton
+              size="small"
+              onClick={() => {
+                const url = new URL(params.value!);
+                const pathParts = url.pathname.split('/');
+                const blobName = pathParts.slice(2).join('/');
+                window.open(adjustmentsApi.getPdfUrl(blobName), '_blank');
+              }}
+              sx={{ color: 'var(--color-accent-cyan)' }}
+            >
+              <PictureAsPdfIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        );
+      },
     },
   ], []);
 
@@ -235,6 +263,7 @@ export default function TankDetailPage() {
       movementVolume: sign * movementVolume,
       tankAfter: 0,
       notes: movement.notes || null,
+      pdfUrl: movement.pdf_url || null,
     };
   });
 

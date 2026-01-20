@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
-from routers import tanks, movements, signals, imports, coa
+from routers import tanks, movements, signals, imports, coa, adjustments
 
 load_dotenv()
 
@@ -64,6 +64,7 @@ app.include_router(movements.router, prefix="/api/movements", tags=["Movements"]
 app.include_router(signals.router, prefix="/api/movements/signals", tags=["Signals"])
 app.include_router(imports.router, prefix="/api/imports", tags=["Imports"])
 app.include_router(coa.router, prefix="/api/coa", tags=["Certificate of Analysis"])
+app.include_router(adjustments.router, prefix="/api/adjustments", tags=["Adjustments"])
 
 
 @app.get("/")

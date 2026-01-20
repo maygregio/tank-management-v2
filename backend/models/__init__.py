@@ -50,6 +50,17 @@ from .coa import (
     COAWithSignal,
 )
 
+# Adjustments
+from .adjustments import (
+    AdjustmentExtractedReading,
+    AdjustmentMatchSuggestion,
+    AdjustmentReadingWithMatches,
+    AdjustmentExtractionResult,
+    AdjustmentImportConfirmItem,
+    AdjustmentImportRequest,
+    AdjustmentImportResult,
+)
+
 __all__ = [
     # Shared
     "generate_id",
@@ -86,4 +97,12 @@ __all__ = [
     "COAUploadRequest",
     "COALinkRequest",
     "COAWithSignal",
+    # Adjustments
+    "AdjustmentExtractedReading",
+    "AdjustmentMatchSuggestion",
+    "AdjustmentReadingWithMatches",
+    "AdjustmentExtractionResult",
+    "AdjustmentImportConfirmItem",
+    "AdjustmentImportRequest",
+    "AdjustmentImportResult",
 ]

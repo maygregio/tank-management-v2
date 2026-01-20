@@ -47,6 +47,11 @@ Base: `/` (no `/api` prefix in the host system)
 - `POST /imports/extract` (multipart files)
 - `POST /imports/confirm`
 
+**Adjustments (PDF)**
+- `POST /adjustments/extract` (multipart files) - extracts tank readings from monthly inspection PDF
+- `POST /adjustments/confirm` - creates adjustment movements from confirmed readings
+- `GET /adjustments/pdf/{blob_name}` - proxy endpoint to serve stored PDFs
+
 **COA**
 - `GET /coa`
 - `GET /coa/{coa_id}`

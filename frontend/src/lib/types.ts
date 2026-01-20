@@ -34,6 +34,8 @@ export interface Movement {
   trade_line_item?: string;
   // Nomination key for COA linking
   nomination_key?: string;
+  // PDF reference (for adjustments imported from PDFs)
+  pdf_url?: string;
 }
 
 // Form types
@@ -238,4 +240,52 @@ export interface MovementSummaryStats {
   pending: number;
   completed: number;
   scheduledToday: number;
+}
+
+// Adjustment Import Types
+export interface AdjustmentExtractedReading {
+  tank_name: string;
+  physical_level: number;
+  inspection_date: string | null;
+  row_index: number;
+}
+
+export interface AdjustmentMatchSuggestion {
+  tank_id: string;
+  tank_name: string;
+  confidence: number;
+}
+
+export interface AdjustmentReadingWithMatches {
+  extracted: AdjustmentExtractedReading;
+  suggested_matches: AdjustmentMatchSuggestion[];
+  best_match: AdjustmentMatchSuggestion | null;
+  is_exact_match: boolean;
+  system_level: number | null;
+  delta: number | null;
+}
+
+export interface AdjustmentExtractionResult {
+  filename: string;
+  pdf_url: string | null;
+  readings: AdjustmentReadingWithMatches[];
+  extraction_errors: string[];
+}
+
+export interface AdjustmentImportConfirmItem {
+  tank_id: string;
+  physical_level: number;
+  inspection_date: string;
+  notes?: string;
+}
+
+export interface AdjustmentImportRequest {
+  adjustments: AdjustmentImportConfirmItem[];
+  pdf_url?: string;
+}
+
+export interface AdjustmentImportResult {
+  created_count: number;
+  failed_count: number;
+  errors: string[];
 }

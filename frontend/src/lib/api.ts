@@ -3,7 +3,8 @@ import type {
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
   PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
   SignalAssignment, SignalUploadResult, TradeInfoUpdate,
-  COAWithSignal, COALinkRequest
+  COAWithSignal, COALinkRequest,
+  AdjustmentExtractionResult, AdjustmentImportRequest, AdjustmentImportResult
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -175,4 +176,32 @@ export const coaApi = {
     }),
 
   delete: (id: string) => fetchAPI<void>(`/coa/${id}`, { method: 'DELETE' }),
+};
+
+// Adjustment Imports
+export const adjustmentsApi = {
+  extractFromPDFs: async (files: File[]): Promise<AdjustmentExtractionResult[]> => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    const response = await fetch(`${API_BASE}/adjustments/extract`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Extraction failed' }));
+      throw new Error(error.detail || 'Extraction failed');
+    }
+
+    return response.json();
+  },
+
+  confirmImport: (data: AdjustmentImportRequest) =>
+    fetchAPI<AdjustmentImportResult>('/adjustments/confirm', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getPdfUrl: (blobName: string) => `${API_BASE}/adjustments/pdf/${encodeURIComponent(blobName)}`,
 };
