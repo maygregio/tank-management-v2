@@ -6,20 +6,13 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CellTowerIcon from '@mui/icons-material/CellTower';
 import ScienceIcon from '@mui/icons-material/Science';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
-import Tooltip from '@mui/material/Tooltip';
-import KeyboardShortcutsDialog from '@/components/KeyboardShortcutsDialog';
 import MobileNavigation from '@/components/MobileNavigation';
-import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 const menuItems = [
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
@@ -32,18 +25,6 @@ const menuItems = [
 
 export default function Navigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-
-  useKeyboardShortcuts([
-    { key: '1', description: 'Go to Tanks', action: () => router.push('/tanks') },
-    { key: '2', description: 'Go to Movements', action: () => router.push('/movements') },
-    { key: '3', description: 'Go to Signals', action: () => router.push('/signals') },
-    { key: '4', description: 'Go to COA', action: () => router.push('/coa') },
-    { key: '5', description: 'Go to Adjustments', action: () => router.push('/adjustments') },
-    { key: '6', description: 'Go to Import PDF', action: () => router.push('/imports') },
-    { key: '?', description: 'Show keyboard shortcuts', action: () => setShortcutsOpen(true) },
-  ]);
 
   const tabMenu = (
     <Box
@@ -116,16 +97,6 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
     </Box>
   );
 
-  const shortcuts = [
-    { key: '1', description: 'Go to Tanks' },
-    { key: '2', description: 'Go to Movements' },
-    { key: '3', description: 'Go to Signals' },
-    { key: '4', description: 'Go to COA' },
-    { key: '5', description: 'Go to Adjustments' },
-    { key: '6', description: 'Go to Import PDF' },
-    { key: '?', description: 'Show this dialog' },
-  ];
-
   return (
     <>
       <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: { xs: 7, md: 0 } }}>
@@ -148,24 +119,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                 {menuItems.find((item) => item.href === pathname)?.text || (pathname.startsWith('/tanks/') ? 'Tank Details' : 'Tanks')}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {tabMenu}
-              <Tooltip title="Keyboard Shortcuts">
-                <IconButton
-                  onClick={() => setShortcutsOpen(true)}
-                  aria-label="Show keyboard shortcuts"
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {
-                      color: 'var(--color-accent-cyan)',
-                      bgcolor: 'rgba(0, 229, 255, 0.05)'
-                    }
-                  }}
-                >
-                  <KeyboardIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
+            {tabMenu}
           </Toolbar>
         </AppBar>
         <Box
@@ -181,12 +135,6 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
       </Box>
 
       <MobileNavigation />
-
-      <KeyboardShortcutsDialog
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-        shortcuts={shortcuts}
-      />
     </>
   );
 }
