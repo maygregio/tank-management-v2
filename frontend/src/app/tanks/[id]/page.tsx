@@ -68,7 +68,6 @@ export default function TankDetailPage() {
     onSuccess: () => {
       success('Tank deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       router.push('/tanks');
     },
     onError: () => {

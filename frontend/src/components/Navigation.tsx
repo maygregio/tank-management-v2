@@ -7,7 +7,6 @@ import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -23,7 +22,6 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 const menuItems = [
-  { text: 'Dashboard', href: '/', Icon: DashboardIcon },
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
   { text: 'Movements', href: '/movements', Icon: SwapHorizIcon },
   { text: 'Signals', href: '/signals', Icon: CellTowerIcon },
@@ -38,13 +36,12 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   useKeyboardShortcuts([
-    { key: '1', description: 'Go to Dashboard', action: () => router.push('/') },
-    { key: '2', description: 'Go to Tanks', action: () => router.push('/tanks') },
-    { key: '3', description: 'Go to Movements', action: () => router.push('/movements') },
-    { key: '4', description: 'Go to Signals', action: () => router.push('/signals') },
-    { key: '5', description: 'Go to COA', action: () => router.push('/coa') },
-    { key: '6', description: 'Go to Adjustments', action: () => router.push('/adjustments') },
-    { key: '7', description: 'Go to Import PDF', action: () => router.push('/imports') },
+    { key: '1', description: 'Go to Tanks', action: () => router.push('/tanks') },
+    { key: '2', description: 'Go to Movements', action: () => router.push('/movements') },
+    { key: '3', description: 'Go to Signals', action: () => router.push('/signals') },
+    { key: '4', description: 'Go to COA', action: () => router.push('/coa') },
+    { key: '5', description: 'Go to Adjustments', action: () => router.push('/adjustments') },
+    { key: '6', description: 'Go to Import PDF', action: () => router.push('/imports') },
     { key: '?', description: 'Show keyboard shortcuts', action: () => setShortcutsOpen(true) },
   ]);
 
@@ -120,13 +117,12 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
   );
 
   const shortcuts = [
-    { key: '1', description: 'Go to Dashboard' },
-    { key: '2', description: 'Go to Tanks' },
-    { key: '3', description: 'Go to Movements' },
-    { key: '4', description: 'Go to Signals' },
-    { key: '5', description: 'Go to COA' },
-    { key: '6', description: 'Go to Adjustments' },
-    { key: '7', description: 'Go to Import PDF' },
+    { key: '1', description: 'Go to Tanks' },
+    { key: '2', description: 'Go to Movements' },
+    { key: '3', description: 'Go to Signals' },
+    { key: '4', description: 'Go to COA' },
+    { key: '5', description: 'Go to Adjustments' },
+    { key: '6', description: 'Go to Import PDF' },
     { key: '?', description: 'Show this dialog' },
   ];
 
@@ -149,7 +145,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                 Tank Management
               </Typography>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                {menuItems.find((item) => item.href === pathname)?.text || (pathname.startsWith('/tanks/') ? 'Tank Details' : 'Dashboard')}
+                {menuItems.find((item) => item.href === pathname)?.text || (pathname.startsWith('/tanks/') ? 'Tank Details' : 'Tanks')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

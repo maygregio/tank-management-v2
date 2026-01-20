@@ -1,6 +1,6 @@
 import { useQuery, type QueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import { tanksApi, movementsApi, dashboardApi, coaApi } from './api';
-import type { TankWithLevel, Movement, DashboardStats, COAWithSignal } from './types';
+import { tanksApi, movementsApi, coaApi } from './api';
+import type { TankWithLevel, Movement, COAWithSignal } from './types';
 
 // ============================================================================
 // Query Keys - Centralized for consistency and easy refactoring
@@ -20,10 +20,6 @@ export const queryKeys = {
     list: (filters?: { tankId?: string; type?: string; status?: string }) =>
       ['movements', filters] as const,
     signals: ['signals'] as const,
-  },
-  // Dashboard
-  dashboard: {
-    stats: ['dashboard-stats'] as const,
   },
   // COA
   coa: {
@@ -46,7 +42,6 @@ export const queryKeys = {
 export function invalidateCommonQueries(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: queryKeys.movements.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.tanks.all });
-  queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
   queryClient.invalidateQueries({ queryKey: queryKeys.alerts });
 }
 
@@ -145,18 +140,6 @@ export function useSignalsQuery(options?: QueryOptions<Movement[]>) {
   return useQuery({
     queryKey: queryKeys.movements.signals,
     queryFn: ({ signal }) => movementsApi.getSignals(signal),
-    ...defaultQueryOptions,
-    ...options,
-  });
-}
-
-/**
- * Hook to fetch dashboard statistics.
- */
-export function useDashboardStatsQuery(options?: QueryOptions<DashboardStats>) {
-  return useQuery({
-    queryKey: queryKeys.dashboard.stats,
-    queryFn: dashboardApi.getStats,
     ...defaultQueryOptions,
     ...options,
   });

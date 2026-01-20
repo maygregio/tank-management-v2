@@ -127,13 +127,6 @@ class AdjustmentCreate(BaseModel):
     notes: Optional[str] = None
 
 
-# Dashboard Models
-class DashboardStats(BaseModel):
-    total_tanks: int
-    total_locations: int
-    total_feedstock_volume: float
-
-
 # PDF Import Models
 class PDFExtractedMovement(BaseModel):
     """Raw movement data extracted from PDF."""

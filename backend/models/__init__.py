@@ -15,7 +15,6 @@ from .tanks import (
     TankUpdate,
     Tank,
     TankWithLevel,
-    DashboardStats,
 )
 
 # Movements
@@ -63,7 +62,6 @@ __all__ = [
     "TankUpdate",
     "Tank",
     "TankWithLevel",
-    "DashboardStats",
     # Movements
     "MovementBase",
     "MovementCreate",

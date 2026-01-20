@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from models import Tank, TankCreate, TankUpdate, TankWithLevel, Movement, DashboardStats
+from models import Tank, TankCreate, TankUpdate, TankWithLevel, Movement
 from services.storage import CosmosStorage
 from services.calculations import get_tank_with_level
 
@@ -65,22 +65,6 @@ class TankService:
             limit=limit
         )
         return movements
-
-    def get_dashboard_stats(self) -> DashboardStats:
-        """Get dashboard statistics."""
-        logger.info("Fetching dashboard stats")
-        tanks = self._tank_storage.get_all()
-        movements = self._movement_storage.get_all()
-
-        tanks_with_levels = [get_tank_with_level(t, movements) for t in tanks]
-        total_volume = sum(t.current_level for t in tanks_with_levels)
-        unique_locations = len(set(t.location for t in tanks))
-
-        return DashboardStats(
-            total_tanks=len(tanks),
-            total_locations=unique_locations,
-            total_feedstock_volume=round(total_volume, 2)
-        )
 
     def create(self, tank_data: TankCreate) -> Tank:
         """Create a new tank."""

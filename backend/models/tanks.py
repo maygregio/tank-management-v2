@@ -38,10 +38,3 @@ class TankWithLevel(Tank):
     """Tank with calculated current level."""
     current_level: float = 0.0
     level_percentage: float = 0.0
-
-
-class DashboardStats(BaseModel):
-    """Dashboard statistics model."""
-    total_tanks: int
-    total_locations: int
-    total_feedstock_volume: float

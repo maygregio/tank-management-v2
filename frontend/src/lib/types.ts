@@ -36,12 +36,6 @@ export interface Movement {
   nomination_key?: string;
 }
 
-export interface DashboardStats {
-  total_tanks: number;
-  total_locations: number;
-  total_feedstock_volume: number;
-}
-
 // Form types
 export interface TankCreate {
   name: string;

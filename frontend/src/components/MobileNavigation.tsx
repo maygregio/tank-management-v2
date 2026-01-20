@@ -5,7 +5,6 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -16,7 +15,6 @@ import { useTheme as useMuiTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 const menuItems = [
-  { text: 'Dashboard', href: '/', Icon: DashboardIcon },
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
   { text: 'Movements', href: '/movements', Icon: SwapHorizIcon },
   { text: 'Signals', href: '/signals', Icon: CellTowerIcon },

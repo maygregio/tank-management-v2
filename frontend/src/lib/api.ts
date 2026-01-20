@@ -1,7 +1,7 @@
 import type {
   Tank, TankWithLevel, TankCreate,
   Movement, MovementCreate, MovementComplete, MovementUpdate, AdjustmentCreate,
-  DashboardStats, PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
+  PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
   SignalAssignment, SignalUploadResult, TradeInfoUpdate,
   COAWithSignal, COALinkRequest
 } from './types';
@@ -112,11 +112,6 @@ export const movementsApi = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-};
-
-// Dashboard
-export const dashboardApi = {
-  getStats: () => fetchAPI<DashboardStats>('/tanks/dashboard'),
 };
 
 // Imports

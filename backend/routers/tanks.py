@@ -4,7 +4,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
 
-from models import Tank, TankCreate, TankUpdate, TankWithLevel, Movement, DashboardStats
+from models import Tank, TankCreate, TankUpdate, TankWithLevel, Movement
 from services.tank_service import TankService, get_tank_service
 
 logger = logging.getLogger(__name__)
@@ -20,12 +20,6 @@ def get_tanks(
 ):
     """Get all tanks with calculated levels. Optionally filter by location."""
     return service.get_all(location=location, skip=skip, limit=limit)
-
-
-@router.get("/dashboard", response_model=DashboardStats)
-def get_dashboard(service: TankService = Depends(get_tank_service)):
-    """Get dashboard statistics."""
-    return service.get_dashboard_stats()
 
 
 @router.get("/{tank_id}", response_model=TankWithLevel)

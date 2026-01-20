@@ -6,7 +6,7 @@ import { tanksApi } from '@/lib/api';
 import TankCard from '@/components/TankCard';
 import EmptyState from '@/components/EmptyState';
 import GlassDialog from '@/components/GlassDialog';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -19,6 +19,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
+import type { TankWithLevel } from '@/lib/types';
 
 export default function TanksPage() {
   const queryClient = useQueryClient();
@@ -44,12 +45,21 @@ export default function TanksPage() {
     : allTanks;
   const uniqueLocations = [...new Set(allTanks?.map((t) => t.location) || [])].sort();
 
+  const tanksByLocation = useMemo(() => {
+    if (!allTanks) return {};
+    return allTanks.reduce((acc, tank) => {
+      const location = tank.location;
+      if (!acc[location]) acc[location] = [];
+      acc[location].push(tank);
+      return acc;
+    }, {} as Record<string, TankWithLevel[]>);
+  }, [allTanks]);
+
   const createMutation = useMutation({
     mutationFn: (data: TankCreateInput) => tanksApi.create(data),
     onSuccess: () => {
       success('Tank added successfully');
       queryClient.invalidateQueries({ queryKey: ['tanks'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       handleCloseDialog();
     },
     onError: () => {
@@ -182,7 +192,7 @@ export default function TanksPage() {
             onClick: handleOpenDialog
           }}
         />
-      ) : (
+      ) : filterLocation ? (
         <Grid container spacing={2}>
           {tanks.map((tank) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={tank.id}>
@@ -190,6 +200,32 @@ export default function TanksPage() {
             </Grid>
           ))}
         </Grid>
+      ) : (
+        Object.entries(tanksByLocation).map(([location, locationTanks]) => (
+          <Box key={location} sx={{ mb: 5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+              <Typography variant="overline" sx={{
+                color: 'var(--color-accent-cyan)',
+                fontWeight: 800,
+                fontSize: '0.75rem',
+                letterSpacing: '0.2em'
+              }}>
+                LOCATION: {location.toUpperCase()}
+              </Typography>
+              <Box sx={{ flex: 1, height: '1px', backgroundColor: 'rgba(0, 212, 255, 0.3)' }} />
+              <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.5 }}>
+                {locationTanks.length} TANK{locationTanks.length !== 1 ? 'S' : ''}
+              </Typography>
+            </Box>
+            <Grid container spacing={2}>
+              {locationTanks.map((tank) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={tank.id}>
+                  <TankCard tank={tank} />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ))
       )}
 
       <GlassDialog
