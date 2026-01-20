@@ -12,7 +12,6 @@ import TuneIcon from '@mui/icons-material/Tune';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CellTowerIcon from '@mui/icons-material/CellTower';
 import ScienceIcon from '@mui/icons-material/Science';
-import MobileNavigation from '@/components/MobileNavigation';
 
 const menuItems = [
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
@@ -99,7 +98,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
 
   return (
     <>
-      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: { xs: 7, md: 0 } }}>
+      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
         <AppBar
           position="fixed"
           elevation={0}
@@ -133,8 +132,6 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
           {children}
         </Box>
       </Box>
-
-      <MobileNavigation />
     </>
   );
 }
