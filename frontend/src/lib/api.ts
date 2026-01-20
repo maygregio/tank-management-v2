@@ -8,13 +8,20 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+interface FetchAPIOptions extends Omit<RequestInit, 'signal'> {
+  signal?: AbortSignal;
+}
+
+async function fetchAPI<T>(endpoint: string, options?: FetchAPIOptions): Promise<T> {
+  const { signal, headers, ...restOptions } = options || {};
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
+    signal,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...headers,
     },
-    ...options,
+    ...restOptions,
   });
 
   if (!response.ok) {
@@ -31,12 +38,12 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 // Tanks
 export const tanksApi = {
-  getAll: (location?: string) => {
+  getAll: (location?: string, signal?: AbortSignal) => {
     const params = location ? `?location=${encodeURIComponent(location)}` : '';
-    return fetchAPI<TankWithLevel[]>(`/tanks${params}`);
+    return fetchAPI<TankWithLevel[]>(`/tanks${params}`, { signal });
   },
-  getById: (id: string) => fetchAPI<TankWithLevel>(`/tanks/${id}`),
-  getHistory: (id: string) => fetchAPI<Movement[]>(`/tanks/${id}/history`),
+  getById: (id: string, signal?: AbortSignal) => fetchAPI<TankWithLevel>(`/tanks/${id}`, { signal }),
+  getHistory: (id: string, signal?: AbortSignal) => fetchAPI<Movement[]>(`/tanks/${id}/history`, { signal }),
   create: (data: TankCreate) => fetchAPI<Tank>('/tanks', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -50,13 +57,13 @@ export const tanksApi = {
 
 // Movements
 export const movementsApi = {
-  getAll: (tankId?: string, type?: string, status?: string) => {
+  getAll: (tankId?: string, type?: string, status?: string, signal?: AbortSignal) => {
     const params = new URLSearchParams();
     if (tankId) params.append('tank_id', tankId);
     if (type) params.append('type', type);
     if (status) params.append('status', status);
     const query = params.toString() ? `?${params.toString()}` : '';
-    return fetchAPI<Movement[]>(`/movements${query}`);
+    return fetchAPI<Movement[]>(`/movements${query}`, { signal });
   },
   create: (data: MovementCreate) => fetchAPI<Movement>('/movements', {
     method: 'POST',
@@ -80,7 +87,7 @@ export const movementsApi = {
   }),
   delete: (id: string) => fetchAPI<void>(`/movements/${id}`, { method: 'DELETE' }),
   // Signal methods
-  getSignals: () => fetchAPI<Movement[]>('/movements/signals'),
+  getSignals: (signal?: AbortSignal) => fetchAPI<Movement[]>('/movements/signals', { signal }),
   uploadSignals: async (file: File): Promise<SignalUploadResult> => {
     const formData = new FormData();
     formData.append('file', file);

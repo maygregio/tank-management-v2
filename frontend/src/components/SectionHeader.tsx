@@ -2,7 +2,6 @@
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { styles } from '@/lib/constants';
 
 interface SectionHeaderProps {
   title: string;

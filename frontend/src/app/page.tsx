@@ -103,7 +103,7 @@ export default function Dashboard() {
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Box className="card-hover">
-            <StatCard title="Active Systems" value={stats?.total_tanks || 0} />
+            <StatCard title="Active Tanks" value={stats?.total_tanks || 0} />
           </Box>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>

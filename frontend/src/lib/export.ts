@@ -1,15 +1,20 @@
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-
 export interface ExportData {
   filename: string;
   data: Record<string, string | number>[];
 }
 
-export function exportToExcel({ filename, data }: ExportData) {
+// Dynamic import for xlsx and file-saver to reduce initial bundle size
+// These libraries are only loaded when export is actually triggered
+export async function exportToExcel({ filename, data }: ExportData) {
   if (data.length === 0) {
     throw new Error('No data to export');
   }
+
+  // Dynamic imports - loaded on demand
+  const [XLSX, { saveAs }] = await Promise.all([
+    import('xlsx'),
+    import('file-saver'),
+  ]);
 
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();

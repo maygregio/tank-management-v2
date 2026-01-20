@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -112,7 +112,7 @@ export default function SignalsPage() {
     }
   };
 
-  const handleOpenAssignDialog = (signal: Movement) => {
+  const handleOpenAssignDialog = useCallback((signal: Movement) => {
     setSelectedSignal(signal);
     setAssignmentData({
       tank_id: '',
@@ -121,7 +121,7 @@ export default function SignalsPage() {
       notes: signal.notes || '',
     });
     setAssignDialogOpen(true);
-  };
+  }, []);
 
   const handleCloseAssignDialog = () => {
     setAssignDialogOpen(false);
@@ -139,14 +139,14 @@ export default function SignalsPage() {
     assignMutation.mutate({ id: selectedSignal.id, data: assignmentData });
   };
 
-  const handleOpenTradeDialog = (signal: Movement) => {
+  const handleOpenTradeDialog = useCallback((signal: Movement) => {
     setSelectedTradeSignal(signal);
     setTradeData({
       trade_number: signal.trade_number || '',
       trade_line_item: signal.trade_line_item || '',
     });
     setTradeDialogOpen(true);
-  };
+  }, []);
 
   const handleCloseTradeDialog = () => {
     setTradeDialogOpen(false);
@@ -164,22 +164,47 @@ export default function SignalsPage() {
 
   const isLoading = signalsLoading || tanksLoading;
 
-  const rows: SignalGridRow[] = (signals || []).map((signal) => {
-    const tank = signal.tank_id ? tanks?.find((t) => t.id === signal.tank_id) : null;
-    return {
-      id: signal.id,
-      signal_id: signal.signal_id || 'N/A',
-      source_tank: signal.source_tank || 'Unknown',
-      load_date: signal.scheduled_date,
-      volume: signal.expected_volume,
-      tank_id: signal.tank_id,
-      tank_name: tank?.name || null,
-      trade_number: signal.trade_number || null,
-      trade_line_item: signal.trade_line_item || null,
-    };
-  });
+  // Build Map for O(1) tank lookups
+  const tankMap = useMemo(
+    () => new Map(tanks?.map((tank) => [tank.id, tank]) || []),
+    [tanks]
+  );
 
-  const columns: GridColDef[] = [
+  // Build Map for O(1) signal lookups (used in actions column)
+  const signalMap = useMemo(
+    () => new Map(signals?.map((signal) => [signal.id, signal]) || []),
+    [signals]
+  );
+
+  const rows = useMemo<SignalGridRow[]>(() => (
+    (signals || []).map((signal) => {
+      const tank = signal.tank_id ? tankMap.get(signal.tank_id) : null;
+      return {
+        id: signal.id,
+        signal_id: signal.signal_id || 'N/A',
+        source_tank: signal.source_tank || 'Unknown',
+        load_date: signal.scheduled_date,
+        volume: signal.expected_volume,
+        tank_id: signal.tank_id,
+        tank_name: tank?.name || null,
+        trade_number: signal.trade_number || null,
+        trade_line_item: signal.trade_line_item || null,
+      };
+    })
+  ), [signals, tankMap]);
+
+  // Stable handlers for column actions
+  const handleAssignClick = useCallback((signalId: string) => {
+    const signal = signalMap.get(signalId);
+    if (signal) handleOpenAssignDialog(signal);
+  }, [signalMap, handleOpenAssignDialog]);
+
+  const handleTradeClick = useCallback((signalId: string) => {
+    const signal = signalMap.get(signalId);
+    if (signal) handleOpenTradeDialog(signal);
+  }, [signalMap, handleOpenTradeDialog]);
+
+  const columns = useMemo<GridColDef[]>(() => [
     {
       field: 'signal_id',
       headerName: 'Signal ID',
@@ -278,10 +303,9 @@ export default function SignalsPage() {
       filterable: false,
       minWidth: 180,
       renderCell: (params: GridRenderCellParams) => {
-        const signal = signals?.find((s) => s.id === params.row.id);
-        if (!signal) return null;
-        const isAssigned = signal.tank_id !== null;
-        const hasTrade = signal.trade_number && signal.trade_line_item;
+        const row = params.row as SignalGridRow;
+        const isAssigned = row.tank_id !== null;
+        const hasTrade = row.trade_number && row.trade_line_item;
         return (
           <Box sx={{ display: 'flex', gap: 1 }}>
             {!isAssigned && (
@@ -289,7 +313,7 @@ export default function SignalsPage() {
                 size="small"
                 variant="outlined"
                 startIcon={<AssignmentIcon sx={{ fontSize: 14 }} />}
-                onClick={() => handleOpenAssignDialog(signal)}
+                onClick={() => handleAssignClick(row.id)}
                 sx={{
                   borderColor: 'var(--color-accent-cyan)',
                   color: 'var(--color-accent-cyan)',
@@ -307,7 +331,7 @@ export default function SignalsPage() {
                 size="small"
                 variant="outlined"
                 startIcon={<EditIcon sx={{ fontSize: 14 }} />}
-                onClick={() => handleOpenTradeDialog(signal)}
+                onClick={() => handleTradeClick(row.id)}
                 sx={{
                   borderColor: '#8b5cf6',
                   color: '#8b5cf6',
@@ -324,7 +348,7 @@ export default function SignalsPage() {
         );
       },
     },
-  ];
+  ], [handleAssignClick, handleTradeClick]);
 
   if (isLoading) {
     return (

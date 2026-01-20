@@ -19,7 +19,7 @@ import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
 import TankLevelGauge from '@/components/TankLevelGauge';
-import TankActivityChart from '@/components/charts/TankActivityChart';
+import { DynamicTankActivityChart } from '@/components/charts/DynamicCharts';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -28,7 +28,6 @@ import { feedstockTypeLabels } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { exportToExcel, formatDataForExport } from '@/lib/export';
 import { useToast } from '@/contexts/ToastContext';
-import { usePolling } from '@/lib/hooks/usePolling';
 
 interface MovementRow {
   id: string;
@@ -48,14 +47,18 @@ export default function TankDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { success, error } = useToast();
 
+  const pollingInterval = Number(process.env.NEXT_PUBLIC_POLLING_INTERVAL) || 30000;
+
   const { data: tank, isLoading: tankLoading } = useQuery({
     queryKey: ['tank', tankId],
-    queryFn: () => tanksApi.getById(tankId),
+    queryFn: ({ signal }) => tanksApi.getById(tankId, signal),
+    refetchInterval: pollingInterval,
   });
 
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['tank-history', tankId],
-    queryFn: () => tanksApi.getHistory(tankId),
+    queryFn: ({ signal }) => tanksApi.getHistory(tankId, signal),
+    refetchInterval: pollingInterval,
   });
 
   const deleteMutation = useMutation({
@@ -70,15 +73,6 @@ export default function TankDetailPage() {
       error('Failed to decommission tank');
     },
   });
-
-  usePolling(
-    () => {
-      queryClient.invalidateQueries({ queryKey: ['tank', tankId] });
-      queryClient.invalidateQueries({ queryKey: ['tank-history', tankId] });
-    },
-    Number(process.env.NEXT_PUBLIC_POLLING_INTERVAL) || 30000,
-    true
-  );
 
   const handleDelete = () => {
     setDeleteDialogOpen(true);
@@ -117,7 +111,7 @@ export default function TankDetailPage() {
 
   const isLoading = tankLoading || historyLoading;
 
-  const columns: GridColDef<MovementRow>[] = [
+  const columns = useMemo<GridColDef<MovementRow>[]>(() => [
     {
       field: 'dateLabel',
       headerName: 'Date',
@@ -168,7 +162,7 @@ export default function TankDetailPage() {
         <Typography sx={{ color: 'text.secondary' }}>{params.value || '—'}</Typography>
       ),
     },
-  ];
+  ], []);
 
   const sortedHistory = useMemo(() => (
     history ? [...history].sort(
@@ -179,6 +173,16 @@ export default function TankDetailPage() {
       }
     ) : []
   ), [history]);
+
+  // Build Map for O(1) history lookups (used in chart data computation)
+  const historyTimestampMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const m of sortedHistory) {
+      const timestamp = new Date(m.scheduled_date || m.created_at).getTime();
+      map.set(m.id, timestamp);
+    }
+    return map;
+  }, [sortedHistory]);
 
   const startingLevel = tank?.initial_level || 0;
   const runningBalanceRows = sortedHistory.map((movement) => {
@@ -210,25 +214,19 @@ export default function TankDetailPage() {
     const data: Array<[number, number]> = [
       [new Date(tank?.created_at || 0).getTime(), tank?.initial_level || 0],
       ...rows.map(row => {
-        const movement = sortedHistory.find(m => m.id === row.id);
-        const timestamp = movement
-          ? new Date(movement.scheduled_date || movement.created_at).getTime()
-          : 0;
+        const timestamp = historyTimestampMap.get(row.id) || 0;
         return [timestamp, row.tankAfter] as [number, number];
       })
     ];
     return data.sort((a, b) => a[0] - b[0]);
-  }, [rows, sortedHistory, tank]);
+  }, [rows, historyTimestampMap, tank]);
 
   const movementChartData = useMemo(() => {
     return rows.map(row => {
-      const movement = sortedHistory.find(m => m.id === row.id);
-      const timestamp = movement
-        ? new Date(movement.scheduled_date || movement.created_at).getTime()
-        : 0;
+      const timestamp = historyTimestampMap.get(row.id) || 0;
       return [timestamp, row.movementVolume] as [number, number];
     }).sort((a, b) => a[0] - b[0]);
-  }, [rows, sortedHistory]);
+  }, [rows, historyTimestampMap]);
 
   const levelPercentage = tank?.level_percentage ?? 0;
   const levelStatusColor = levelPercentage < 20 ? '#ff5252' : levelPercentage < 50 ? '#ffb300' : '#00e676';
@@ -352,40 +350,6 @@ export default function TankDetailPage() {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '12px',
-              border: '1px solid var(--glass-border)',
-              backgroundColor: 'rgba(12, 18, 29, 0.88)',
-              mb: 3
-            }}
-          >
-            <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              Capacity Utilization
-            </Typography>
-            <Box sx={{ mb: 3 }}>
-              <TankLevelGauge percentage={tank.level_percentage} showLabel={true} />
-            </Box>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr 1fr' }}>
-              <Box sx={{ borderLeft: '2px solid var(--color-accent-cyan)', pl: 2 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
-                  CURRENT LEVEL
-                </Typography>
-                <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-accent-cyan)' }}>
-                  {tank.current_level.toLocaleString()} bbl
-                </Typography>
-              </Box>
-              <Box sx={{ borderLeft: '2px solid rgba(139, 92, 246, 0.6)', pl: 2 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
-                  REMAINING CAPACITY
-                </Typography>
-                <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: 'rgba(139, 92, 246, 0.8)' }}>
-                  {(tank.capacity - tank.current_level).toLocaleString()} bbl
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
 
           <Box
             sx={{
@@ -399,7 +363,7 @@ export default function TankDetailPage() {
             <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
               Level History
             </Typography>
-            <TankActivityChart
+            <DynamicTankActivityChart
               levelData={levelChartData}
               movementData={movementChartData}
               height={200}

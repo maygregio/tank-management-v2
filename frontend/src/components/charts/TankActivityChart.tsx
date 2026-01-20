@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import BaseChart from './BaseChart';
 import Highcharts from 'highcharts/highstock';
 
@@ -14,7 +15,7 @@ export default function TankActivityChart({
   movementData,
   height = 300
 }: TankActivityChartProps) {
-  const options: Highcharts.Options = {
+  const options = useMemo<Highcharts.Options>(() => ({
     chart: {
       backgroundColor: 'transparent',
       marginLeft: 70,
@@ -128,7 +129,7 @@ export default function TankActivityChart({
         }
       }
     ]
-  };
+  }), [levelData, movementData]);
 
   return <BaseChart options={options} height={height} />;
 }

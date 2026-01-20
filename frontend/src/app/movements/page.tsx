@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -18,7 +18,6 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
@@ -537,16 +536,25 @@ export default function MovementsPage() {
 
   const hasTransferTargets = transferTargets.length > 0;
 
+  // Build Map for O(1) movement lookups (used in actions column)
+  const movementMap = useMemo(
+    () => new Map(movements?.map((m) => [m.id, m]) || []),
+    [movements]
+  );
 
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-        <CircularProgress size={24} sx={{ color: 'var(--color-accent-cyan)' }} />
-      </Box>
-    );
-  }
+  // Stable handlers for column actions
+  const handleEditClick = useCallback((movementId: string) => {
+    const movement = movementMap.get(movementId);
+    if (movement) handleOpenEdit(movement);
+  }, [movementMap]);
 
-  const columns: GridColDef[] = [
+  const handleCompleteClick = useCallback((movementId: string) => {
+    const movement = movementMap.get(movementId);
+    if (movement) handleOpenComplete(movement);
+  }, [movementMap]);
+
+  // Memoized columns definition
+  const columns = useMemo<GridColDef[]>(() => [
     {
       field: 'date',
       headerName: 'Date',
@@ -625,13 +633,17 @@ export default function MovementsPage() {
       filterable: false,
       width: 120,
       renderCell: (params: GridRenderCellParams) => {
-        const movement = movements?.find((item) => item.id === params.row.id);
-        if (!movement || movement.actual_volume !== null || movement.type === 'adjustment') return null;
+        const row = params.row as MovementGridRow;
+        // Use row data to determine if actions are available
+        // status=true means pending (actual_volume is null)
+        const isPending = row.status;
+        const isAdjustment = row.type === 'adjustment';
+        if (!isPending || isAdjustment) return null;
         return (
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
               size="small"
-              onClick={() => handleOpenEdit(movement)}
+              onClick={() => handleEditClick(row.id)}
               title="Edit movement"
               aria-label="Edit movement"
               sx={{ color: '#ffab00', '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.1)' } }}
@@ -640,7 +652,7 @@ export default function MovementsPage() {
             </IconButton>
             <IconButton
               size="small"
-              onClick={() => handleOpenComplete(movement)}
+              onClick={() => handleCompleteClick(row.id)}
               title="Complete movement"
               aria-label="Complete movement"
               sx={{ color: 'var(--color-accent-cyan)', '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.1)' } }}
@@ -651,7 +663,15 @@ export default function MovementsPage() {
         );
       }
     },
-  ];
+  ], [handleEditClick, handleCompleteClick]);
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+        <CircularProgress size={24} sx={{ color: 'var(--color-accent-cyan)' }} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
