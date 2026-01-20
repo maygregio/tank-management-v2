@@ -8,6 +8,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
@@ -45,6 +46,7 @@ export default function TankDetailPage() {
   const queryClient = useQueryClient();
   const tankId = params.id as string;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const { success, error } = useToast();
 
   const pollingInterval = Number(process.env.NEXT_PUBLIC_POLLING_INTERVAL) || 30000;
@@ -84,12 +86,12 @@ export default function TankDetailPage() {
   };
 
   const handleExport = () => {
-    if (!history || history.length === 0) {
+    if (!filteredHistory.length) {
       error('No data to export');
       return;
     }
 
-    const exportData = formatDataForExport(history, {
+    const exportData = formatDataForExport(filteredHistory, {
       id: 'ID',
       type: 'Type',
       tank_id: 'Tank ID',
@@ -174,18 +176,53 @@ export default function TankDetailPage() {
     ) : []
   ), [history]);
 
+  const filteredHistory = useMemo(() => {
+    if (!sortedHistory.length) return [];
+    const rangeStart = dateRange.start ? new Date(dateRange.start).getTime() : null;
+    const rangeEnd = dateRange.end
+      ? new Date(`${dateRange.end}T23:59:59.999`).getTime()
+      : null;
+
+    if (!rangeStart && !rangeEnd) return sortedHistory;
+
+    return sortedHistory.filter((movement) => {
+      const timestamp = new Date(movement.scheduled_date || movement.created_at).getTime();
+      if (rangeStart !== null && timestamp < rangeStart) return false;
+      if (rangeEnd !== null && timestamp > rangeEnd) return false;
+      return true;
+    });
+  }, [sortedHistory, dateRange.end, dateRange.start]);
+
+  const rangeStartTimestamp = dateRange.start ? new Date(dateRange.start).getTime() : null;
+
   // Build Map for O(1) history lookups (used in chart data computation)
   const historyTimestampMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const m of sortedHistory) {
+    for (const m of filteredHistory) {
       const timestamp = new Date(m.scheduled_date || m.created_at).getTime();
       map.set(m.id, timestamp);
     }
     return map;
-  }, [sortedHistory]);
+  }, [filteredHistory]);
 
-  const startingLevel = tank?.initial_level || 0;
-  const runningBalanceRows = sortedHistory.map((movement) => {
+  const initialLevel = tank?.initial_level || 0;
+  const initialTimestamp = new Date(tank?.created_at || 0).getTime();
+
+  const startingLevel = useMemo(() => {
+    const initialLevel = tank?.initial_level || 0;
+    if (!rangeStartTimestamp || !sortedHistory.length) return initialLevel;
+
+    return sortedHistory.reduce((total, movement) => {
+      const timestamp = new Date(movement.scheduled_date || movement.created_at).getTime();
+      if (timestamp >= rangeStartTimestamp) return total;
+      const isOutgoing = movement.type === 'discharge'
+        || (movement.type === 'transfer' && movement.tank_id === tankId);
+      const sign = isOutgoing ? -1 : 1;
+      const movementVolume = Math.abs(movement.actual_volume ?? movement.expected_volume);
+      return total + sign * movementVolume;
+    }, initialLevel);
+  }, [rangeStartTimestamp, sortedHistory, tank?.initial_level, tankId]);
+  const runningBalanceRows = filteredHistory.map((movement) => {
     const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
     const sign = isOutgoing ? -1 : 1;
     const movementVolume = Math.abs(movement.actual_volume ?? movement.expected_volume);
@@ -211,15 +248,17 @@ export default function TankDetailPage() {
 
   const levelChartData = useMemo(() => {
     if (!rows.length) return [];
-    const data: Array<[number, number]> = [
-      [new Date(tank?.created_at || 0).getTime(), tank?.initial_level || 0],
-      ...rows.map(row => {
-        const timestamp = historyTimestampMap.get(row.id) || 0;
-        return [timestamp, row.tankAfter] as [number, number];
-      })
-    ];
+    const data = rows.map(row => {
+      const timestamp = historyTimestampMap.get(row.id) || 0;
+      return [timestamp, row.tankAfter] as [number, number];
+    });
+    if (rangeStartTimestamp !== null) {
+      data.push([rangeStartTimestamp, startingLevel]);
+    } else if (initialTimestamp) {
+      data.push([initialTimestamp, initialLevel]);
+    }
     return data.sort((a, b) => a[0] - b[0]);
-  }, [rows, historyTimestampMap, tank]);
+  }, [rows, historyTimestampMap, rangeStartTimestamp, startingLevel, initialTimestamp, initialLevel]);
 
   const movementChartData = useMemo(() => {
     return rows.map(row => {
@@ -361,7 +400,7 @@ export default function TankDetailPage() {
             }}
           >
             <Typography variant="overline" sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.65rem', mb: 2, display: 'block' }}>
-              Level History
+              Level History (range-only balance)
             </Typography>
             <DynamicTankActivityChart
               levelData={levelChartData}
@@ -403,7 +442,7 @@ export default function TankDetailPage() {
               <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em', fontSize: '0.6rem' }}>
                 TOTAL MOVEMENTS
               </Typography>
-              <Typography sx={{ fontWeight: 600 }}>{(history?.length || 0).toLocaleString()}</Typography>
+              <Typography sx={{ fontWeight: 600 }}>{(filteredHistory.length || 0).toLocaleString()}</Typography>
             </Box>
           </Box>
         </Grid>
@@ -411,10 +450,50 @@ export default function TankDetailPage() {
 
       <Box sx={{ mt: 5, mb: 2 }}>
         <SectionHeader title="Activity Timeline" />
+        <Box
+          sx={{
+            mt: 2,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 2,
+            alignItems: 'center'
+          }}
+        >
+          <TextField
+            size="small"
+            type="date"
+            label="Start date"
+            value={dateRange.start}
+            onChange={(event) => setDateRange((prev) => ({ ...prev, start: event.target.value }))}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 160 }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="End date"
+            value={dateRange.end}
+            onChange={(event) => setDateRange((prev) => ({ ...prev, end: event.target.value }))}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 160 }}
+          />
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setDateRange({ start: '', end: '' })}
+            disabled={!dateRange.start && !dateRange.end}
+            sx={{ borderColor: 'divider', color: 'text.secondary', whiteSpace: 'nowrap' }}
+          >
+            Reset
+          </Button>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Balance is recalculated for the selected range and may not match the current tank level.
+          </Typography>
+        </Box>
       </Box>
 
       <Box sx={{ height: 460, width: '100%' }}>
-        {!history || history.length === 0 ? (
+        {!filteredHistory.length ? (
           <Box
             sx={{
               height: '100%',
