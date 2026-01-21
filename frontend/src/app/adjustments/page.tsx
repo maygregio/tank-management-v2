@@ -15,26 +15,22 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { adjustmentsApi, movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
-import { styles } from '@/lib/constants';
+import { styles, buttonStyles, openPdfInNewTab } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import SectionHeader from '@/components/SectionHeader';
+import { AdjustmentReviewRow } from '@/components/adjustments';
 import type { AdjustmentExtractionResult, AdjustmentReadingWithMatches, AdjustmentImportConfirmItem } from '@/lib/types';
 
 const steps = ['Upload PDF', 'Review & Match', 'Confirm Import'];
@@ -127,26 +123,26 @@ export default function AdjustmentsPage() {
     setFiles((prev) => [...prev, ...droppedFiles]);
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files).filter(
         (f) => f.type === 'application/pdf'
       );
       setFiles((prev) => [...prev, ...selectedFiles]);
     }
-  };
+  }, []);
 
-  const handleRemoveFile = (index: number) => {
+  const handleRemoveFile = useCallback((index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const handleExtract = () => {
+  const handleExtract = useCallback(() => {
     if (files.length > 0) {
       extractMutation.mutate(files);
     }
-  };
+  }, [files, extractMutation]);
 
-  const handleToggleAdjustment = (
+  const handleToggleAdjustment = useCallback((
     fileIndex: number,
     readingIndex: number,
     reading: AdjustmentReadingWithMatches,
@@ -154,37 +150,41 @@ export default function AdjustmentsPage() {
     filePdfUrl?: string
   ) => {
     const key = `${fileIndex}-${readingIndex}`;
-    const newSelections = new Map(selectedAdjustments);
+    setSelectedAdjustments((prev) => {
+      const newSelections = new Map(prev);
+      if (newSelections.has(key)) {
+        newSelections.delete(key);
+      } else if (reading.best_match) {
+        newSelections.set(key, {
+          fileIndex,
+          readingIndex,
+          tankId: reading.best_match.tank_id,
+          physicalLevel: reading.extracted.physical_level,
+          inspectionDate: reading.extracted.inspection_date || new Date().toISOString().split('T')[0],
+          notes: `Imported from PDF: ${filename}`,
+          pdfUrl: filePdfUrl,
+        });
+      }
+      return newSelections;
+    });
+  }, []);
 
-    if (newSelections.has(key)) {
-      newSelections.delete(key);
-    } else if (reading.best_match) {
-      newSelections.set(key, {
-        fileIndex,
-        readingIndex,
-        tankId: reading.best_match.tank_id,
-        physicalLevel: reading.extracted.physical_level,
-        inspectionDate: reading.extracted.inspection_date || new Date().toISOString().split('T')[0],
-        notes: `Imported from PDF: ${filename}`,
-        pdfUrl: filePdfUrl,
-      });
-    }
-    setSelectedAdjustments(newSelections);
-  };
+  const handleChangeTank = useCallback((key: string, tankId: string, filename: string, filePdfUrl?: string) => {
+    setSelectedAdjustments((prev) => {
+      const selection = prev.get(key);
+      if (selection) {
+        return new Map(prev).set(key, {
+          ...selection,
+          tankId,
+          notes: `Imported from PDF: ${filename}`,
+          pdfUrl: filePdfUrl,
+        });
+      }
+      return prev;
+    });
+  }, []);
 
-  const handleChangeTank = (key: string, tankId: string, filename: string, filePdfUrl?: string) => {
-    const selection = selectedAdjustments.get(key);
-    if (selection) {
-      setSelectedAdjustments(new Map(selectedAdjustments).set(key, {
-        ...selection,
-        tankId,
-        notes: `Imported from PDF: ${filename}`,
-        pdfUrl: filePdfUrl,
-      }));
-    }
-  };
-
-  const handleImport = () => {
+  const handleImport = useCallback(() => {
     const adjustments: AdjustmentImportConfirmItem[] = Array.from(selectedAdjustments.values()).map((s) => ({
       tank_id: s.tankId,
       physical_level: s.physicalLevel,
@@ -192,28 +192,34 @@ export default function AdjustmentsPage() {
       notes: s.notes,
     }));
     importMutation.mutate({ adjustments, pdf_url: pdfUrl || undefined });
-  };
+  }, [selectedAdjustments, importMutation, pdfUrl]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setActiveStep(0);
     setFiles([]);
     setExtractionResults([]);
     setSelectedAdjustments(new Map());
     setPdfUrl(null);
-  };
+  }, []);
 
   const tankOptions = tanks || [];
   const tankMap = useMemo(() => new Map(tanks?.map((t) => [t.id, t]) || []), [tanks]);
 
-  // Check if today is the first of the month
+  const handleOpenFileDialog = useCallback(() => {
+    document.getElementById('file-input')?.click();
+  }, []);
+
+  // Get 1st of current month for adjustment dating
   const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const firstOfMonthFormatted = firstOfMonth.toLocaleDateString();
   const isFirstOfMonth = today.getDate() === 1;
 
   const renderUploadStep = () => (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
       {!isFirstOfMonth && (
-        <Alert severity="warning" sx={{ mb: 3, bgcolor: 'rgba(255, 171, 0, 0.1)', border: '1px solid rgba(255, 171, 0, 0.3)' }}>
-          Adjustments can only be imported on the first day of the month. Today is {today.toLocaleDateString()}.
+        <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.3)' }}>
+          Adjustments will be dated to the 1st of the current month ({firstOfMonthFormatted}).
         </Alert>
       )}
 
@@ -230,10 +236,9 @@ export default function AdjustmentsPage() {
           textAlign: 'center',
           bgcolor: dragActive ? 'rgba(0, 212, 255, 0.05)' : 'rgba(0,0,0,0.2)',
           transition: 'all 0.2s',
-          cursor: isFirstOfMonth ? 'pointer' : 'not-allowed',
-          opacity: isFirstOfMonth ? 1 : 0.5,
+          cursor: 'pointer',
         }}
-        onClick={() => isFirstOfMonth && document.getElementById('file-input')?.click()}
+        onClick={handleOpenFileDialog}
       >
         <input
           id="file-input"
@@ -242,7 +247,6 @@ export default function AdjustmentsPage() {
           accept=".pdf"
           style={{ display: 'none' }}
           onChange={handleFileSelect}
-          disabled={!isFirstOfMonth}
         />
         <CloudUploadIcon sx={{ fontSize: 48, color: 'var(--color-accent-cyan)', mb: 2 }} />
         <Typography variant="body1" sx={{ mb: 1 }}>
@@ -299,15 +303,9 @@ export default function AdjustmentsPage() {
         <Button
           variant="contained"
           onClick={handleExtract}
-          disabled={files.length === 0 || extractMutation.isPending || !isFirstOfMonth}
+          disabled={files.length === 0 || extractMutation.isPending}
           startIcon={extractMutation.isPending ? <CircularProgress size={16} /> : undefined}
-          sx={{
-            bgcolor: 'rgba(255, 171, 0, 0.1)',
-            color: '#ffab00',
-            border: '1px solid #ffab00',
-            '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.2)' },
-            '&:disabled': { opacity: 0.3 },
-          }}
+          sx={buttonStyles.warning}
         >
           {extractMutation.isPending ? 'Extracting...' : 'Extract Readings'}
         </Button>
@@ -333,13 +331,7 @@ export default function AdjustmentsPage() {
               <Tooltip title="View PDF">
                 <IconButton
                   size="small"
-                  onClick={() => {
-                    // Extract blob name from URL
-                    const url = new URL(result.pdf_url!);
-                    const pathParts = url.pathname.split('/');
-                    const blobName = pathParts.slice(2).join('/'); // Skip container name
-                    window.open(adjustmentsApi.getPdfUrl(blobName), '_blank');
-                  }}
+                  onClick={() => openPdfInNewTab(result.pdf_url!, adjustmentsApi.getPdfUrl)}
                   sx={{ color: 'var(--color-accent-cyan)' }}
                 >
                   <PictureAsPdfIcon fontSize="small" />
@@ -373,118 +365,20 @@ export default function AdjustmentsPage() {
                 <TableBody>
                   {result.readings.map((reading, readingIndex) => {
                     const key = `${fileIndex}-${readingIndex}`;
-                    const isSelected = selectedAdjustments.has(key);
-                    const selection = selectedAdjustments.get(key);
-                    const suggestedMatchIds = new Set(
-                      reading.suggested_matches.map((match) => match.tank_id)
-                    );
-                    const extraTankOptions = tankOptions.filter(
-                      (tank) => !suggestedMatchIds.has(tank.id)
-                    );
-                    const delta = reading.delta;
-                    const isPositive = delta !== null && delta >= 0;
-
                     return (
-                      <TableRow
+                      <AdjustmentReviewRow
                         key={readingIndex}
-                        sx={{
-                          opacity: isSelected ? 1 : 0.6,
-                          '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.06)' },
-                        }}
-                      >
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={() => handleToggleAdjustment(fileIndex, readingIndex, reading, result.filename, result.pdf_url || undefined)}
-                            disabled={reading.suggested_matches.length === 0}
-                            sx={{
-                              color: 'var(--color-border)',
-                              '&.Mui-checked': { color: '#ffab00' },
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontSize: '0.8rem', fontFamily: styles.monoFont }}>
-                            {reading.extracted.tank_name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          {reading.suggested_matches.length > 0 ? (
-                            <FormControl size="small" sx={{ minWidth: 180 }}>
-                              <Select
-                                value={selection?.tankId || reading.best_match?.tank_id || ''}
-                                onChange={(e) => {
-                                  if (!isSelected && reading.best_match) {
-                                    handleToggleAdjustment(fileIndex, readingIndex, reading, result.filename, result.pdf_url || undefined);
-                                  }
-                                  handleChangeTank(key, e.target.value, result.filename, result.pdf_url || undefined);
-                                }}
-                                sx={{ fontSize: '0.8rem' }}
-                              >
-                                {reading.suggested_matches.map((match) => (
-                                  <MenuItem key={match.tank_id} value={match.tank_id}>
-                                    {match.tank_name} ({match.confidence}%)
-                                  </MenuItem>
-                                ))}
-                                {extraTankOptions.map((tank) => (
-                                  <MenuItem key={tank.id} value={tank.id}>
-                                    {tank.name}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          ) : (
-                            <Typography sx={{ fontSize: '0.75rem', color: 'error.main' }}>
-                              No match found
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography sx={{ fontSize: '0.8rem', fontFamily: styles.monoFont }}>
-                            {reading.extracted.physical_level.toLocaleString()} bbl
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography sx={{ fontSize: '0.8rem', fontFamily: styles.monoFont, color: 'text.secondary' }}>
-                            {reading.system_level !== null ? `${reading.system_level.toLocaleString()} bbl` : '—'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          {delta !== null ? (
-                            <Chip
-                              label={`${isPositive ? '+' : ''}${delta.toLocaleString()} bbl`}
-                              size="small"
-                              sx={{
-                                bgcolor: isPositive ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 82, 82, 0.1)',
-                                color: isPositive ? '#00e676' : '#ff5252',
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                              }}
-                            />
-                          ) : (
-                            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>—</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-                            {reading.extracted.inspection_date || '—'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          {reading.best_match && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {reading.is_exact_match ? (
-                                <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                              ) : (
-                                <ErrorOutlineIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                              )}
-                              <Typography sx={{ fontSize: '0.75rem', color: reading.is_exact_match ? 'success.main' : 'warning.main' }}>
-                                {reading.best_match.confidence}%
-                              </Typography>
-                            </Box>
-                          )}
-                        </TableCell>
-                      </TableRow>
+                        reading={reading}
+                        readingIndex={readingIndex}
+                        fileIndex={fileIndex}
+                        filename={result.filename}
+                        pdfUrl={result.pdf_url || undefined}
+                        isSelected={selectedAdjustments.has(key)}
+                        selection={selectedAdjustments.get(key)}
+                        tankOptions={tankOptions}
+                        onToggle={handleToggleAdjustment}
+                        onChangeTank={handleChangeTank}
+                      />
                     );
                   })}
                 </TableBody>
@@ -507,13 +401,7 @@ export default function AdjustmentsPage() {
           onClick={handleImport}
           disabled={selectedAdjustments.size === 0 || importMutation.isPending}
           startIcon={importMutation.isPending ? <CircularProgress size={16} /> : undefined}
-          sx={{
-            bgcolor: 'rgba(255, 171, 0, 0.1)',
-            color: '#ffab00',
-            border: '1px solid #ffab00',
-            '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.2)' },
-            '&:disabled': { opacity: 0.3 },
-          }}
+          sx={buttonStyles.warning}
         >
           {importMutation.isPending ? 'Importing...' : `Import ${selectedAdjustments.size} Adjustment${selectedAdjustments.size !== 1 ? 's' : ''}`}
         </Button>
@@ -539,12 +427,7 @@ export default function AdjustmentsPage() {
       <Button
         variant="contained"
         onClick={handleReset}
-        sx={{
-          bgcolor: 'rgba(255, 171, 0, 0.1)',
-          color: '#ffab00',
-          border: '1px solid #ffab00',
-          '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.2)' },
-        }}
+        sx={buttonStyles.warning}
       >
         Import More
       </Button>
@@ -648,12 +531,7 @@ export default function AdjustmentsPage() {
                             <Tooltip title="View source PDF">
                               <IconButton
                                 size="small"
-                                onClick={() => {
-                                  const url = new URL(movement.pdf_url!);
-                                  const pathParts = url.pathname.split('/');
-                                  const blobName = pathParts.slice(2).join('/');
-                                  window.open(adjustmentsApi.getPdfUrl(blobName), '_blank');
-                                }}
+                                onClick={() => openPdfInNewTab(movement.pdf_url!, adjustmentsApi.getPdfUrl)}
                                 sx={{ color: 'var(--color-accent-cyan)' }}
                               >
                                 <PictureAsPdfIcon fontSize="small" />

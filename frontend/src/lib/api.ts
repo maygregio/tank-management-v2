@@ -144,11 +144,11 @@ export const importsApi = {
 
 // Certificate of Analysis (COA)
 export const coaApi = {
-  getAll: () => fetchAPI<COAWithSignal[]>('/coa'),
+  getAll: (signal?: AbortSignal) => fetchAPI<COAWithSignal[]>('/coa', { signal }),
 
-  getById: (id: string) => fetchAPI<COAWithSignal>(`/coa/${id}`),
+  getById: (id: string, signal?: AbortSignal) => fetchAPI<COAWithSignal>(`/coa/${id}`, { signal }),
 
-  getBySignalId: (signalId: string) => fetchAPI<COAWithSignal | null>(`/coa/signal/${signalId}`),
+  getBySignalId: (signalId: string, signal?: AbortSignal) => fetchAPI<COAWithSignal | null>(`/coa/signal/${signalId}`, { signal }),
 
   upload: async (file: File, signalId?: string): Promise<COAWithSignal> => {
     const formData = new FormData();

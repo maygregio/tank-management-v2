@@ -1,5 +1,34 @@
 import type { MovementType, FeedstockType } from './types';
 
+// ============================================================================
+// Timing & Polling Constants
+// ============================================================================
+
+/** Default polling interval in milliseconds (30 seconds) */
+export const DEFAULT_POLLING_INTERVAL_MS = 30000;
+
+/** Debounce delay for search inputs in milliseconds */
+export const DEBOUNCE_DELAY_MS = 500;
+
+/** Animation duration for card hover effects in seconds */
+export const CARD_HOVER_TRANSITION_SECONDS = 0.35;
+
+/** Row transition duration for tables in seconds */
+export const TABLE_ROW_TRANSITION_SECONDS = 0.25;
+
+// ============================================================================
+// UI Sizing Constants
+// ============================================================================
+
+/** Default number of skeleton cards to show while loading */
+export const SKELETON_CARD_COUNT = 8;
+
+/** Default page size for data grids */
+export const DEFAULT_PAGE_SIZE = 10;
+
+/** Height of the data grid in pixels */
+export const DATA_GRID_HEIGHT = 520;
+
 // Movement type display labels
 export const movementTypeLabels: Record<MovementType, string> = {
   load: 'Load',
@@ -276,3 +305,21 @@ export const iconButtonStyles = {
     '&:hover': { color: 'var(--color-accent-cyan)' },
   },
 } as const;
+
+// ============================================================================
+// PDF URL Utilities
+// ============================================================================
+
+/**
+ * Extracts blob name from Azure Blob Storage URL and opens PDF in new tab.
+ * Centralizes the PDF URL handling logic used across the application.
+ *
+ * @param pdfUrl - The Azure Blob Storage URL
+ * @param getPdfUrlFn - Function to construct the API URL from blob name
+ */
+export function openPdfInNewTab(pdfUrl: string, getPdfUrlFn: (blobName: string) => string): void {
+  const url = new URL(pdfUrl);
+  const pathParts = url.pathname.split('/');
+  const blobName = pathParts.slice(2).join('/');
+  window.open(getPdfUrlFn(blobName), '_blank');
+}

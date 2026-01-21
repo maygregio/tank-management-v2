@@ -1,9 +1,8 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -17,20 +16,24 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Tooltip from '@mui/material/Tooltip';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
 import SectionHeader from '@/components/SectionHeader';
-import TankLevelGauge from '@/components/TankLevelGauge';
 import { DynamicTankActivityChart } from '@/components/charts/DynamicCharts';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
+import { EditDialog, CompleteDialog } from '@/components/movements';
 import StorageIcon from '@mui/icons-material/Storage';
-import { tanksApi, adjustmentsApi } from '@/lib/api';
-import { feedstockTypeLabels } from '@/lib/constants';
+import { adjustmentsApi } from '@/lib/api';
+import { feedstockTypeLabels, openPdfInNewTab, buttonStyles } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { exportToExcel, formatDataForExport } from '@/lib/export';
+import { useTankDetail } from '@/lib/hooks/useTankDetail';
 import { useToast } from '@/contexts/ToastContext';
+import type { Movement, MovementUpdate, TankWithLevel } from '@/lib/types';
 
 interface MovementRow {
   id: string;
@@ -41,79 +44,93 @@ interface MovementRow {
   tankAfter: number;
   notes: string | null;
   pdfUrl: string | null;
+  actualVolume: number | null;
+  rawMovement: Movement;
 }
 
 export default function TankDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const tankId = params.id as string;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
+  const [editData, setEditData] = useState<MovementUpdate>({});
+  const [actualVolume, setActualVolume] = useState<number>(0);
+
+  const {
+    tank,
+    history,
+    isLoading,
+    deleteTank,
+    updateMovement,
+    completeMovement,
+    isDeleting,
+    isUpdating,
+    isCompleting,
+  } = useTankDetail({ tankId });
+
   const { success, error } = useToast();
 
-  const pollingInterval = Number(process.env.NEXT_PUBLIC_POLLING_INTERVAL) || 30000;
+  const resetEditState = () => {
+    setEditDialogOpen(false);
+    setSelectedMovement(null);
+    setEditData({});
+  };
 
-  const { data: tank, isLoading: tankLoading } = useQuery({
-    queryKey: ['tank', tankId],
-    queryFn: ({ signal }) => tanksApi.getById(tankId, signal),
-    refetchInterval: pollingInterval,
-  });
+  const resetCompleteState = () => {
+    setCompleteDialogOpen(false);
+    setSelectedMovement(null);
+    setActualVolume(0);
+  };
 
-  const { data: history, isLoading: historyLoading } = useQuery({
-    queryKey: ['tank-history', tankId],
-    queryFn: ({ signal }) => tanksApi.getHistory(tankId, signal),
-    refetchInterval: pollingInterval,
-  });
+  const handleOpenEdit = useCallback((movement: Movement) => {
+    setSelectedMovement(movement);
+    setEditData({
+      scheduled_date: movement.scheduled_date,
+      expected_volume: movement.expected_volume,
+      notes: movement.notes || '',
+    });
+    setEditDialogOpen(true);
+  }, []);
 
-  const deleteMutation = useMutation({
-    mutationFn: tanksApi.delete,
-    onSuccess: () => {
-      success('Tank deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['tanks'] });
-      router.push('/tanks');
-    },
-    onError: () => {
-      error('Failed to delete tank');
-    },
-  });
+  const handleEdit = useCallback(() => {
+    if (!selectedMovement) return;
+    updateMovement(selectedMovement.id, editData);
+    resetEditState();
+  }, [selectedMovement, updateMovement, editData]);
 
-  const handleDelete = () => {
+  const handleOpenComplete = useCallback((movement: Movement) => {
+    setSelectedMovement(movement);
+    setActualVolume(movement.expected_volume);
+    setCompleteDialogOpen(true);
+  }, []);
+
+  const handleComplete = useCallback(() => {
+    if (!selectedMovement || !Number.isFinite(actualVolume) || actualVolume <= 0) return;
+    completeMovement(selectedMovement.id, actualVolume);
+    resetCompleteState();
+  }, [selectedMovement, actualVolume, completeMovement]);
+
+  const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleConfirmDelete = () => {
-    deleteMutation.mutate(tankId);
+  const handleConfirmDelete = useCallback(() => {
+    deleteTank();
     setDeleteDialogOpen(false);
-  };
+  }, [deleteTank]);
 
-  const handleExport = () => {
-    if (!filteredHistory.length) {
-      error('No data to export');
-      return;
+  // Create tankMap for dialogs (just the current tank)
+  const tankMap = useMemo(() => {
+    const map = new Map<string, TankWithLevel>();
+    if (tank) {
+      map.set(tank.id, tank);
     }
-
-    const exportData = formatDataForExport(filteredHistory, {
-      id: 'ID',
-      type: 'Type',
-      tank_id: 'Tank ID',
-      target_tank_id: 'Target Tank ID',
-      expected_volume: 'Expected Volume (bbl)',
-      actual_volume: 'Actual Volume (bbl)',
-      scheduled_date: 'Scheduled Date',
-      created_at: 'Created At',
-      notes: 'Notes'
-    });
-
-    exportToExcel({
-      filename: `${tank?.name.replace(/\s+/g, '_')}_history`,
-      data: exportData
-    });
-
-    success('Export completed successfully');
-  };
-
-  const isLoading = tankLoading || historyLoading;
+    return map;
+  }, [tank]);
 
   const columns = useMemo<GridColDef<MovementRow>[]>(() => [
     {
@@ -177,12 +194,7 @@ export default function TankDetailPage() {
           <Tooltip title="View source PDF">
             <IconButton
               size="small"
-              onClick={() => {
-                const url = new URL(params.value!);
-                const pathParts = url.pathname.split('/');
-                const blobName = pathParts.slice(2).join('/');
-                window.open(adjustmentsApi.getPdfUrl(blobName), '_blank');
-              }}
+              onClick={() => openPdfInNewTab(params.value!, adjustmentsApi.getPdfUrl)}
               sx={{ color: 'var(--color-accent-cyan)' }}
             >
               <PictureAsPdfIcon fontSize="small" />
@@ -191,7 +203,42 @@ export default function TankDetailPage() {
         );
       },
     },
-  ], []);
+    {
+      field: 'actions',
+      headerName: '',
+      sortable: false,
+      filterable: false,
+      width: 90,
+      renderCell: (params: GridRenderCellParams<MovementRow>) => {
+        const row = params.row;
+        const isPending = row.actualVolume === null;
+        const isAdjustment = row.type === 'adjustment';
+        if (!isPending || isAdjustment) return null;
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={() => handleOpenEdit(row.rawMovement)}
+              title="Edit movement"
+              aria-label="Edit movement"
+              sx={{ color: '#ffab00', '&:hover': { bgcolor: 'rgba(255, 171, 0, 0.1)' } }}
+            >
+              <EditIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => handleOpenComplete(row.rawMovement)}
+              title="Complete movement"
+              aria-label="Complete movement"
+              sx={{ color: 'var(--color-accent-cyan)', '&:hover': { bgcolor: 'rgba(0, 212, 255, 0.1)' } }}
+            >
+              <CheckCircleIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Box>
+        );
+      },
+    },
+  ], [handleOpenEdit, handleOpenComplete]);
 
   const sortedHistory = useMemo(() => (
     history ? [...history].sort(
@@ -219,6 +266,32 @@ export default function TankDetailPage() {
       return true;
     });
   }, [sortedHistory, dateRange.end, dateRange.start]);
+
+  const handleExport = useCallback(() => {
+    if (!filteredHistory.length) {
+      error('No data to export');
+      return;
+    }
+
+    const exportData = formatDataForExport(filteredHistory, {
+      id: 'ID',
+      type: 'Type',
+      tank_id: 'Tank ID',
+      target_tank_id: 'Target Tank ID',
+      expected_volume: 'Expected Volume (bbl)',
+      actual_volume: 'Actual Volume (bbl)',
+      scheduled_date: 'Scheduled Date',
+      created_at: 'Created At',
+      notes: 'Notes'
+    });
+
+    exportToExcel({
+      filename: `${tank?.name.replace(/\s+/g, '_')}_history`,
+      data: exportData
+    });
+
+    success('Export completed successfully');
+  }, [filteredHistory, tank?.name, error, success]);
 
   const rangeStartTimestamp = dateRange.start ? new Date(dateRange.start).getTime() : null;
 
@@ -249,7 +322,8 @@ export default function TankDetailPage() {
       return total + sign * movementVolume;
     }, initialLevel);
   }, [rangeStartTimestamp, sortedHistory, tank?.initial_level, tankId]);
-  const runningBalanceRows = filteredHistory.map((movement) => {
+
+  const runningBalanceRows = useMemo(() => filteredHistory.map((movement) => {
     const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
     const sign = isOutgoing ? -1 : 1;
     const movementVolume = Math.abs(movement.actual_volume ?? movement.expected_volume);
@@ -264,8 +338,10 @@ export default function TankDetailPage() {
       tankAfter: 0,
       notes: movement.notes || null,
       pdfUrl: movement.pdf_url || null,
+      actualVolume: movement.actual_volume,
+      rawMovement: movement,
     };
-  });
+  }), [filteredHistory, tankId]);
 
   const rows = useMemo(() => runningBalanceRows.reduce<MovementRow[]>((acc, row) => {
     const previousTotal = acc.length ? acc[acc.length - 1].tankAfter : startingLevel;
@@ -332,7 +408,7 @@ export default function TankDetailPage() {
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
-        loading={deleteMutation.isPending}
+        loading={isDeleting}
       />
 
       <Box
@@ -407,7 +483,7 @@ export default function TankDetailPage() {
             variant="outlined"
             startIcon={<DeleteIcon sx={{ fontSize: 16 }} />}
             onClick={handleDelete}
-            sx={{ color: '#ff5252', borderColor: '#ff5252', fontSize: '0.75rem', '&:hover': { bgcolor: 'rgba(255, 82, 82, 0.1)', borderColor: '#ff5252' } }}
+            sx={{ ...buttonStyles.danger, fontSize: '0.75rem' }}
             aria-label="Delete tank"
           >
             Delete
@@ -492,7 +568,13 @@ export default function TankDetailPage() {
             type="date"
             label="Start date"
             value={dateRange.start}
-            onChange={(event) => setDateRange((prev) => ({ ...prev, start: event.target.value }))}
+            onChange={(event) => {
+              const newStart = event.target.value;
+              setDateRange((prev) => ({
+                start: newStart,
+                end: prev.end && newStart > prev.end ? '' : prev.end
+              }));
+            }}
             slotProps={{ inputLabel: { shrink: true } }}
             sx={{ minWidth: 160 }}
           />
@@ -502,7 +584,10 @@ export default function TankDetailPage() {
             label="End date"
             value={dateRange.end}
             onChange={(event) => setDateRange((prev) => ({ ...prev, end: event.target.value }))}
-            slotProps={{ inputLabel: { shrink: true } }}
+            slotProps={{
+              inputLabel: { shrink: true },
+              htmlInput: { min: dateRange.start || undefined }
+            }}
             sx={{ minWidth: 160 }}
           />
           <Button
@@ -593,6 +678,28 @@ export default function TankDetailPage() {
           />
         )}
       </Box>
+
+      <EditDialog
+        open={editDialogOpen}
+        onClose={resetEditState}
+        movement={selectedMovement}
+        tankMap={tankMap}
+        editData={editData}
+        onEditDataChange={setEditData}
+        onEdit={handleEdit}
+        isSubmitting={isUpdating}
+      />
+
+      <CompleteDialog
+        open={completeDialogOpen}
+        onClose={resetCompleteState}
+        movement={selectedMovement}
+        tankMap={tankMap}
+        actualVolume={actualVolume}
+        onActualVolumeChange={setActualVolume}
+        onComplete={handleComplete}
+        isSubmitting={isCompleting}
+      />
     </Box>
   );
 }

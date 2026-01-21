@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
-import { GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
+import { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { formatDate } from '@/lib/dateUtils';
@@ -175,15 +175,22 @@ export default function MovementsPage() {
     setCompleteDialogOpen(true);
   };
 
-  const handleBulkComplete = () => {
+  const handleBulkComplete = async () => {
     const pendingMovements = (movements || []).filter(
       (movement) => selectedRows.ids.has(movement.id) && movement.actual_volume === null
     );
     if (pendingMovements.length === 0) return;
     if (!confirm(`Complete ${pendingMovements.length} movements with expected volumes?`)) return;
-    pendingMovements.forEach((movement) => {
-      completeMutation.mutate({ id: movement.id, actual_volume: movement.expected_volume });
-    });
+
+    try {
+      await Promise.all(
+        pendingMovements.map((movement) =>
+          completeMutation.mutateAsync({ id: movement.id, actual_volume: movement.expected_volume })
+        )
+      );
+    } catch {
+      // Errors are handled by the mutation's onError callback
+    }
     setSelectedRows({ type: 'include', ids: new Set() });
   };
 
@@ -207,16 +214,23 @@ export default function MovementsPage() {
     updateMutation.mutate({ id: selectedMovement.id, data: editData });
   };
 
-  const handleBulkReschedule = () => {
+  const handleBulkReschedule = async () => {
     if (!editData.scheduled_date) return;
     const pendingMovements = (movements || []).filter(
       (movement) => selectedRows.ids.has(movement.id) && movement.actual_volume === null
     );
     if (pendingMovements.length === 0) return;
     if (!confirm(`Reschedule ${pendingMovements.length} movements to ${editData.scheduled_date}?`)) return;
-    pendingMovements.forEach((movement) => {
-      updateMutation.mutate({ id: movement.id, data: { scheduled_date: editData.scheduled_date } });
-    });
+
+    try {
+      await Promise.all(
+        pendingMovements.map((movement) =>
+          updateMutation.mutateAsync({ id: movement.id, data: { scheduled_date: editData.scheduled_date } })
+        )
+      );
+    } catch {
+      // Errors are handled by the mutation's onError callback
+    }
     setSelectedRows({ type: 'include', ids: new Set() });
   };
 
@@ -257,19 +271,15 @@ export default function MovementsPage() {
     if (movement) handleOpenComplete(movement);
   }, [movementMap]);
 
-  const columns = useMemo<GridColDef[]>(() => [
+  const columns = useMemo<GridColDef<MovementGridRowExtended>[]>(() => [
     {
       field: 'date',
       headerName: 'Date',
       minWidth: 100,
       flex: 0.8,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
-          {formatDate(
-            params.row?.date
-              ?? params.row?.scheduled_date
-              ?? params.row?.created_at
-          )}
+          {formatDate(params.row.date)}
         </Typography>
       )
     },
@@ -278,7 +288,7 @@ export default function MovementsPage() {
       headerName: 'Type',
       minWidth: 100,
       flex: 0.6,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <MovementTypeChip type={params.value as MovementType} />
       ),
       sortable: false,
@@ -288,7 +298,7 @@ export default function MovementsPage() {
       headerName: 'Source',
       minWidth: 80,
       flex: 0.5,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <SourceBadge source={params.value as MovementSource} />
       ),
       sortable: false,
@@ -305,7 +315,7 @@ export default function MovementsPage() {
       minWidth: 110,
       flex: 0.8,
       type: 'number',
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography sx={{ fontWeight: 600, fontSize: '0.8rem' }} noWrap>
           {Number(params.value || 0).toLocaleString()} bbl
         </Typography>
@@ -317,7 +327,7 @@ export default function MovementsPage() {
       minWidth: 110,
       flex: 0.8,
       type: 'number',
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography sx={{ color: params.value === null ? 'text.secondary' : 'text.primary', fontSize: '0.8rem' }} noWrap>
           {params.value === null ? '—' : `${Number(params.value).toLocaleString()} bbl`}
         </Typography>
@@ -328,7 +338,7 @@ export default function MovementsPage() {
       headerName: 'Status',
       minWidth: 100,
       flex: 0.6,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <MovementStatus isPending={Boolean(params.value)} />
       ),
       sortable: false,
@@ -345,8 +355,8 @@ export default function MovementsPage() {
       sortable: false,
       filterable: false,
       width: 100,
-      renderCell: (params: GridRenderCellParams) => {
-        const row = params.row as MovementGridRowExtended;
+      renderCell: (params) => {
+        const { row } = params;
         const isPending = row.status;
         const isAdjustment = row.type === 'adjustment';
         if (!isPending || isAdjustment) return null;

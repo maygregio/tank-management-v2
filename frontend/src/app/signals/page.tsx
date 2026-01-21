@@ -17,7 +17,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EditIcon from '@mui/icons-material/Edit';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
@@ -204,13 +204,13 @@ export default function SignalsPage() {
     if (signal) handleOpenTradeDialog(signal);
   }, [signalMap, handleOpenTradeDialog]);
 
-  const columns = useMemo<GridColDef[]>(() => [
+  const columns = useMemo<GridColDef<SignalGridRow>[]>(() => [
     {
       field: 'signal_id',
       headerName: 'Signal ID',
       minWidth: 120,
       flex: 0.9,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography sx={{ fontWeight: 600, color: 'var(--color-accent-cyan)' }} noWrap>
           {params.value}
         </Typography>
@@ -227,7 +227,7 @@ export default function SignalsPage() {
       headerName: 'Date',
       minWidth: 90,
       flex: 0.7,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
           {formatDate(params.value)}
         </Typography>
@@ -239,7 +239,7 @@ export default function SignalsPage() {
       minWidth: 100,
       flex: 0.7,
       type: 'number',
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography sx={{ fontWeight: 600 }} noWrap>
           {Number(params.value || 0).toLocaleString()}
         </Typography>
@@ -250,7 +250,7 @@ export default function SignalsPage() {
       headerName: 'Tank',
       minWidth: 100,
       flex: 0.8,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography
           sx={{
             fontWeight: params.value ? 600 : 400,
@@ -267,7 +267,7 @@ export default function SignalsPage() {
       headerName: 'Trade #',
       minWidth: 90,
       flex: 0.7,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography
           sx={{
             fontWeight: params.value ? 600 : 400,
@@ -284,7 +284,7 @@ export default function SignalsPage() {
       headerName: 'Line',
       minWidth: 70,
       flex: 0.5,
-      renderCell: (params: GridRenderCellParams) => (
+      renderCell: (params) => (
         <Typography
           sx={{
             fontWeight: params.value ? 600 : 400,
@@ -302,8 +302,8 @@ export default function SignalsPage() {
       sortable: false,
       filterable: false,
       minWidth: 180,
-      renderCell: (params: GridRenderCellParams) => {
-        const row = params.row as SignalGridRow;
+      renderCell: (params) => {
+        const { row } = params;
         const isAssigned = row.tank_id !== null;
         const hasTrade = row.trade_number && row.trade_line_item;
         return (
@@ -563,7 +563,7 @@ export default function SignalsPage() {
               <Select
                 value={assignmentData.tank_id}
                 label="Destination Tank"
-                onChange={(e) => setAssignmentData({ ...assignmentData, tank_id: e.target.value })}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, tank_id: e.target.value }))}
               >
                 {tanks?.map((tank: TankWithLevel) => (
                   <MenuItem key={tank.id} value={tank.id}>
@@ -582,10 +582,10 @@ export default function SignalsPage() {
               value={assignmentData.expected_volume || ''}
               onChange={(e) => {
                 const value = e.target.value;
-                setAssignmentData({
-                  ...assignmentData,
+                setAssignmentData(prev => ({
+                  ...prev,
                   expected_volume: value === '' ? 0 : Number(value),
-                });
+                }));
               }}
               slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
             />
@@ -597,7 +597,7 @@ export default function SignalsPage() {
               type="date"
               required
               value={assignmentData.scheduled_date}
-              onChange={(e) => setAssignmentData({ ...assignmentData, scheduled_date: e.target.value })}
+              onChange={(e) => setAssignmentData(prev => ({ ...prev, scheduled_date: e.target.value }))}
               slotProps={{ inputLabel: { shrink: true } }}
             />
 
@@ -608,7 +608,7 @@ export default function SignalsPage() {
               multiline
               rows={2}
               value={assignmentData.notes || ''}
-              onChange={(e) => setAssignmentData({ ...assignmentData, notes: e.target.value })}
+              onChange={(e) => setAssignmentData(prev => ({ ...prev, notes: e.target.value }))}
             />
           </Box>
         )}
@@ -671,7 +671,7 @@ export default function SignalsPage() {
               label="Trade Number"
               required
               value={tradeData.trade_number}
-              onChange={(e) => setTradeData({ ...tradeData, trade_number: e.target.value })}
+              onChange={(e) => setTradeData(prev => ({ ...prev, trade_number: e.target.value }))}
               placeholder="e.g., TR-123"
             />
 
@@ -681,7 +681,7 @@ export default function SignalsPage() {
               label="Trade Line Item"
               required
               value={tradeData.trade_line_item}
-              onChange={(e) => setTradeData({ ...tradeData, trade_line_item: e.target.value })}
+              onChange={(e) => setTradeData(prev => ({ ...prev, trade_line_item: e.target.value }))}
               placeholder="e.g., 01"
             />
           </Box>
