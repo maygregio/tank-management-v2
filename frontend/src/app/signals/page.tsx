@@ -39,6 +39,11 @@ export default function SignalsPage() {
     expected_volume: 0,
     scheduled_date: new Date().toISOString().split('T')[0],
     notes: '',
+    strategy: undefined,
+    destination: '',
+    equipment: '',
+    discharge_date: '',
+    base_diff: undefined,
   });
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
   const [selectedTradeSignal, setSelectedTradeSignal] = useState<Movement | null>(null);
@@ -119,6 +124,11 @@ export default function SignalsPage() {
       expected_volume: signal.expected_volume,
       scheduled_date: signal.scheduled_date,
       notes: signal.notes || '',
+      strategy: signal.strategy,
+      destination: signal.destination || '',
+      equipment: signal.equipment || '',
+      discharge_date: signal.discharge_date || '',
+      base_diff: signal.base_diff,
     });
     setAssignDialogOpen(true);
   }, []);
@@ -131,6 +141,11 @@ export default function SignalsPage() {
       expected_volume: 0,
       scheduled_date: new Date().toISOString().split('T')[0],
       notes: '',
+      strategy: undefined,
+      destination: '',
+      equipment: '',
+      discharge_date: '',
+      base_diff: undefined,
     });
   };
 
@@ -609,6 +624,77 @@ export default function SignalsPage() {
               rows={2}
               value={assignmentData.notes || ''}
               onChange={(e) => setAssignmentData(prev => ({ ...prev, notes: e.target.value }))}
+            />
+
+            {/* Additional workflow fields */}
+            <Box sx={{ mt: 3, mb: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.1em', fontSize: '0.6rem' }}>
+                ADDITIONAL INFO (OPTIONAL)
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Strategy ID"
+                type="number"
+                value={assignmentData.strategy ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAssignmentData(prev => ({
+                    ...prev,
+                    strategy: value === '' ? undefined : Number(value),
+                  }));
+                }}
+                slotProps={{ htmlInput: { min: 0 } }}
+              />
+
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Destination"
+                value={assignmentData.destination || ''}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, destination: e.target.value }))}
+                placeholder="e.g., IMTT"
+              />
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Equipment"
+                value={assignmentData.equipment || ''}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, equipment: e.target.value }))}
+                placeholder="e.g., WEB 241/248"
+              />
+
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Discharge Date"
+                type="date"
+                value={assignmentData.discharge_date || ''}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, discharge_date: e.target.value }))}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Box>
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Base Diff ($/bbl)"
+              type="number"
+              value={assignmentData.base_diff ?? ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setAssignmentData(prev => ({
+                  ...prev,
+                  base_diff: value === '' ? undefined : Number(value),
+                }));
+              }}
+              slotProps={{ htmlInput: { step: 0.01 } }}
             />
           </Box>
         )}

@@ -174,6 +174,71 @@ export function EditDialog({
             value={editData.notes || ''}
             onChange={(e) => onEditDataChange({ ...editData, notes: e.target.value })}
           />
+
+          {/* Additional workflow fields */}
+          <Box sx={{ mt: 3, mb: 1 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.1em', fontSize: '0.6rem' }}>
+              ADDITIONAL INFO (OPTIONAL)
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Strategy ID"
+              type="number"
+              value={editData.strategy ?? ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                onEditDataChange({ ...editData, strategy: value === '' ? undefined : Number(value) });
+              }}
+              slotProps={{ htmlInput: { min: 0 } }}
+            />
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Destination"
+              value={editData.destination || ''}
+              onChange={(e) => onEditDataChange({ ...editData, destination: e.target.value })}
+              placeholder="e.g., IMTT"
+            />
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Equipment"
+              value={editData.equipment || ''}
+              onChange={(e) => onEditDataChange({ ...editData, equipment: e.target.value })}
+              placeholder="e.g., WEB 241/248"
+            />
+
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Discharge Date"
+              type="date"
+              value={editData.discharge_date || ''}
+              onChange={(e) => onEditDataChange({ ...editData, discharge_date: e.target.value })}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </Box>
+
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Base Diff ($/bbl)"
+            type="number"
+            value={editData.base_diff ?? ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              onEditDataChange({ ...editData, base_diff: value === '' ? undefined : Number(value) });
+            }}
+            slotProps={{ htmlInput: { step: 0.01 } }}
+          />
         </Box>
       )}
     </GlassDialog>

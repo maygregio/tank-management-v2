@@ -25,6 +25,12 @@ class MovementBase(BaseModel):
     nomination_key: Optional[str] = None
     # PDF reference (for adjustments imported from PDFs)
     pdf_url: Optional[str] = None
+    # Additional fields for workflow tracking
+    strategy: Optional[int] = None  # Trading strategy ID (Trader/Green)
+    destination: Optional[str] = None  # Final delivery terminal e.g., "IMTT" (Blender/Orange)
+    equipment: Optional[str] = None  # Barge/vessel info e.g., "WEB 241/248" (Transportation/Yellow)
+    discharge_date: Optional[date] = None  # Date of receipt at discharge location (Transportation/Yellow)
+    base_diff: Optional[float] = None  # Base price differential $/bbl (Trader/external)
 
 
 class MovementCreate(BaseModel):
@@ -61,6 +67,11 @@ class MovementUpdate(BaseModel):
     scheduled_date: Optional[date] = None
     expected_volume: Optional[float] = Field(default=None, gt=0)
     notes: Optional[str] = None
+    strategy: Optional[int] = None
+    destination: Optional[str] = None
+    equipment: Optional[str] = None
+    discharge_date: Optional[date] = None
+    base_diff: Optional[float] = None
 
 
 class SignalAssignment(BaseModel):
@@ -69,6 +80,11 @@ class SignalAssignment(BaseModel):
     expected_volume: float = Field(gt=0)
     scheduled_date: date
     notes: Optional[str] = None
+    strategy: Optional[int] = None
+    destination: Optional[str] = None
+    equipment: Optional[str] = None
+    discharge_date: Optional[date] = None
+    base_diff: Optional[float] = None
 
 
 class TradeInfoUpdate(BaseModel):

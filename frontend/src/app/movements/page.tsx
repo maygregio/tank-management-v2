@@ -205,6 +205,11 @@ export default function MovementsPage() {
       scheduled_date: movement.scheduled_date,
       expected_volume: movement.expected_volume,
       notes: movement.notes || '',
+      strategy: movement.strategy,
+      destination: movement.destination || '',
+      equipment: movement.equipment || '',
+      discharge_date: movement.discharge_date || '',
+      base_diff: movement.base_diff,
     });
     setEditDialogOpen(true);
   };

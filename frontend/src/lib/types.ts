@@ -36,6 +36,12 @@ export interface Movement {
   nomination_key?: string;
   // PDF reference (for adjustments imported from PDFs)
   pdf_url?: string;
+  // Additional workflow fields
+  strategy?: number;  // Trading strategy ID (Trader/Green)
+  destination?: string;  // Final delivery terminal e.g., "IMTT" (Blender/Orange)
+  equipment?: string;  // Barge/vessel info e.g., "WEB 241/248" (Transportation/Yellow)
+  discharge_date?: string;  // Date of receipt at discharge location (Transportation/Yellow)
+  base_diff?: number;  // Base price differential $/bbl (Trader/external)
 }
 
 // Form types
@@ -76,6 +82,11 @@ export interface MovementUpdate {
   scheduled_date?: string;
   expected_volume?: number;
   notes?: string;
+  strategy?: number;
+  destination?: string;
+  equipment?: string;
+  discharge_date?: string;
+  base_diff?: number;
 }
 
 export interface AdjustmentCreate {
@@ -144,6 +155,11 @@ export interface SignalAssignment {
   expected_volume: number;
   scheduled_date: string;
   notes?: string;
+  strategy?: number;
+  destination?: string;
+  equipment?: string;
+  discharge_date?: string;
+  base_diff?: number;
 }
 
 export interface TradeInfoUpdate {
