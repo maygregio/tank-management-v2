@@ -28,7 +28,7 @@ export interface Movement {
   created_at: string;
   // Signal metadata
   signal_id?: string;
-  source_tank?: string;
+  refinery_tank_name?: string;
   // Trade information
   trade_number?: string;
   trade_line_item?: string;
@@ -154,7 +154,7 @@ export interface TradeInfoUpdate {
 export interface ParsedSignal {
   signal_id: string;
   load_date: string;
-  source_tank: string;
+  refinery_tank_name: string;
   volume: number;
 }
 
@@ -203,7 +203,7 @@ export interface COALinkRequest {
 export interface SignalGridRow {
   id: string;
   signal_id: string;
-  source_tank: string;
+  refinery_tank_name: string;
   load_date: string;
   volume: number;
   tank_id: string | null;

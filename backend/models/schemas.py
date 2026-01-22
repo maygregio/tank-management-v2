@@ -62,7 +62,7 @@ class MovementBase(BaseModel):
     notes: Optional[str] = None
     # Signal metadata (for movements created from refinery signals)
     signal_id: Optional[str] = None  # Refinery's signal ID
-    source_tank: Optional[str] = None  # Refinery tank name (external)
+    refinery_tank_name: Optional[str] = None  # Refinery tank name (external)
     # Trade information (filled separately from tank assignment)
     trade_number: Optional[str] = None
     trade_line_item: Optional[str] = None

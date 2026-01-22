@@ -76,8 +76,8 @@ class SignalService:
                 expected_volume=signal.volume,
                 scheduled_date=signal.load_date,
                 signal_id=signal.signal_id,
-                source_tank=signal.source_tank,
-                notes=f"Signal from refinery tank: {signal.source_tank}"
+                refinery_tank_name=signal.refinery_tank_name,
+                notes=f"Signal from refinery tank: {signal.refinery_tank_name}"
             )
             self._movement_storage.create(movement)
             created_count += 1

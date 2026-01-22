@@ -182,7 +182,7 @@ export default function SignalsPage() {
       return {
         id: signal.id,
         signal_id: signal.signal_id || 'N/A',
-        source_tank: signal.source_tank || 'Unknown',
+        refinery_tank_name: signal.refinery_tank_name || 'Unknown',
         load_date: signal.scheduled_date,
         volume: signal.expected_volume,
         tank_id: signal.tank_id,
@@ -217,7 +217,7 @@ export default function SignalsPage() {
       ),
     },
     {
-      field: 'source_tank',
+      field: 'refinery_tank_name',
       headerName: 'Refinery Tank',
       minWidth: 120,
       flex: 0.9,
@@ -553,7 +553,7 @@ export default function SignalsPage() {
                   <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
                     REFINERY TANK
                   </Typography>
-                  <Typography sx={{ fontSize: '0.85rem' }}>{selectedSignal.source_tank}</Typography>
+                  <Typography sx={{ fontSize: '0.85rem' }}>{selectedSignal.refinery_tank_name}</Typography>
                 </Box>
               </Box>
             </Box>
@@ -660,7 +660,7 @@ export default function SignalsPage() {
                   <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
                     REFINERY TANK
                   </Typography>
-                  <Typography sx={{ fontSize: '0.85rem' }}>{selectedTradeSignal.source_tank}</Typography>
+                  <Typography sx={{ fontSize: '0.85rem' }}>{selectedTradeSignal.refinery_tank_name}</Typography>
                 </Box>
               </Box>
             </Box>

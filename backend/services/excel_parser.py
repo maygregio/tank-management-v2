@@ -11,7 +11,7 @@ class ParsedSignal(BaseModel):
     """A single signal parsed from the Excel file."""
     signal_id: str
     load_date: date
-    source_tank: str  # Refinery tank name
+    refinery_tank_name: str  # Refinery tank name
     volume: float
 
 
@@ -64,7 +64,7 @@ def parse_signals_excel(file_content: bytes) -> ExcelParseResult:
                     col_map['load_date'] = col_idx
                     header_row = row_idx
                 elif cell_lower in tank_names:
-                    col_map['source_tank'] = col_idx
+                    col_map['refinery_tank_name'] = col_idx
                     header_row = row_idx
                 elif cell_lower in volume_names:
                     col_map['volume'] = col_idx
@@ -74,7 +74,7 @@ def parse_signals_excel(file_content: bytes) -> ExcelParseResult:
                 break
 
         # Validate we found required columns
-        required_cols = ['signal_id', 'load_date', 'source_tank', 'volume']
+        required_cols = ['signal_id', 'load_date', 'refinery_tank_name', 'volume']
         missing = [col for col in required_cols if col not in col_map]
         if missing:
             return ExcelParseResult(
@@ -91,11 +91,11 @@ def parse_signals_excel(file_content: bytes) -> ExcelParseResult:
             try:
                 signal_id = row[col_map['signal_id']]
                 load_date_raw = row[col_map['load_date']]
-                source_tank = row[col_map['source_tank']]
+                refinery_tank_name = row[col_map['refinery_tank_name']]
                 volume_raw = row[col_map['volume']]
 
                 # Validate required fields
-                if signal_id is None or source_tank is None or volume_raw is None:
+                if signal_id is None or refinery_tank_name is None or volume_raw is None:
                     errors.append(f"Row {row_idx}: Missing required field(s)")
                     continue
 
@@ -131,7 +131,7 @@ def parse_signals_excel(file_content: bytes) -> ExcelParseResult:
                 signals.append(ParsedSignal(
                     signal_id=str(signal_id).strip(),
                     load_date=load_date,
-                    source_tank=str(source_tank).strip(),
+                    refinery_tank_name=str(refinery_tank_name).strip(),
                     volume=volume
                 ))
 
