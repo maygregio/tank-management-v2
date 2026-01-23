@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { tanksApi, movementsApi } from '@/lib/api';
-import { invalidateTankQueries } from '@/lib/queryUtils';
 import { useToast } from '@/contexts/ToastContext';
 import { DEFAULT_POLLING_INTERVAL_MS } from '@/lib/constants';
 import type { Movement, MovementUpdate, TankWithLevel } from '@/lib/types';
@@ -71,7 +70,9 @@ export function useTankDetail({
     mutationFn: ({ id, data }: { id: string; data: MovementUpdate }) =>
       movementsApi.update(id, data),
     onSuccess: () => {
-      invalidateTankQueries(queryClient, tankId);
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
+      queryClient.invalidateQueries({ queryKey: ['tank', tankId] });
+      queryClient.invalidateQueries({ queryKey: ['tank-history', tankId] });
       success('Movement updated successfully');
     },
     onError: () => {
@@ -84,7 +85,9 @@ export function useTankDetail({
     mutationFn: ({ id, actual_volume }: { id: string; actual_volume: number }) =>
       movementsApi.complete(id, { actual_volume }),
     onSuccess: () => {
-      invalidateTankQueries(queryClient, tankId);
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
+      queryClient.invalidateQueries({ queryKey: ['tank', tankId] });
+      queryClient.invalidateQueries({ queryKey: ['tank-history', tankId] });
       success('Movement completed successfully');
     },
     onError: () => {

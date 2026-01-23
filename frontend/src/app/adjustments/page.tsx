@@ -26,7 +26,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { adjustmentsApi, movementsApi, tanksApi } from '@/lib/api';
-import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles, buttonStyles, openPdfInNewTab } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import SectionHeader from '@/components/SectionHeader';
@@ -98,7 +97,8 @@ export default function AdjustmentsPage() {
   const importMutation = useMutation({
     mutationFn: adjustmentsApi.confirmImport,
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       setActiveStep(2);
     },
   });

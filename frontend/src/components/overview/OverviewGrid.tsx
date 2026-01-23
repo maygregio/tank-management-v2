@@ -5,9 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
-import { DataGrid, GridColDef, GridColumnVisibilityModel, GridRowModel } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridColumnVisibilityModel } from '@mui/x-data-grid';
 import { overviewApi, movementsApi, tanksApi } from '@/lib/api';
-import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 import type { MovementWithCOA, MovementUpdate } from '@/lib/types';
@@ -56,7 +55,8 @@ export default function OverviewGrid() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: MovementUpdate }) => movementsApi.update(id, data),
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       queryClient.invalidateQueries({ queryKey: ['overview'] });
     },
     onError: (err: Error) => showError(err.message),
@@ -78,14 +78,14 @@ export default function OverviewGrid() {
     saveColumnPreferences({ profileName: detected, visibilityModel: model });
   }, []);
 
-  const processRowUpdate = useCallback(async (newRow: GridRowModel, oldRow: GridRowModel): Promise<GridRowModel> => {
-    const field = Object.keys(FIELD_MAP).find(f => newRow[f] !== oldRow[f]);
+  const processRowUpdate = useCallback(async (newRow: MovementWithCOA, oldRow: MovementWithCOA): Promise<MovementWithCOA> => {
+    const field = Object.keys(FIELD_MAP).find(f => newRow[f as keyof MovementWithCOA] !== oldRow[f as keyof MovementWithCOA]);
     if (!field) return oldRow;
 
     try {
       await updateMutation.mutateAsync({
-        id: newRow.id as string,
-        data: { [FIELD_MAP[field]]: newRow[field] },
+        id: newRow.id,
+        data: { [FIELD_MAP[field]]: newRow[field as keyof MovementWithCOA] },
       });
       return newRow;
     } catch {
@@ -178,7 +178,7 @@ export default function OverviewGrid() {
           '& .MuiDataGrid-footerContainer': { borderTop: '1px solid var(--glass-border)', bgcolor: 'rgba(0, 229, 255, 0.04)' },
         }}
       >
-        <DataGrid
+        <DataGrid<MovementWithCOA>
           rows={movements || []}
           columns={columns}
           columnVisibilityModel={visibility}

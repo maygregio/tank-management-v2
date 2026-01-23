@@ -27,7 +27,6 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { importsApi } from '@/lib/api';
-import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles, movementTypeLabels, movementTypeColors, movementTypeChipColors } from '@/lib/constants';
 import type {
   MovementType,
@@ -90,7 +89,8 @@ export default function PdfImportForm({ tanks }: PdfImportFormProps) {
   const importMutation = useMutation({
     mutationFn: importsApi.confirmImport,
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       setPdfStep(2);
     },
   });

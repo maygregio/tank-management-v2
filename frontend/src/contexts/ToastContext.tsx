@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useCallback } from 'react';
-import { useSnackbar, OptionsObject } from 'notistack';
+import { useSnackbar, OptionsObject, VariantType } from 'notistack';
 
 interface ToastContextValue {
   success: (message: string, options?: OptionsObject) => void;
@@ -15,45 +15,17 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const { enqueueSnackbar } = useSnackbar();
 
-  const success = useCallback(
-    (message: string, options?: OptionsObject) => {
-      enqueueSnackbar(message, {
-        variant: 'success',
-        ...options,
-      });
+  const notify = useCallback(
+    (message: string, variant: VariantType, options?: OptionsObject) => {
+      enqueueSnackbar(message, { variant, ...options });
     },
     [enqueueSnackbar]
   );
 
-  const error = useCallback(
-    (message: string, options?: OptionsObject) => {
-      enqueueSnackbar(message, {
-        variant: 'error',
-        ...options,
-      });
-    },
-    [enqueueSnackbar]
-  );
-
-  const warning = useCallback(
-    (message: string, options?: OptionsObject) => {
-      enqueueSnackbar(message, {
-        variant: 'warning',
-        ...options,
-      });
-    },
-    [enqueueSnackbar]
-  );
-
-  const info = useCallback(
-    (message: string, options?: OptionsObject) => {
-      enqueueSnackbar(message, {
-        variant: 'info',
-        ...options,
-      });
-    },
-    [enqueueSnackbar]
-  );
+  const success = useCallback((m: string, o?: OptionsObject) => notify(m, 'success', o), [notify]);
+  const error = useCallback((m: string, o?: OptionsObject) => notify(m, 'error', o), [notify]);
+  const warning = useCallback((m: string, o?: OptionsObject) => notify(m, 'warning', o), [notify]);
+  const info = useCallback((m: string, o?: OptionsObject) => notify(m, 'info', o), [notify]);
 
   return (
     <ToastContext.Provider value={{ success, error, warning, info }}>

@@ -13,7 +13,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
-import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 import MovementTypeChip from '@/components/MovementTypeChip';
@@ -78,7 +77,8 @@ export default function MovementsPage() {
   const createMutation = useMutation({
     mutationFn: movementsApi.create,
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       setFormData({
         type: formData.type,
         tank_id: '',
@@ -97,7 +97,8 @@ export default function MovementsPage() {
   const transferMutation = useMutation({
     mutationFn: movementsApi.createTransfer,
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       setFormData({
         type: formData.type,
         tank_id: '',
@@ -123,7 +124,8 @@ export default function MovementsPage() {
     mutationFn: ({ id, actual_volume }: { id: string; actual_volume: number }) =>
       movementsApi.complete(id, { actual_volume }),
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       resetCompleteState();
     },
     onError: (err: Error) => {
@@ -141,7 +143,8 @@ export default function MovementsPage() {
     mutationFn: ({ id, data }: { id: string; data: MovementUpdate }) =>
       movementsApi.update(id, data),
     onSuccess: () => {
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       resetEditState();
     },
     onError: (err: Error) => {

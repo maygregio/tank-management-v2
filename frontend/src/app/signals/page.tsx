@@ -19,7 +19,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import EditIcon from '@mui/icons-material/Edit';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
-import { invalidateCommonQueries } from '@/lib/queryUtils';
 import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
@@ -66,7 +65,8 @@ export default function SignalsPage() {
     mutationFn: (file: File) => movementsApi.uploadSignals(file),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       const skippedMsg = result.skipped_count > 0 ? ` (${result.skipped_count} already existed)` : '';
       showSuccess(`Added ${result.created_count} new signal(s)${skippedMsg}`);
       if (result.errors.length > 0) {
@@ -83,7 +83,8 @@ export default function SignalsPage() {
       movementsApi.assignSignal(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       showSuccess('Signal assigned successfully');
       handleCloseAssignDialog();
     },
@@ -97,7 +98,8 @@ export default function SignalsPage() {
       movementsApi.updateTradeInfo(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['signals'] });
-      invalidateCommonQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['tanks'] });
       showSuccess('Trade information updated');
       handleCloseTradeDialog();
     },

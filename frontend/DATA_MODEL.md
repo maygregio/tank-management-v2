@@ -38,13 +38,18 @@ This document describes the data entities and their relationships in the tank ma
 │ notes                │  │       ├─ transfer
 │ signal_id ───────────┼──┼─┐     └─ adjustment
 │ refinery_tank_name   │  │ │
-│ trade_number         │  │ │
-│ trade_line_item      │  │ │
-│ nomination_key ──────┼──┼─┼─┐
-│ pdf_url              │  │ │ │
+│ trade_number         │  │ │     Workflow Fields:
+│ trade_line_item      │  │ │     ├─ strategy
+│ nomination_key ──────┼──┼─┼─┐   ├─ destination
+│ pdf_url              │  │ │ │   ├─ equipment
+│ strategy             │  │ │ │   ├─ discharge_date
+│ destination          │  │ │ │   ├─ base_diff
+│ equipment            │  │ │ │   └─ quality_adj_diff
+│ discharge_date       │  │ │ │
+│ base_diff            │  │ │ │
+│ quality_adj_diff     │  │ │ │
 └──────────────────────┘  │ │ │
            ▲              │ │ │
-           │              │ │ │
            │              │ │ │
     ┌──────┴──────────────┘ │ │
     │                       │ │
@@ -119,23 +124,50 @@ Physical storage container for feedstock (carbon black oil or other).
 
 ### Movement
 
-Records all volume changes in the system.
+Records all volume changes in the system. Uses paired fields pattern for system vs. user values.
 
+#### Core Fields
 | Field | Description |
 |-------|-------------|
 | `id` | Unique identifier |
 | `type` | `load`, `discharge`, `transfer`, or `adjustment` |
-| `tank_id` | Source tank (null for unassigned signals) |
 | `target_tank_id` | Destination tank (transfers only) |
-| `expected_volume` | Planned volume |
 | `actual_volume` | Actual volume (null = pending) |
-| `scheduled_date` | When movement is/was scheduled |
 | `signal_id` | Refinery signal ID (if from signal import) |
 | `refinery_tank_name` | Refinery tank name from signal |
-| `trade_number` | Trade reference number |
-| `trade_line_item` | Trade line item |
 | `nomination_key` | Key for COA auto-linking |
 | `pdf_url` | Reference to source PDF (adjustments) |
+
+#### Paired Fields (Default + Manual)
+
+These fields use the paired pattern where `*_default` stores system/import values and `*_manual` stores user overrides. The computed property returns `manual ?? default`.
+
+| Computed Field | Default Field | Manual Field | Description |
+|----------------|---------------|--------------|-------------|
+| `tank_id` | `tank_id_default` | `tank_id_manual` | Assigned tank |
+| `expected_volume` | `expected_volume_default` | `expected_volume_manual` | Planned volume |
+| `scheduled_date` | `scheduled_date_default` | `scheduled_date_manual` | Load/scheduled date |
+| `notes` | `notes_default` | `notes_manual` | Status comments |
+| `trade_number` | `trade_number_default` | `trade_number_manual` | Trade reference |
+| `trade_line_item` | `trade_line_item_default` | `trade_line_item_manual` | Trade line item |
+| `strategy` | `strategy_default` | `strategy_manual` | Strategy number |
+| `destination` | `destination_default` | `destination_manual` | Destination |
+| `equipment` | `equipment_default` | `equipment_manual` | Equipment used |
+| `discharge_date` | `discharge_date_default` | `discharge_date_manual` | Discharge date |
+| `base_diff` | `base_diff_default` | `base_diff_manual` | Base differential |
+| `quality_adj_diff` | `quality_adj_diff_default` | `quality_adj_diff_manual` | Quality adjustment differential |
+
+### MovementWithCOA
+
+Extended Movement type used by the Overview grid. Includes COA chemical properties joined via `nomination_key` or `signal_id`.
+
+| Field | Description |
+|-------|-------------|
+| *(all Movement fields)* | |
+| `coa_api_gravity` | API gravity from linked COA |
+| `coa_sulfur_content` | Sulfur content from linked COA |
+| `coa_viscosity` | Viscosity from linked COA |
+| `coa_ash_content` | Ash content from linked COA |
 
 ### Signal
 
@@ -158,11 +190,15 @@ Chemical analysis document for carbon black oil shipments.
 | `analysis_date` | Date of analysis |
 | `bmci` | Bureau of Mines Correlation Index |
 | `api_gravity` | API gravity measurement |
+| `specific_gravity` | Specific gravity |
 | `sulfur_content` | Sulfur percentage |
 | `viscosity` | Viscosity measurement |
+| `viscosity_temp` | Temperature for viscosity reading |
 | `flash_point` | Flash point temperature |
 | `ash_content` | Ash percentage |
-| ... | Other chemical properties |
+| `moisture_content` | Moisture percentage |
+| `toluene_insoluble` | Toluene insoluble percentage |
+| `sodium_content` | Sodium content (ppm) |
 
 ## Relationships
 
@@ -180,4 +216,22 @@ Chemical analysis document for carbon black oil shipments.
 | `load` | Increases level |
 | `discharge` | Decreases level |
 | `transfer` | Decreases source, increases target |
-| `adjustment` | Sets level to match physical reading |
+| `adjustment` | Sets level to match physical reading (can be positive or negative) |
+
+## API Update Pattern
+
+When updating Movement fields, send only the `*_manual` variant:
+
+```typescript
+// Update expected volume
+movementsApi.update(id, { expected_volume_manual: 5000 });
+
+// Update multiple fields
+movementsApi.update(id, {
+  notes_manual: "Updated status",
+  strategy_manual: 2,
+  quality_adj_diff_manual: 0.05
+});
+```
+
+The backend stores the manual value and the computed property returns `manual ?? default`.
