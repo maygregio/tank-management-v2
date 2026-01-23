@@ -72,7 +72,7 @@ export function useTankHistoryViewModel({
         (movement.type === 'transfer' && movement.tank_id === tankId);
       const sign = isOutgoing ? -1 : 1;
       const movementVolume = Math.abs(
-        movement.actual_volume ?? movement.expected_volume
+        movement.actual_volume ?? (movement.expected_volume || 0)
       );
       const movementDate = movement.scheduled_date || movement.created_at;
 

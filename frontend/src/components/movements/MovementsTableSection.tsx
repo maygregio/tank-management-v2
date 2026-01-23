@@ -124,8 +124,8 @@ export default function MovementsTableSection({
           <TextField
             size="small"
             type="date"
-            value={editData.scheduled_date || ''}
-            onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
+            value={editData.scheduled_date_manual || ''}
+            onChange={(e) => onEditDataChange({ ...editData, scheduled_date_manual: e.target.value })}
             slotProps={{ inputLabel: { shrink: true } }}
             inputProps={{ 'aria-label': 'Reschedule date' }}
             sx={{ width: 140 }}
@@ -133,7 +133,7 @@ export default function MovementsTableSection({
           <Button
             variant="outlined"
             size="small"
-            disabled={selectedRows.ids.size === 0 || !editData.scheduled_date}
+            disabled={selectedRows.ids.size === 0 || !editData.scheduled_date_manual}
             onClick={onBulkReschedule}
             sx={{ borderColor: 'var(--color-accent-cyan)', color: 'var(--color-accent-cyan)', whiteSpace: 'nowrap' }}
           >

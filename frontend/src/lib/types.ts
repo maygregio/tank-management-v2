@@ -19,29 +19,53 @@ export interface TankWithLevel extends Tank {
 export interface Movement {
   id: string;
   type: MovementType;
-  tank_id: string | null;  // null = unassigned signal
   target_tank_id?: string;
-  expected_volume: number;
   actual_volume: number | null;
-  scheduled_date: string;
-  notes?: string;
   created_at: string;
   // Signal metadata
   signal_id?: string;
   refinery_tank_name?: string;
-  // Trade information
-  trade_number?: string;
-  trade_line_item?: string;
   // Nomination key for COA linking
   nomination_key?: string;
   // PDF reference (for adjustments imported from PDFs)
   pdf_url?: string;
-  // Additional workflow fields
-  strategy?: number;  // Trading strategy ID (Trader/Green)
-  destination?: string;  // Final delivery terminal e.g., "IMTT" (Blender/Orange)
-  equipment?: string;  // Barge/vessel info e.g., "WEB 241/248" (Transportation/Yellow)
-  discharge_date?: string;  // Date of receipt at discharge location (Transportation/Yellow)
-  base_diff?: number;  // Base price differential $/bbl (Trader/external)
+
+  // === Computed Fields: Effective Values (returned by API) ===
+  tank_id?: string;
+  expected_volume?: number;
+  scheduled_date?: string;
+  notes?: string;
+  trade_number?: string;
+  trade_line_item?: string;
+  strategy?: number;
+  destination?: string;
+  equipment?: string;
+  discharge_date?: string;
+  base_diff?: number;
+
+  // === Paired Fields: System Defaults + Manual Overrides ===
+  tank_id_default?: string;
+  tank_id_manual?: string;
+  expected_volume_default?: number;
+  expected_volume_manual?: number;
+  scheduled_date_default?: string;
+  scheduled_date_manual?: string;
+  notes_default?: string;
+  notes_manual?: string;
+  trade_number_default?: string;
+  trade_number_manual?: string;
+  trade_line_item_default?: string;
+  trade_line_item_manual?: string;
+  strategy_default?: number;
+  strategy_manual?: number;
+  destination_default?: string;
+  destination_manual?: string;
+  equipment_default?: string;
+  equipment_manual?: string;
+  discharge_date_default?: string;
+  discharge_date_manual?: string;
+  base_diff_default?: number;
+  base_diff_manual?: number;
 }
 
 // Form types
@@ -79,14 +103,18 @@ export interface MovementComplete {
 }
 
 export interface MovementUpdate {
-  scheduled_date?: string;
-  expected_volume?: number;
-  notes?: string;
-  strategy?: number;
-  destination?: string;
-  equipment?: string;
-  discharge_date?: string;
-  base_diff?: number;
+  // All update fields are manual overrides
+  scheduled_date_manual?: string;
+  expected_volume_manual?: number;
+  notes_manual?: string;
+  tank_id_manual?: string;
+  trade_number_manual?: string;
+  trade_line_item_manual?: string;
+  strategy_manual?: number;
+  destination_manual?: string;
+  equipment_manual?: string;
+  discharge_date_manual?: string;
+  base_diff_manual?: number;
 }
 
 export interface AdjustmentCreate {
@@ -151,15 +179,16 @@ export interface PDFImportResult {
 
 // Signal types
 export interface SignalAssignment {
-  tank_id: string;
-  expected_volume: number;
-  scheduled_date: string;
-  notes?: string;
-  strategy?: number;
-  destination?: string;
-  equipment?: string;
-  discharge_date?: string;
-  base_diff?: number;
+  // All assignment fields are manual overrides
+  tank_id_manual: string;
+  expected_volume_manual: number;
+  scheduled_date_manual: string;
+  notes_manual?: string;
+  strategy_manual?: number;
+  destination_manual?: string;
+  equipment_manual?: string;
+  discharge_date_manual?: string;
+  base_diff_manual?: number;
 }
 
 export interface TradeInfoUpdate {

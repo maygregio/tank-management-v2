@@ -171,7 +171,7 @@ export default function MovementsPage() {
 
   const handleOpenComplete = (movement: Movement) => {
     setSelectedMovement(movement);
-    setActualVolume(movement.expected_volume);
+    setActualVolume(movement.expected_volume || 0);
     setCompleteDialogOpen(true);
   };
 
@@ -185,7 +185,7 @@ export default function MovementsPage() {
     try {
       await Promise.all(
         pendingMovements.map((movement) =>
-          completeMutation.mutateAsync({ id: movement.id, actual_volume: movement.expected_volume })
+          completeMutation.mutateAsync({ id: movement.id, actual_volume: movement.expected_volume || 0 })
         )
       );
     } catch {
@@ -202,14 +202,14 @@ export default function MovementsPage() {
   const handleOpenEdit = (movement: Movement) => {
     setSelectedMovement(movement);
     setEditData({
-      scheduled_date: movement.scheduled_date,
-      expected_volume: movement.expected_volume,
-      notes: movement.notes || '',
-      strategy: movement.strategy,
-      destination: movement.destination || '',
-      equipment: movement.equipment || '',
-      discharge_date: movement.discharge_date || '',
-      base_diff: movement.base_diff,
+      scheduled_date_manual: movement.scheduled_date || '',
+      expected_volume_manual: movement.expected_volume,
+      notes_manual: movement.notes || '',
+      strategy_manual: movement.strategy,
+      destination_manual: movement.destination || '',
+      equipment_manual: movement.equipment || '',
+      discharge_date_manual: movement.discharge_date || '',
+      base_diff_manual: movement.base_diff,
     });
     setEditDialogOpen(true);
   };
@@ -220,17 +220,17 @@ export default function MovementsPage() {
   };
 
   const handleBulkReschedule = async () => {
-    if (!editData.scheduled_date) return;
+    if (!editData.scheduled_date_manual) return;
     const pendingMovements = (movements || []).filter(
       (movement) => selectedRows.ids.has(movement.id) && movement.actual_volume === null
     );
     if (pendingMovements.length === 0) return;
-    if (!confirm(`Reschedule ${pendingMovements.length} movements to ${editData.scheduled_date}?`)) return;
+    if (!confirm(`Reschedule ${pendingMovements.length} movements to ${editData.scheduled_date_manual}?`)) return;
 
     try {
       await Promise.all(
         pendingMovements.map((movement) =>
-          updateMutation.mutateAsync({ id: movement.id, data: { scheduled_date: editData.scheduled_date } })
+          updateMutation.mutateAsync({ id: movement.id, data: { scheduled_date_manual: editData.scheduled_date_manual } })
         )
       );
     } catch {

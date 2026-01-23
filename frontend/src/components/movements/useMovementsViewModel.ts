@@ -118,7 +118,7 @@ export function useMovementsViewModel({
         date: dateValue,
         type: movement.type,
         tankName: `${tank?.name || 'Unknown'}${targetTank ? ` → ${targetTank.name}` : ''}`,
-        expectedVolume: movement.expected_volume,
+        expectedVolume: movement.expected_volume || 0,
         actualVolume: movement.actual_volume,
         status: isPending,
         isFuture,

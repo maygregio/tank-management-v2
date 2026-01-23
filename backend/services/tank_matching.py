@@ -1,5 +1,5 @@
 from rapidfuzz import fuzz, process
-from models.schemas import (
+from models import (
     Tank, TankMatchSuggestion, PDFExtractedMovement,
     PDFMovementWithMatches, MovementType
 )

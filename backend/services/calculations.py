@@ -1,6 +1,6 @@
 from datetime import date
 
-from models.schemas import Tank, Movement, MovementType, TankWithLevel
+from models import Tank, Movement, MovementType, TankWithLevel
 
 
 def get_effective_volume(movement: Movement) -> float:

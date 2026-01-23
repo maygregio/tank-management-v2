@@ -35,15 +35,15 @@ export default function SignalsPage() {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<Movement | null>(null);
   const [assignmentData, setAssignmentData] = useState<SignalAssignment>({
-    tank_id: '',
-    expected_volume: 0,
-    scheduled_date: new Date().toISOString().split('T')[0],
-    notes: '',
-    strategy: undefined,
-    destination: '',
-    equipment: '',
-    discharge_date: '',
-    base_diff: undefined,
+    tank_id_manual: '',
+    expected_volume_manual: 0,
+    scheduled_date_manual: new Date().toISOString().split('T')[0],
+    notes_manual: '',
+    strategy_manual: undefined,
+    destination_manual: '',
+    equipment_manual: '',
+    discharge_date_manual: '',
+    base_diff_manual: undefined,
   });
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
   const [selectedTradeSignal, setSelectedTradeSignal] = useState<Movement | null>(null);
@@ -120,15 +120,15 @@ export default function SignalsPage() {
   const handleOpenAssignDialog = useCallback((signal: Movement) => {
     setSelectedSignal(signal);
     setAssignmentData({
-      tank_id: '',
-      expected_volume: signal.expected_volume,
-      scheduled_date: signal.scheduled_date,
-      notes: signal.notes || '',
-      strategy: signal.strategy,
-      destination: signal.destination || '',
-      equipment: signal.equipment || '',
-      discharge_date: signal.discharge_date || '',
-      base_diff: signal.base_diff,
+      tank_id_manual: '',
+      expected_volume_manual: signal.expected_volume || 0,
+      scheduled_date_manual: signal.scheduled_date || new Date().toISOString().split('T')[0],
+      notes_manual: signal.notes || '',
+      strategy_manual: signal.strategy,
+      destination_manual: signal.destination || '',
+      equipment_manual: signal.equipment || '',
+      discharge_date_manual: signal.discharge_date || '',
+      base_diff_manual: signal.base_diff,
     });
     setAssignDialogOpen(true);
   }, []);
@@ -137,20 +137,20 @@ export default function SignalsPage() {
     setAssignDialogOpen(false);
     setSelectedSignal(null);
     setAssignmentData({
-      tank_id: '',
-      expected_volume: 0,
-      scheduled_date: new Date().toISOString().split('T')[0],
-      notes: '',
-      strategy: undefined,
-      destination: '',
-      equipment: '',
-      discharge_date: '',
-      base_diff: undefined,
+      tank_id_manual: '',
+      expected_volume_manual: 0,
+      scheduled_date_manual: new Date().toISOString().split('T')[0],
+      notes_manual: '',
+      strategy_manual: undefined,
+      destination_manual: '',
+      equipment_manual: '',
+      discharge_date_manual: '',
+      base_diff_manual: undefined,
     });
   };
 
   const handleAssign = () => {
-    if (!selectedSignal || !assignmentData.tank_id) return;
+    if (!selectedSignal || !assignmentData.tank_id_manual) return;
     assignMutation.mutate({ id: selectedSignal.id, data: assignmentData });
   };
 
@@ -198,9 +198,9 @@ export default function SignalsPage() {
         id: signal.id,
         signal_id: signal.signal_id || 'N/A',
         refinery_tank_name: signal.refinery_tank_name || 'Unknown',
-        load_date: signal.scheduled_date,
-        volume: signal.expected_volume,
-        tank_id: signal.tank_id,
+        load_date: signal.scheduled_date || '',
+        volume: signal.expected_volume || 0,
+        tank_id: signal.tank_id || null,
         tank_name: tank?.name || null,
         trade_number: signal.trade_number || null,
         trade_line_item: signal.trade_line_item || null,
@@ -402,7 +402,7 @@ export default function SignalsPage() {
             TOTAL VOLUME
           </Typography>
           <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, color: '#8b5cf6' }}>
-            {(signals?.reduce((sum, s) => sum + s.expected_volume, 0) || 0).toLocaleString()} bbl
+            {(signals?.reduce((sum, s) => sum + (s.expected_volume || 0), 0) || 0).toLocaleString()} bbl
           </Typography>
         </Box>
         <Box sx={styles.summaryCard}>
@@ -538,7 +538,7 @@ export default function SignalsPage() {
             <Button
               onClick={handleAssign}
               variant="contained"
-              disabled={!assignmentData.tank_id || assignmentData.expected_volume <= 0 || assignMutation.isPending}
+              disabled={!assignmentData.tank_id_manual || assignmentData.expected_volume_manual <= 0 || assignMutation.isPending}
               sx={{
                 bgcolor: 'rgba(0, 230, 118, 0.1)',
                 color: '#00e676',
@@ -576,9 +576,9 @@ export default function SignalsPage() {
             <FormControl fullWidth margin="normal" required>
               <InputLabel>Destination Tank</InputLabel>
               <Select
-                value={assignmentData.tank_id}
+                value={assignmentData.tank_id_manual}
                 label="Destination Tank"
-                onChange={(e) => setAssignmentData(prev => ({ ...prev, tank_id: e.target.value }))}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, tank_id_manual: e.target.value }))}
               >
                 {tanks?.map((tank: TankWithLevel) => (
                   <MenuItem key={tank.id} value={tank.id}>
@@ -594,12 +594,12 @@ export default function SignalsPage() {
               label="Expected Volume (bbl)"
               type="number"
               required
-              value={assignmentData.expected_volume || ''}
+              value={assignmentData.expected_volume_manual || ''}
               onChange={(e) => {
                 const value = e.target.value;
                 setAssignmentData(prev => ({
                   ...prev,
-                  expected_volume: value === '' ? 0 : Number(value),
+                  expected_volume_manual: value === '' ? 0 : Number(value),
                 }));
               }}
               slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
@@ -611,8 +611,8 @@ export default function SignalsPage() {
               label="Scheduled Date"
               type="date"
               required
-              value={assignmentData.scheduled_date}
-              onChange={(e) => setAssignmentData(prev => ({ ...prev, scheduled_date: e.target.value }))}
+              value={assignmentData.scheduled_date_manual}
+              onChange={(e) => setAssignmentData(prev => ({ ...prev, scheduled_date_manual: e.target.value }))}
               slotProps={{ inputLabel: { shrink: true } }}
             />
 
@@ -622,8 +622,8 @@ export default function SignalsPage() {
               label="Notes"
               multiline
               rows={2}
-              value={assignmentData.notes || ''}
-              onChange={(e) => setAssignmentData(prev => ({ ...prev, notes: e.target.value }))}
+              value={assignmentData.notes_manual || ''}
+              onChange={(e) => setAssignmentData(prev => ({ ...prev, notes_manual: e.target.value }))}
             />
 
             {/* Additional workflow fields */}
@@ -639,12 +639,12 @@ export default function SignalsPage() {
                 margin="normal"
                 label="Strategy ID"
                 type="number"
-                value={assignmentData.strategy ?? ''}
+                value={assignmentData.strategy_manual ?? ''}
                 onChange={(e) => {
                   const value = e.target.value;
                   setAssignmentData(prev => ({
                     ...prev,
-                    strategy: value === '' ? undefined : Number(value),
+                    strategy_manual: value === '' ? undefined : Number(value),
                   }));
                 }}
                 slotProps={{ htmlInput: { min: 0 } }}
@@ -654,8 +654,8 @@ export default function SignalsPage() {
                 fullWidth
                 margin="normal"
                 label="Destination"
-                value={assignmentData.destination || ''}
-                onChange={(e) => setAssignmentData(prev => ({ ...prev, destination: e.target.value }))}
+                value={assignmentData.destination_manual || ''}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, destination_manual: e.target.value }))}
                 placeholder="e.g., IMTT"
               />
             </Box>
@@ -665,8 +665,8 @@ export default function SignalsPage() {
                 fullWidth
                 margin="normal"
                 label="Equipment"
-                value={assignmentData.equipment || ''}
-                onChange={(e) => setAssignmentData(prev => ({ ...prev, equipment: e.target.value }))}
+                value={assignmentData.equipment_manual || ''}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, equipment_manual: e.target.value }))}
                 placeholder="e.g., WEB 241/248"
               />
 
@@ -675,8 +675,8 @@ export default function SignalsPage() {
                 margin="normal"
                 label="Discharge Date"
                 type="date"
-                value={assignmentData.discharge_date || ''}
-                onChange={(e) => setAssignmentData(prev => ({ ...prev, discharge_date: e.target.value }))}
+                value={assignmentData.discharge_date_manual || ''}
+                onChange={(e) => setAssignmentData(prev => ({ ...prev, discharge_date_manual: e.target.value }))}
                 slotProps={{ inputLabel: { shrink: true } }}
               />
             </Box>
@@ -686,12 +686,12 @@ export default function SignalsPage() {
               margin="normal"
               label="Base Diff ($/bbl)"
               type="number"
-              value={assignmentData.base_diff ?? ''}
+              value={assignmentData.base_diff_manual ?? ''}
               onChange={(e) => {
                 const value = e.target.value;
                 setAssignmentData(prev => ({
                   ...prev,
-                  base_diff: value === '' ? undefined : Number(value),
+                  base_diff_manual: value === '' ? undefined : Number(value),
                 }));
               }}
               slotProps={{ htmlInput: { step: 0.01 } }}

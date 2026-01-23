@@ -151,7 +151,7 @@ export function useSignalsQuery(options?: QueryOptions<Movement[]>) {
 export function useCOAsQuery(options?: QueryOptions<COAWithSignal[]>) {
   return useQuery({
     queryKey: queryKeys.coa.all,
-    queryFn: coaApi.getAll,
+    queryFn: ({ signal }) => coaApi.getAll(signal),
     ...defaultQueryOptions,
     ...options,
   });

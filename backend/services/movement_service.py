@@ -99,12 +99,12 @@ class MovementService:
 
         movement = Movement(
             type=movement_data.type,
-            tank_id=movement_data.tank_id,
+            tank_id_default=movement_data.tank_id,  # System/form values go to _default
             target_tank_id=movement_data.target_tank_id,
-            expected_volume=movement_data.expected_volume,
+            expected_volume_default=movement_data.expected_volume,
             actual_volume=None,
-            scheduled_date=movement_data.scheduled_date,
-            notes=movement_data.notes
+            scheduled_date_default=movement_data.scheduled_date,
+            notes_default=movement_data.notes
         )
         created = self._movement_storage.create(movement)
         logger.info(f"Movement created: {created.id}")
@@ -141,12 +141,12 @@ class MovementService:
 
             movement = Movement(
                 type=MovementType.TRANSFER,
-                tank_id=transfer_data.source_tank_id,
+                tank_id_default=transfer_data.source_tank_id,  # System/form values go to _default
                 target_tank_id=target.tank_id,
-                expected_volume=target.volume,
+                expected_volume_default=target.volume,
                 actual_volume=None,
-                scheduled_date=transfer_data.scheduled_date,
-                notes=transfer_data.notes,
+                scheduled_date_default=transfer_data.scheduled_date,
+                notes_default=transfer_data.notes,
             )
             created_movements.append(self._movement_storage.create(movement))
 
@@ -154,7 +154,7 @@ class MovementService:
         return created_movements
 
     def update(self, movement_id: str, data: MovementUpdate) -> Movement:
-        """Update a pending movement."""
+        """Update a pending movement (user values go to _manual fields)."""
         logger.info(f"Updating movement: {movement_id}")
 
         movement = self._movement_storage.get_by_id(movement_id)
@@ -165,9 +165,9 @@ class MovementService:
             raise MovementServiceError("Cannot edit completed movements")
 
         update_data = {}
-        if data.scheduled_date is not None:
-            update_data["scheduled_date"] = data.scheduled_date
-        if data.expected_volume is not None:
+        if data.scheduled_date_manual is not None:
+            update_data["scheduled_date_manual"] = data.scheduled_date_manual
+        if data.expected_volume_manual is not None:
             # Validate sufficient fuel for discharge/transfer
             if movement.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
                 tank = self._tank_storage.get_by_id(movement.tank_id)
@@ -175,14 +175,30 @@ class MovementService:
                     raise MovementServiceError("Tank not found")
                 movements = self._movement_storage.get_all()
                 current_level = calculate_tank_level(tank, movements)
-                available = current_level + movement.expected_volume
-                if data.expected_volume > available:
+                available = current_level + (movement.expected_volume or 0)
+                if data.expected_volume_manual > available:
                     raise MovementServiceError(
                         f"Insufficient feedstock. Available: {available:.2f} bbl"
                     )
-            update_data["expected_volume"] = data.expected_volume
-        if data.notes is not None:
-            update_data["notes"] = data.notes
+            update_data["expected_volume_manual"] = data.expected_volume_manual
+        if data.notes_manual is not None:
+            update_data["notes_manual"] = data.notes_manual
+        if data.tank_id_manual is not None:
+            update_data["tank_id_manual"] = data.tank_id_manual
+        if data.trade_number_manual is not None:
+            update_data["trade_number_manual"] = data.trade_number_manual
+        if data.trade_line_item_manual is not None:
+            update_data["trade_line_item_manual"] = data.trade_line_item_manual
+        if data.strategy_manual is not None:
+            update_data["strategy_manual"] = data.strategy_manual
+        if data.destination_manual is not None:
+            update_data["destination_manual"] = data.destination_manual
+        if data.equipment_manual is not None:
+            update_data["equipment_manual"] = data.equipment_manual
+        if data.discharge_date_manual is not None:
+            update_data["discharge_date_manual"] = data.discharge_date_manual
+        if data.base_diff_manual is not None:
+            update_data["base_diff_manual"] = data.base_diff_manual
 
         if not update_data:
             return movement
@@ -237,11 +253,11 @@ class MovementService:
 
         movement = Movement(
             type=MovementType.ADJUSTMENT,
-            tank_id=adjustment_data.tank_id,
-            expected_volume=abs(adjustment_quantity),
+            tank_id_default=adjustment_data.tank_id,  # System/form values go to _default
+            expected_volume_default=abs(adjustment_quantity),
             actual_volume=adjustment_quantity,
-            scheduled_date=date.today(),
-            notes=notes
+            scheduled_date_default=date.today(),
+            notes_default=notes
         )
 
         created = self._movement_storage.create(movement)

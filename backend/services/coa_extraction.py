@@ -3,7 +3,7 @@ import json
 import os
 from datetime import date, datetime
 from openai import OpenAI
-from models.schemas import CertificateOfAnalysis
+from models import CertificateOfAnalysis
 
 # OpenAI client - initialized lazily
 _client = None

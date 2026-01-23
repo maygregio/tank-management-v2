@@ -72,12 +72,12 @@ class SignalService:
 
             movement = Movement(
                 type=MovementType.LOAD,
-                tank_id=None,
-                expected_volume=signal.volume,
-                scheduled_date=signal.load_date,
+                tank_id_default=None,  # Unassigned signal
+                expected_volume_default=signal.volume,
+                scheduled_date_default=signal.load_date,
                 signal_id=signal.signal_id,
                 refinery_tank_name=signal.refinery_tank_name,
-                notes=f"Signal from refinery tank: {signal.refinery_tank_name}"
+                notes_default=f"Signal from refinery tank: {signal.refinery_tank_name}"
             )
             self._movement_storage.create(movement)
             created_count += 1
@@ -91,8 +91,8 @@ class SignalService:
         )
 
     def assign_signal(self, movement_id: str, data: SignalAssignment) -> Movement:
-        """Assign an unassigned signal to a tank."""
-        logger.info(f"Assigning signal: {movement_id} to tank {data.tank_id}")
+        """Assign an unassigned signal to a tank (user values go to _manual fields)."""
+        logger.info(f"Assigning signal: {movement_id} to tank {data.tank_id_manual}")
 
         movement = self._movement_storage.get_by_id(movement_id)
         if not movement:
@@ -104,17 +104,28 @@ class SignalService:
         if movement.signal_id is None:
             raise SignalServiceError("Movement is not a signal")
 
-        tank = self._tank_storage.get_by_id(data.tank_id)
+        tank = self._tank_storage.get_by_id(data.tank_id_manual)
         if not tank:
             raise SignalServiceError("Tank not found")
 
+        # All user-provided values go to _manual fields
         update_data = {
-            "tank_id": data.tank_id,
-            "expected_volume": data.expected_volume,
-            "scheduled_date": data.scheduled_date,
+            "tank_id_manual": data.tank_id_manual,
+            "expected_volume_manual": data.expected_volume_manual,
+            "scheduled_date_manual": data.scheduled_date_manual,
         }
-        if data.notes is not None:
-            update_data["notes"] = data.notes
+        if data.notes_manual is not None:
+            update_data["notes_manual"] = data.notes_manual
+        if data.strategy_manual is not None:
+            update_data["strategy_manual"] = data.strategy_manual
+        if data.destination_manual is not None:
+            update_data["destination_manual"] = data.destination_manual
+        if data.equipment_manual is not None:
+            update_data["equipment_manual"] = data.equipment_manual
+        if data.discharge_date_manual is not None:
+            update_data["discharge_date_manual"] = data.discharge_date_manual
+        if data.base_diff_manual is not None:
+            update_data["base_diff_manual"] = data.base_diff_manual
 
         updated = self._movement_storage.update(movement_id, update_data)
         if not updated:
@@ -124,7 +135,7 @@ class SignalService:
         return updated
 
     def update_trade_info(self, movement_id: str, data: TradeInfoUpdate) -> Movement:
-        """Update trade information on a signal."""
+        """Update trade information on a signal (user values go to _manual fields)."""
         logger.info(f"Updating trade info: {movement_id}")
 
         movement = self._movement_storage.get_by_id(movement_id)
@@ -134,9 +145,10 @@ class SignalService:
         if movement.signal_id is None:
             raise SignalServiceError("Movement is not a signal")
 
+        # Trade info from user goes to _manual fields
         update_data = {
-            "trade_number": data.trade_number,
-            "trade_line_item": data.trade_line_item,
+            "trade_number_manual": data.trade_number,
+            "trade_line_item_manual": data.trade_line_item,
         }
 
         updated = self._movement_storage.update(movement_id, update_data)

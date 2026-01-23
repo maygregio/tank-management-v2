@@ -3,7 +3,7 @@ import json
 import os
 from datetime import date
 from openai import OpenAI
-from models.schemas import PDFExtractedMovement
+from models import PDFExtractedMovement
 
 # OpenAI client - initialized lazily
 _client = None

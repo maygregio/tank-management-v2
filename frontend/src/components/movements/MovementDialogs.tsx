@@ -61,7 +61,7 @@ export function CompleteDialog({
           </Box>
           <Box sx={{ mb: 2.5 }}>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPECTED VOLUME</Typography>
-            <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{movement.expected_volume.toLocaleString()} bbl</Typography>
+            <Typography sx={{ color: 'var(--color-accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{(movement.expected_volume || 0).toLocaleString()} bbl</Typography>
           </Box>
           <TextField
             fullWidth
@@ -149,8 +149,8 @@ export function EditDialog({
             margin="normal"
             label="Scheduled Date"
             type="date"
-            value={editData.scheduled_date || ''}
-            onChange={(e) => onEditDataChange({ ...editData, scheduled_date: e.target.value })}
+            value={editData.scheduled_date_manual || ''}
+            onChange={(e) => onEditDataChange({ ...editData, scheduled_date_manual: e.target.value })}
             slotProps={{ inputLabel: { shrink: true } }}
           />
           <TextField
@@ -158,10 +158,10 @@ export function EditDialog({
             margin="normal"
             label="Expected Volume (bbl)"
             type="number"
-            value={editData.expected_volume || ''}
+            value={editData.expected_volume_manual || ''}
             onChange={(e) => {
               const value = e.target.value;
-              onEditDataChange({ ...editData, expected_volume: value === '' ? undefined : Number(value) });
+              onEditDataChange({ ...editData, expected_volume_manual: value === '' ? undefined : Number(value) });
             }}
             slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
           />
@@ -171,8 +171,8 @@ export function EditDialog({
             label="Notes"
             multiline
             rows={2}
-            value={editData.notes || ''}
-            onChange={(e) => onEditDataChange({ ...editData, notes: e.target.value })}
+            value={editData.notes_manual || ''}
+            onChange={(e) => onEditDataChange({ ...editData, notes_manual: e.target.value })}
           />
 
           {/* Additional workflow fields */}
@@ -188,10 +188,10 @@ export function EditDialog({
               margin="normal"
               label="Strategy ID"
               type="number"
-              value={editData.strategy ?? ''}
+              value={editData.strategy_manual ?? ''}
               onChange={(e) => {
                 const value = e.target.value;
-                onEditDataChange({ ...editData, strategy: value === '' ? undefined : Number(value) });
+                onEditDataChange({ ...editData, strategy_manual: value === '' ? undefined : Number(value) });
               }}
               slotProps={{ htmlInput: { min: 0 } }}
             />
@@ -200,8 +200,8 @@ export function EditDialog({
               fullWidth
               margin="normal"
               label="Destination"
-              value={editData.destination || ''}
-              onChange={(e) => onEditDataChange({ ...editData, destination: e.target.value })}
+              value={editData.destination_manual || ''}
+              onChange={(e) => onEditDataChange({ ...editData, destination_manual: e.target.value })}
               placeholder="e.g., IMTT"
             />
           </Box>
@@ -211,8 +211,8 @@ export function EditDialog({
               fullWidth
               margin="normal"
               label="Equipment"
-              value={editData.equipment || ''}
-              onChange={(e) => onEditDataChange({ ...editData, equipment: e.target.value })}
+              value={editData.equipment_manual || ''}
+              onChange={(e) => onEditDataChange({ ...editData, equipment_manual: e.target.value })}
               placeholder="e.g., WEB 241/248"
             />
 
@@ -221,8 +221,8 @@ export function EditDialog({
               margin="normal"
               label="Discharge Date"
               type="date"
-              value={editData.discharge_date || ''}
-              onChange={(e) => onEditDataChange({ ...editData, discharge_date: e.target.value })}
+              value={editData.discharge_date_manual || ''}
+              onChange={(e) => onEditDataChange({ ...editData, discharge_date_manual: e.target.value })}
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
@@ -232,10 +232,10 @@ export function EditDialog({
             margin="normal"
             label="Base Diff ($/bbl)"
             type="number"
-            value={editData.base_diff ?? ''}
+            value={editData.base_diff_manual ?? ''}
             onChange={(e) => {
               const value = e.target.value;
-              onEditDataChange({ ...editData, base_diff: value === '' ? undefined : Number(value) });
+              onEditDataChange({ ...editData, base_diff_manual: value === '' ? undefined : Number(value) });
             }}
             slotProps={{ htmlInput: { step: 0.01 } }}
           />

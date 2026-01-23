@@ -89,9 +89,9 @@ export default function TankDetailPage() {
   const handleOpenEdit = useCallback((movement: Movement) => {
     setSelectedMovement(movement);
     setEditData({
-      scheduled_date: movement.scheduled_date,
-      expected_volume: movement.expected_volume,
-      notes: movement.notes || '',
+      scheduled_date_manual: movement.scheduled_date || '',
+      expected_volume_manual: movement.expected_volume,
+      notes_manual: movement.notes || '',
     });
     setEditDialogOpen(true);
   }, []);
@@ -104,7 +104,7 @@ export default function TankDetailPage() {
 
   const handleOpenComplete = useCallback((movement: Movement) => {
     setSelectedMovement(movement);
-    setActualVolume(movement.expected_volume);
+    setActualVolume(movement.expected_volume || 0);
     setCompleteDialogOpen(true);
   }, []);
 
@@ -318,7 +318,7 @@ export default function TankDetailPage() {
       const isOutgoing = movement.type === 'discharge'
         || (movement.type === 'transfer' && movement.tank_id === tankId);
       const sign = isOutgoing ? -1 : 1;
-      const movementVolume = Math.abs(movement.actual_volume ?? movement.expected_volume);
+      const movementVolume = Math.abs(movement.actual_volume ?? (movement.expected_volume || 0));
       return total + sign * movementVolume;
     }, initialLevel);
   }, [rangeStartTimestamp, sortedHistory, tank?.initial_level, tankId]);
@@ -326,7 +326,7 @@ export default function TankDetailPage() {
   const runningBalanceRows = useMemo(() => filteredHistory.map((movement) => {
     const isOutgoing = movement.type === 'discharge' || (movement.type === 'transfer' && movement.tank_id === tankId);
     const sign = isOutgoing ? -1 : 1;
-    const movementVolume = Math.abs(movement.actual_volume ?? movement.expected_volume);
+    const movementVolume = Math.abs(movement.actual_volume ?? (movement.expected_volume || 0));
     const movementDate = movement.scheduled_date || movement.created_at;
 
     return {
