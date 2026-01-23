@@ -29,6 +29,7 @@ from .movements import (
     TradeInfoUpdate,
     Movement,
     AdjustmentCreate,
+    MovementWithCOA,
 )
 
 # Imports
@@ -84,6 +85,7 @@ __all__ = [
     "TradeInfoUpdate",
     "Movement",
     "AdjustmentCreate",
+    "MovementWithCOA",
     # Imports
     "PDFExtractedMovement",
     "TankMatchSuggestion",

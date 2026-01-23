@@ -5,7 +5,7 @@ from typing import Optional
 
 from models import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
-    Tank, AdjustmentCreate, TransferCreate
+    Tank, AdjustmentCreate, TransferCreate, MovementWithCOA, CertificateOfAnalysis
 )
 from services.storage import CosmosStorage
 from services.calculations import calculate_tank_level, calculate_adjustment
@@ -27,6 +27,7 @@ class MovementService:
     def __init__(self):
         self._movement_storage = CosmosStorage("movements", Movement)
         self._tank_storage = CosmosStorage("tanks", Tank)
+        self._coa_storage = CosmosStorage("coa", CertificateOfAnalysis)
 
     def get_all(
         self,
@@ -68,6 +69,49 @@ class MovementService:
     def get_by_id(self, movement_id: str) -> Movement | None:
         """Get a specific movement."""
         return self._movement_storage.get_by_id(movement_id)
+
+    def get_overview(self) -> list[MovementWithCOA]:
+        """Get all movements joined with COA chemical properties for overview display."""
+        logger.info("Fetching movements overview with COA data")
+
+        # Get all movements (pending and completed)
+        movements = self._movement_storage.get_all()
+
+        # Get all COAs for joining
+        coas = self._coa_storage.get_all()
+
+        # Build lookup dictionaries for COAs by nomination_key and signal_id
+        coa_by_nomination_key: dict[str, CertificateOfAnalysis] = {}
+        coa_by_signal_id: dict[str, CertificateOfAnalysis] = {}
+        for coa in coas:
+            if coa.nomination_key:
+                coa_by_nomination_key[coa.nomination_key] = coa
+            if coa.signal_id:
+                coa_by_signal_id[coa.signal_id] = coa
+
+        # Join movements with COA data
+        results: list[MovementWithCOA] = []
+        for movement in movements:
+            # Find matching COA (prefer nomination_key, fall back to signal_id)
+            coa = None
+            if movement.nomination_key and movement.nomination_key in coa_by_nomination_key:
+                coa = coa_by_nomination_key[movement.nomination_key]
+            elif movement.signal_id and movement.signal_id in coa_by_signal_id:
+                coa = coa_by_signal_id[movement.signal_id]
+
+            # Create MovementWithCOA with COA properties
+            movement_dict = movement.model_dump()
+            movement_with_coa = MovementWithCOA(
+                **movement_dict,
+                coa_api_gravity=coa.api_gravity if coa else None,
+                coa_sulfur_content=coa.sulfur_content if coa else None,
+                coa_viscosity=coa.viscosity if coa else None,
+                coa_ash_content=coa.ash_content if coa else None
+            )
+            results.append(movement_with_coa)
+
+        logger.info(f"Returning {len(results)} movements with COA data")
+        return results
 
     def create(self, movement_data: MovementCreate) -> Movement:
         """Create a new scheduled movement."""
@@ -199,6 +243,8 @@ class MovementService:
             update_data["discharge_date_manual"] = data.discharge_date_manual
         if data.base_diff_manual is not None:
             update_data["base_diff_manual"] = data.base_diff_manual
+        if data.quality_adj_diff_manual is not None:
+            update_data["quality_adj_diff_manual"] = data.quality_adj_diff_manual
 
         if not update_data:
             return movement

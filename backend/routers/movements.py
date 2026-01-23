@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 
 from models import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
-    AdjustmentCreate, TransferCreate
+    AdjustmentCreate, TransferCreate, MovementWithCOA
 )
 from services.movement_service import MovementService, MovementServiceError, get_movement_service
 
@@ -55,6 +55,14 @@ def create_transfer(
         return service.create_transfer(movement_data)
     except MovementServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
+
+
+@router.get("/overview", response_model=list[MovementWithCOA])
+def get_overview(
+    service: MovementService = Depends(get_movement_service)
+):
+    """Get all movements with joined COA chemical properties for overview display."""
+    return service.get_overview()
 
 
 @router.put("/{movement_id}", response_model=Movement)

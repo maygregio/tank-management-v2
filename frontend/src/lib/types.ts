@@ -42,6 +42,7 @@ export interface Movement {
   equipment?: string;
   discharge_date?: string;
   base_diff?: number;
+  quality_adj_diff?: number;
 
   // === Paired Fields: System Defaults + Manual Overrides ===
   tank_id_default?: string;
@@ -66,6 +67,8 @@ export interface Movement {
   discharge_date_manual?: string;
   base_diff_default?: number;
   base_diff_manual?: number;
+  quality_adj_diff_default?: number;
+  quality_adj_diff_manual?: number;
 }
 
 // Form types
@@ -115,6 +118,7 @@ export interface MovementUpdate {
   equipment_manual?: string;
   discharge_date_manual?: string;
   base_diff_manual?: number;
+  quality_adj_diff_manual?: number;
 }
 
 export interface AdjustmentCreate {
@@ -189,6 +193,7 @@ export interface SignalAssignment {
   equipment_manual?: string;
   discharge_date_manual?: string;
   base_diff_manual?: number;
+  quality_adj_diff_manual?: number;
 }
 
 export interface TradeInfoUpdate {
@@ -278,6 +283,14 @@ export interface MovementGridRow {
   status: boolean;
   isFuture: boolean;
   notes: string;
+}
+
+// Movement with COA properties (from backend join)
+export interface MovementWithCOA extends Movement {
+  coa_api_gravity: number | null;
+  coa_sulfur_content: number | null;
+  coa_viscosity: number | null;
+  coa_ash_content: number | null;
 }
 
 export interface MovementSummaryStats {

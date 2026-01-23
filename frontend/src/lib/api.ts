@@ -4,7 +4,8 @@ import type {
   PDFExtractionResult, PDFImportRequest, PDFImportResult, TransferCreate,
   SignalAssignment, SignalUploadResult, TradeInfoUpdate,
   COAWithSignal, COALinkRequest,
-  AdjustmentExtractionResult, AdjustmentImportRequest, AdjustmentImportResult
+  AdjustmentExtractionResult, AdjustmentImportRequest, AdjustmentImportResult,
+  MovementWithCOA
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -113,6 +114,12 @@ export const movementsApi = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
+};
+
+// Overview (movements with COA join)
+export const overviewApi = {
+  getAll: (signal?: AbortSignal) =>
+    fetchAPI<MovementWithCOA[]>('/movements/overview', { signal }),
 };
 
 // Imports

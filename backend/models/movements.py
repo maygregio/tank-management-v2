@@ -53,6 +53,8 @@ class MovementBase(BaseModel):
     discharge_date_manual: Optional[date] = None
     base_diff_default: Optional[float] = None
     base_diff_manual: Optional[float] = None
+    quality_adj_diff_default: Optional[float] = None
+    quality_adj_diff_manual: Optional[float] = None
 
     # === Computed Fields: Effective Values (manual ?? default) ===
 
@@ -111,6 +113,11 @@ class MovementBase(BaseModel):
     def base_diff(self) -> Optional[float]:
         return self.base_diff_manual if self.base_diff_manual is not None else self.base_diff_default
 
+    @computed_field
+    @property
+    def quality_adj_diff(self) -> Optional[float]:
+        return self.quality_adj_diff_manual if self.quality_adj_diff_manual is not None else self.quality_adj_diff_default
+
 
 class MovementCreate(BaseModel):
     """Model for creating a new movement (values go to _default fields)."""
@@ -154,6 +161,7 @@ class MovementUpdate(BaseModel):
     equipment_manual: Optional[str] = None
     discharge_date_manual: Optional[date] = None
     base_diff_manual: Optional[float] = None
+    quality_adj_diff_manual: Optional[float] = None
 
 
 class SignalAssignment(BaseModel):
@@ -167,6 +175,7 @@ class SignalAssignment(BaseModel):
     equipment_manual: Optional[str] = None
     discharge_date_manual: Optional[date] = None
     base_diff_manual: Optional[float] = None
+    quality_adj_diff_manual: Optional[float] = None
 
 
 class TradeInfoUpdate(BaseModel):
@@ -186,3 +195,12 @@ class AdjustmentCreate(BaseModel):
     tank_id: str
     physical_level: float = Field(ge=0, description="Actual physical reading in barrels")
     notes: Optional[str] = None
+
+
+class MovementWithCOA(Movement):
+    """Movement with joined COA chemical properties for overview display."""
+    # COA chemical properties (joined from CertificateOfAnalysis)
+    coa_api_gravity: Optional[float] = None
+    coa_sulfur_content: Optional[float] = None
+    coa_viscosity: Optional[float] = None
+    coa_ash_content: Optional[float] = None

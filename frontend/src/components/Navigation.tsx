@@ -11,10 +11,12 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
 import CellTowerIcon from '@mui/icons-material/CellTower';
 import ScienceIcon from '@mui/icons-material/Science';
+import GridViewIcon from '@mui/icons-material/GridView';
 
 const menuItems = [
   { text: 'Tanks', href: '/tanks', Icon: PropaneTankIcon },
   { text: 'Movements', href: '/movements', Icon: SwapHorizIcon },
+  { text: 'Overview', href: '/overview', Icon: GridViewIcon },
   { text: 'Signals', href: '/signals', Icon: CellTowerIcon },
   { text: 'COA', href: '/coa', Icon: ScienceIcon },
   { text: 'Adjustments', href: '/adjustments', Icon: TuneIcon },
