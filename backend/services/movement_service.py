@@ -39,7 +39,7 @@ class MovementService:
     ) -> list[Movement]:
         """Get movements for a tank from a certain date forward, sorted by scheduled_date ASC."""
         # Query movements where tank_id or target_tank_id matches
-        # and scheduled_date >= from_date
+        # Use OR to over-fetch candidates, then filter by effective date in Python
         movements = self._movement_storage.query(
             conditions=[
                 "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
@@ -53,11 +53,16 @@ class MovementService:
             order_desc=False
         )
 
-        # Filter out the excluded movement and sort by effective scheduled_date
+        # Filter out the excluded movement
         if exclude_movement_id:
             movements = [m for m in movements if m.id != exclude_movement_id]
 
-        # Sort by effective scheduled_date (manual overrides default)
+        # Filter by effective scheduled_date (manual overrides default)
+        # The OR query over-fetches, so we must filter to only include movements
+        # where the effective date is actually >= from_date
+        movements = [m for m in movements if m.scheduled_date and m.scheduled_date >= from_date]
+
+        # Sort by effective scheduled_date
         movements.sort(key=lambda m: m.scheduled_date or date.min)
 
         return movements
@@ -68,7 +73,8 @@ class MovementService:
         Finds the last movement before the date and returns its resulting_volume,
         or falls back to calculating if no resulting_volume is set.
         """
-        # Get movements before this date, sorted desc to get the last one
+        # Get movements before this date
+        # Use OR to over-fetch candidates, then filter by effective date in Python
         movements = self._movement_storage.query(
             conditions=[
                 "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
@@ -80,8 +86,12 @@ class MovementService:
             ],
             order_by="scheduled_date_default",
             order_desc=True,
-            limit=1
+            limit=20  # Fetch more to find the correct one by effective date
         )
+
+        # Filter by effective scheduled_date and sort to find the most recent
+        movements = [m for m in movements if m.scheduled_date and m.scheduled_date < before_date]
+        movements.sort(key=lambda m: m.scheduled_date or date.min, reverse=True)
 
         if movements:
             last_movement = movements[0]

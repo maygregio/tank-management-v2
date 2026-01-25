@@ -96,6 +96,7 @@ class TankService:
             return None
 
         # Get all movements for this tank in the date range
+        # Use OR to over-fetch candidates, then filter by effective date in Python
         movements = self._movement_storage.query(
             conditions=[
                 "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
@@ -110,6 +111,14 @@ class TankService:
             order_by="scheduled_date_default",
             order_desc=False
         )
+
+        # Filter by effective scheduled_date (manual overrides default)
+        # The OR query over-fetches, so we filter to only include movements
+        # where the effective date is actually within the range
+        movements = [
+            m for m in movements
+            if m.scheduled_date and start_date <= m.scheduled_date <= end_date
+        ]
 
         # Sort by effective scheduled_date
         movements.sort(key=lambda m: m.scheduled_date or date.min)
@@ -137,6 +146,7 @@ class TankService:
 
         # Get the last movement before start_date to get starting volume
         # Include both source movements and transfer-ins (target_tank_id)
+        # Use OR to over-fetch candidates, then filter by effective date in Python
         pre_movements = self._movement_storage.query(
             conditions=[
                 "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
@@ -148,8 +158,10 @@ class TankService:
             ],
             order_by="scheduled_date_default",
             order_desc=True,
-            limit=10  # Get more to find the most recent by effective date
+            limit=20  # Get more to find the most recent by effective date
         )
+        # Filter by effective scheduled_date
+        pre_movements = [m for m in pre_movements if m.scheduled_date and m.scheduled_date < start_date]
         if pre_movements:
             # Sort by effective scheduled_date and find the most recent
             pre_movements.sort(key=lambda m: m.scheduled_date or date.min, reverse=True)
