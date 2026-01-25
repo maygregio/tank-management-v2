@@ -1,6 +1,6 @@
 """Movement service - business logic for movement operations."""
 import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 
 from models import (
@@ -71,7 +71,7 @@ class MovementService:
         """Get the tank volume just before a certain date.
 
         Finds the last movement before the date and returns its resulting_volume,
-        or falls back to calculating if no resulting_volume is set.
+        or falls back to calculating from all movements if no resulting_volume is set.
         """
         # Get movements before this date
         # Use OR to over-fetch candidates, then filter by effective date in Python
@@ -86,7 +86,7 @@ class MovementService:
             ],
             order_by="scheduled_date_default",
             order_desc=True,
-            limit=20  # Fetch more to find the correct one by effective date
+            limit=100  # Fetch more to find one with resulting_volume or calculate
         )
 
         # Filter by effective scheduled_date and sort to find the most recent
@@ -94,13 +94,23 @@ class MovementService:
         movements.sort(key=lambda m: m.scheduled_date or date.min, reverse=True)
 
         if movements:
-            last_movement = movements[0]
-            # If this tank is the source, use resulting_volume
-            if last_movement.tank_id == tank.id and last_movement.resulting_volume is not None:
-                return last_movement.resulting_volume
-            # If this tank is the target of a transfer, use target_resulting_volume
-            if last_movement.target_tank_id == tank.id and last_movement.target_resulting_volume is not None:
-                return last_movement.target_resulting_volume
+            # Try to find a movement with resulting_volume set (iterate through all)
+            for movement in movements:
+                # If this tank is the source, use resulting_volume
+                if movement.tank_id == tank.id and movement.resulting_volume is not None:
+                    return movement.resulting_volume
+                # If this tank is the target of a transfer, use target_resulting_volume
+                if movement.target_tank_id == tank.id and movement.target_resulting_volume is not None:
+                    return movement.target_resulting_volume
+
+            # No movement has resulting_volume set (pre-migration data)
+            # Fall back to calculating from all movements
+            from services.calculations import calculate_tank_level
+            # Sort chronologically for calculation
+            movements.sort(key=lambda m: m.scheduled_date or date.min)
+            # Calculate level as of the day before before_date
+            as_of = before_date - timedelta(days=1)
+            return calculate_tank_level(tank, movements, as_of=as_of)
 
         return tank.initial_level
 
