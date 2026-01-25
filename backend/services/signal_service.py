@@ -1,5 +1,6 @@
 """Signal service - business logic for signal operations."""
 import logging
+from datetime import date
 from typing import Optional
 
 from models import Movement, MovementType, Tank, SignalAssignment, TradeInfoUpdate
@@ -37,7 +38,7 @@ class SignalService:
         # Query for signals that need attention
         movements = self._movement_storage.query(
             conditions=["NOT IS_NULL(c.signal_id)"],
-            order_by="scheduled_date",
+            order_by="scheduled_date_default",
             order_desc=True
         )
 
@@ -48,7 +49,8 @@ class SignalService:
             if m.tank_id is None or m.trade_number is None or m.trade_line_item is None
         ]
 
-        # Apply pagination
+        # Sort by effective scheduled_date and apply pagination
+        signals.sort(key=lambda m: m.scheduled_date or date.min, reverse=True)
         return signals[skip:skip + limit] if limit else signals[skip:]
 
     def upload_signals(self, file_content: bytes) -> SignalUploadResult:

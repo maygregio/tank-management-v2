@@ -3,11 +3,11 @@ import logging
 from datetime import date
 from typing import List
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
 from models import (
-    Tank, Movement, MovementType,
+    Tank,
     AdjustmentExtractionResult, AdjustmentImportRequest, AdjustmentImportResult,
 )
 from services.storage import CosmosStorage
@@ -15,13 +15,13 @@ from services.blob_storage import PDFBlobStorage
 from services.pdf_extraction import extract_text_from_pdf
 from services.adjustment_extraction import extract_adjustments_with_ai
 from services.adjustment_matching import process_extracted_adjustments
-from services.calculations import calculate_tank_level, calculate_adjustment, get_tank_with_level
+from services.calculations import get_tank_with_level
+from services.movement_service import MovementService, MovementServiceError, get_movement_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 tank_storage = CosmosStorage("tanks", Tank)
-movement_storage = CosmosStorage("movements", Movement)
 pdf_storage = PDFBlobStorage()
 
 
@@ -50,8 +50,7 @@ async def extract_from_pdfs(files: List[UploadFile] = File(...)):
     validate_first_of_month()
 
     tanks = tank_storage.get_all()
-    movements = movement_storage.get_all()
-    tanks_with_levels = [get_tank_with_level(tank, movements) for tank in tanks]
+    tanks_with_levels = [get_tank_with_level(tank) for tank in tanks]
 
     results = []
 
@@ -116,7 +115,10 @@ async def extract_from_pdfs(files: List[UploadFile] = File(...)):
 
 
 @router.post("/confirm", response_model=AdjustmentImportResult)
-async def confirm_import(request: AdjustmentImportRequest):
+async def confirm_import(
+    request: AdjustmentImportRequest,
+    service: MovementService = Depends(get_movement_service)
+):
     """Create adjustment movements from confirmed import data.
 
     Validates that:
@@ -138,44 +140,16 @@ async def confirm_import(request: AdjustmentImportRequest):
                 )
                 continue
 
-            # Validate tank exists
-            tank = tank_storage.get_by_id(item.tank_id)
-            if not tank:
-                errors.append(f"Tank not found: {item.tank_id}")
-                continue
-
-            # Validate physical level within capacity
-            if item.physical_level > tank.capacity:
-                errors.append(
-                    f"Physical level {item.physical_level} exceeds tank capacity {tank.capacity}"
-                )
-                continue
-
-            # Calculate current system level and adjustment
-            movements = movement_storage.get_all()
-            current_level = calculate_tank_level(tank, movements)
-            adjustment_quantity = calculate_adjustment(current_level, item.physical_level)
-
-            # Build notes
-            notes = item.notes or f"Physical reading adjustment. Previous: {current_level:.2f} bbl, Physical: {item.physical_level:.2f} bbl"
-            if adjustment_quantity < 0:
-                notes = f"(Loss) {notes}"
-            else:
-                notes = f"(Gain) {notes}"
-
-            # Create completed adjustment movement with PDF reference
-            movement = Movement(
-                type=MovementType.ADJUSTMENT,
+            service.create_imported_adjustment(
                 tank_id=item.tank_id,
-                expected_volume=abs(adjustment_quantity),
-                actual_volume=adjustment_quantity,  # Signed value
-                scheduled_date=item.inspection_date,
-                notes=notes,
-                pdf_url=request.pdf_url  # Link to source PDF
+                physical_level=item.physical_level,
+                inspection_date=item.inspection_date,
+                notes=item.notes,
+                pdf_url=request.pdf_url
             )
-
-            movement_storage.create(movement)
             created += 1
+        except MovementServiceError as e:
+            errors.append(f"Failed to create adjustment: {e.message}")
         except Exception as e:
             errors.append(f"Failed to create adjustment: {str(e)}")
 
