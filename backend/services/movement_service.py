@@ -29,7 +29,7 @@ class MovementService:
     def __init__(self):
         self._movement_storage = CosmosStorage("movements", Movement)
         self._tank_storage = CosmosStorage("tanks", Tank)
-        self._coa_storage = CosmosStorage("coa", CertificateOfAnalysis)
+        self._coa_storage = CosmosStorage("certificates_of_analysis", CertificateOfAnalysis)
 
     def _get_tank_movements_from_date(
         self,
@@ -534,47 +534,72 @@ class MovementService:
 
     def create_adjustment(self, adjustment_data: AdjustmentCreate) -> Movement:
         """Create an adjustment movement based on physical reading."""
-        logger.info(f"Creating adjustment for tank: {adjustment_data.tank_id}")
+        return self.create_imported_adjustment(
+            tank_id=adjustment_data.tank_id,
+            physical_level=adjustment_data.physical_level,
+            inspection_date=date.today(),
+            notes=adjustment_data.notes,
+            pdf_url=None
+        )
 
-        tank = self._tank_storage.get_by_id(adjustment_data.tank_id)
+    def create_imported_adjustment(
+        self,
+        tank_id: str,
+        physical_level: float,
+        inspection_date: date,
+        notes: str | None,
+        pdf_url: str | None
+    ) -> Movement:
+        """Create an adjustment movement from an import with a specific inspection date."""
+        logger.info(f"Creating adjustment for tank: {tank_id}")
+
+        tank = self._tank_storage.get_by_id(tank_id)
         if not tank:
             raise MovementServiceError("Tank not found")
 
-        if adjustment_data.physical_level > tank.capacity:
+        if physical_level > tank.capacity:
             raise MovementServiceError(
                 f"Physical level cannot exceed tank capacity ({tank.capacity} bbl)"
             )
 
-        # Use stored current_level instead of calculating
-        current_level = tank.current_level
-        adjustment_quantity = calculate_adjustment(current_level, adjustment_data.physical_level)
+        # Use the system level as of the inspection date.
+        system_level = self._get_starting_volume_for_tank(tank, inspection_date + timedelta(days=1))
+        adjustment_quantity = calculate_adjustment(system_level, physical_level)
 
-        notes = adjustment_data.notes or f"Physical reading adjustment. Previous: {current_level:.2f} bbl, Physical: {adjustment_data.physical_level:.2f} bbl"
+        resolved_notes = notes or (
+            f"Physical reading adjustment. Previous: {system_level:.2f} bbl, Physical: {physical_level:.2f} bbl"
+        )
         if adjustment_quantity < 0:
-            notes = f"(Loss) {notes}"
+            resolved_notes = f"(Loss) {resolved_notes}"
         else:
-            notes = f"(Gain) {notes}"
-
-        # New level is the physical reading
-        new_level = round(adjustment_data.physical_level, 2)
+            resolved_notes = f"(Gain) {resolved_notes}"
 
         movement = Movement(
             type=MovementType.ADJUSTMENT,
-            tank_id_default=adjustment_data.tank_id,
+            tank_id_default=tank_id,
             expected_volume_default=abs(adjustment_quantity),
             actual_volume=adjustment_quantity,
-            scheduled_date_default=date.today(),
-            notes_default=notes,
-            resulting_volume=new_level
+            scheduled_date_default=inspection_date,
+            notes_default=resolved_notes,
+            pdf_url=pdf_url
         )
 
         created = self._movement_storage.create(movement)
 
-        # Update tank's current_level to the physical reading
-        self._update_tank_current_level(tank.id, new_level)
+        # Recalculate from the inspection date to refresh resulting volumes.
+        new_level = self._recalculate_tank_volumes(tank, inspection_date)
+        if inspection_date <= date.today():
+            self._update_tank_current_level(tank.id, new_level)
 
+        created = self._movement_storage.get_by_id(created.id)
         logger.info(f"Adjustment created: {created.id}, quantity={adjustment_quantity}")
         return created
+
+    def create_completed(self, movement_data: MovementCreate, actual_volume: float) -> Movement:
+        """Create a movement and immediately mark it completed."""
+        created = self.create(movement_data)
+        completed = self.complete(created.id, MovementComplete(actual_volume=actual_volume))
+        return completed
 
     def delete(self, movement_id: str) -> bool:
         """Delete a movement and recalculate affected tank volumes."""

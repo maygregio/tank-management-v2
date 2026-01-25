@@ -2,22 +2,22 @@
 import logging
 from typing import List
 
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 
 from models import (
-    Tank, Movement,
+    Tank, MovementCreate,
     PDFExtractionResult, PDFImportRequest, PDFImportResult
 )
 from services.storage import CosmosStorage
 from services.blob_storage import PDFBlobStorage
 from services.pdf_extraction import extract_text_from_pdf, extract_movements_with_ai
 from services.tank_matching import process_extracted_movements
+from services.movement_service import MovementService, MovementServiceError, get_movement_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 tank_storage = CosmosStorage("tanks", Tank)
-movement_storage = CosmosStorage("movements", Movement)
 pdf_storage = PDFBlobStorage()
 
 
@@ -76,31 +76,28 @@ async def extract_from_pdfs(files: List[UploadFile] = File(...)):
 
 
 @router.post("/confirm", response_model=PDFImportResult)
-async def confirm_import(request: PDFImportRequest):
+async def confirm_import(
+    request: PDFImportRequest,
+    service: MovementService = Depends(get_movement_service)
+):
     """Create movements from confirmed import data."""
     created = 0
     errors = []
 
     for item in request.movements:
         try:
-            # Validate tank exists
-            tank = tank_storage.get_by_id(item.tank_id)
-            if not tank:
-                errors.append(f"Tank not found: {item.tank_id}")
-                continue
-
-            # Create completed movement
-            movement = Movement(
+            movement_data = MovementCreate(
                 type=item.type,
                 tank_id=item.tank_id,
+                target_tank_id=None,
                 expected_volume=item.volume,
-                actual_volume=item.volume,  # Completed immediately
                 scheduled_date=item.date,
                 notes=item.notes or "Imported from PDF"
             )
-
-            movement_storage.create(movement)
+            service.create_completed(movement_data, actual_volume=item.volume)
             created += 1
+        except MovementServiceError as e:
+            errors.append(f"Failed to create movement: {e.message}")
         except Exception as e:
             errors.append(f"Failed to create movement: {str(e)}")
 
