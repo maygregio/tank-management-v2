@@ -12,7 +12,9 @@ class MovementBase(BaseModel):
     target_tank_id: Optional[str] = None  # Only for transfers
     actual_volume: Optional[float] = Field(default=None, ge=0, description="Actual quantity after completion")
     # Resulting volume: tank level AFTER this movement (for source tank)
-    resulting_volume: Optional[float] = Field(default=None, ge=0, description="Tank volume after this movement")
+    resulting_volume: Optional[float] = Field(default=None, ge=0, description="Source tank volume after this movement")
+    # Target resulting volume: target tank level AFTER this movement (for transfers only)
+    target_resulting_volume: Optional[float] = Field(default=None, ge=0, description="Target tank volume after transfer")
     # Signal metadata (for movements created from refinery signals)
     signal_id: Optional[str] = None  # Refinery's signal ID
     refinery_tank_name: Optional[str] = None  # Refinery tank name (external)

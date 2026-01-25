@@ -83,15 +83,14 @@ class MovementService:
             limit=1
         )
 
-        if movements and movements[0].resulting_volume is not None:
-            # If this was a transfer TO this tank, we need the target tank's resulting volume
-            # But we only store resulting_volume for source tank, so we need to calculate
-            # the effect on the target tank
+        if movements:
             last_movement = movements[0]
-            if last_movement.tank_id == tank.id:
+            # If this tank is the source, use resulting_volume
+            if last_movement.tank_id == tank.id and last_movement.resulting_volume is not None:
                 return last_movement.resulting_volume
-            # For transfers where this tank is the target, we need to calculate
-            # Fall through to initial_level for now - this is a limitation
+            # If this tank is the target of a transfer, use target_resulting_volume
+            if last_movement.target_tank_id == tank.id and last_movement.target_resulting_volume is not None:
+                return last_movement.target_resulting_volume
 
         return tank.initial_level
 
@@ -103,8 +102,11 @@ class MovementService:
     ) -> float:
         """Recalculate resulting_volume for all movements from a date forward.
 
-        Returns the final tank level after all movements.
+        Returns the tank level as of today (only movements with scheduled_date <= today
+        contribute to current_level).
         """
+        today = date.today()
+
         # Get starting volume
         starting_volume = self._get_starting_volume_for_tank(tank, from_date)
 
@@ -113,13 +115,22 @@ class MovementService:
 
         # Recalculate and update each movement
         current_level = starting_volume
+        level_as_of_today = starting_volume
+
         for movement in movements:
             current_level = apply_movement_to_level(current_level, movement, tank.id)
-            # Only update if this tank is the source (resulting_volume is for source tank)
+
+            # Update resulting_volume based on whether this tank is source or target
             if movement.tank_id == tank.id:
                 self._movement_storage.update(movement.id, {"resulting_volume": round(current_level, 2)})
+            elif movement.target_tank_id == tank.id:
+                self._movement_storage.update(movement.id, {"target_resulting_volume": round(current_level, 2)})
 
-        return round(current_level, 2)
+            # Track level as of today (only for movements up to today)
+            if movement.scheduled_date and movement.scheduled_date <= today:
+                level_as_of_today = current_level
+
+        return round(level_as_of_today, 2)
 
     def _update_tank_current_level(self, tank_id: str, new_level: float) -> None:
         """Update a tank's current_level."""
@@ -237,6 +248,9 @@ class MovementService:
                     f"Insufficient feedstock. Current level: {tank.current_level:.2f} bbl"
                 )
 
+        today = date.today()
+        is_future_movement = movement_data.scheduled_date > today
+
         # Calculate resulting_volume for source tank
         delta = get_volume_delta(
             Movement(
@@ -249,6 +263,11 @@ class MovementService:
         )
         new_source_level = max(0, round(tank.current_level + delta, 2))
 
+        # Calculate target_resulting_volume for transfers
+        new_target_level: float | None = None
+        if target_tank:
+            new_target_level = round(target_tank.current_level + movement_data.expected_volume, 2)
+
         movement = Movement(
             type=movement_data.type,
             tank_id_default=movement_data.tank_id,
@@ -257,17 +276,18 @@ class MovementService:
             actual_volume=None,
             scheduled_date_default=movement_data.scheduled_date,
             notes_default=movement_data.notes,
-            resulting_volume=new_source_level
+            resulting_volume=new_source_level,
+            target_resulting_volume=new_target_level
         )
         created = self._movement_storage.create(movement)
 
-        # Update source tank's current_level
-        self._update_tank_current_level(tank.id, new_source_level)
+        # Only update current_level for non-future movements
+        if not is_future_movement:
+            self._update_tank_current_level(tank.id, new_source_level)
 
-        # For transfers, update target tank's current_level
-        if target_tank:
-            new_target_level = round(target_tank.current_level + movement_data.expected_volume, 2)
-            self._update_tank_current_level(target_tank.id, new_target_level)
+            # For transfers, update target tank's current_level
+            if target_tank and new_target_level is not None:
+                self._update_tank_current_level(target_tank.id, new_target_level)
 
         logger.info(f"Movement created: {created.id}")
         return created
@@ -293,6 +313,9 @@ class MovementService:
                 f"Insufficient feedstock. Current level: {source_tank.current_level:.2f} bbl"
             )
 
+        today = date.today()
+        is_future_movement = transfer_data.scheduled_date > today
+
         created_movements: list[Movement] = []
         running_source_level = source_tank.current_level
 
@@ -304,6 +327,9 @@ class MovementService:
             # Calculate new source level after this transfer
             running_source_level = max(0, round(running_source_level - target.volume, 2))
 
+            # Calculate target tank's new level
+            new_target_level = round(target_tank.current_level + target.volume, 2)
+
             movement = Movement(
                 type=MovementType.TRANSFER,
                 tank_id_default=transfer_data.source_tank_id,
@@ -312,17 +338,19 @@ class MovementService:
                 actual_volume=None,
                 scheduled_date_default=transfer_data.scheduled_date,
                 notes_default=transfer_data.notes,
-                resulting_volume=running_source_level
+                resulting_volume=running_source_level,
+                target_resulting_volume=new_target_level
             )
             created = self._movement_storage.create(movement)
             created_movements.append(created)
 
-            # Update target tank's current_level
-            new_target_level = round(target_tank.current_level + target.volume, 2)
-            self._update_tank_current_level(target_tank.id, new_target_level)
+            # Only update current_level for non-future movements
+            if not is_future_movement:
+                self._update_tank_current_level(target_tank.id, new_target_level)
 
-        # Update source tank's current_level
-        self._update_tank_current_level(source_tank.id, running_source_level)
+        # Only update source tank's current_level for non-future movements
+        if not is_future_movement:
+            self._update_tank_current_level(source_tank.id, running_source_level)
 
         logger.info(f"Created {len(created_movements)} transfer movements")
         return created_movements
