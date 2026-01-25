@@ -261,15 +261,22 @@ class MovementService:
             if movement_data.tank_id == movement_data.target_tank_id:
                 raise MovementServiceError("Source and target tank cannot be the same")
 
-        # For discharge/transfer, verify sufficient fuel using stored current_level
-        if movement_data.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
-            if movement_data.expected_volume > tank.current_level:
-                raise MovementServiceError(
-                    f"Insufficient feedstock. Current level: {tank.current_level:.2f} bbl"
-                )
-
         today = date.today()
         is_future_movement = movement_data.scheduled_date > today
+
+        # For discharge/transfer, verify sufficient fuel
+        # Use level as of scheduled_date for historical movements, current_level for future
+        if movement_data.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
+            if not is_future_movement:
+                # Historical movement: compute level as of the scheduled date
+                available_level = self._get_starting_volume_for_tank(tank, movement_data.scheduled_date)
+            else:
+                # Future movement: use current level
+                available_level = tank.current_level
+            if movement_data.expected_volume > available_level:
+                raise MovementServiceError(
+                    f"Insufficient feedstock. Available level: {available_level:.2f} bbl"
+                )
 
         # Calculate resulting_volume for source tank
         delta = get_volume_delta(
@@ -334,14 +341,20 @@ class MovementService:
         if transfer_data.source_tank_id in target_ids:
             raise MovementServiceError("Source and target tank cannot be the same")
 
-        total_volume = sum(target.volume for target in transfer_data.targets)
-        if total_volume > source_tank.current_level:
-            raise MovementServiceError(
-                f"Insufficient feedstock. Current level: {source_tank.current_level:.2f} bbl"
-            )
-
         today = date.today()
         is_future_movement = transfer_data.scheduled_date > today
+
+        # Verify sufficient fuel
+        # Use level as of scheduled_date for historical movements, current_level for future
+        total_volume = sum(target.volume for target in transfer_data.targets)
+        if not is_future_movement:
+            available_level = self._get_starting_volume_for_tank(source_tank, transfer_data.scheduled_date)
+        else:
+            available_level = source_tank.current_level
+        if total_volume > available_level:
+            raise MovementServiceError(
+                f"Insufficient feedstock. Available level: {available_level:.2f} bbl"
+            )
 
         created_movements: list[Movement] = []
         running_source_level = source_tank.current_level
