@@ -1,23 +1,14 @@
-import fitz  # pymupdf
-import json
-import os
+"""PDF extraction service for movement data."""
 from datetime import date
-from openai import OpenAI
+
 from models import PDFExtractedMovement
+from services.ai_extraction import (
+    extract_text_from_pdf,
+    call_openai_extraction,
+    AIExtractionError,
+)
 
-# OpenAI client - initialized lazily
-_client = None
-
-
-def get_openai_client() -> OpenAI:
-    global _client
-    if _client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
-        _client = OpenAI(api_key=api_key)
-    return _client
-
+SYSTEM_PROMPT = "You are a data extraction specialist. Your job is to locate volume difference tables in PDF text and extract the data as JSON. Ignore all non-tabular content."
 
 EXTRACTION_PROMPT = """This PDF contains analysis reports with various content. Your task is to find ONLY the table(s) showing tank volume differences/movements.
 
@@ -51,49 +42,15 @@ PDF TEXT:
 """
 
 
-def extract_text_from_pdf(pdf_content: bytes) -> str:
-    """Extract text content from PDF bytes."""
-    doc = fitz.open(stream=pdf_content, filetype="pdf")
-    text_parts = []
-    for page in doc:
-        text_parts.append(page.get_text())
-    doc.close()
-    return "\n".join(text_parts)
-
-
 async def extract_movements_with_ai(pdf_text: str) -> list[PDFExtractedMovement]:
     """Use AI to extract structured movement data from PDF text."""
-    client = get_openai_client()
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a data extraction specialist. Your job is to locate volume difference tables in PDF text and extract the data as JSON. Ignore all non-tabular content."
-            },
-            {
-                "role": "user",
-                "content": EXTRACTION_PROMPT + pdf_text[:15000]  # Limit text length
-            }
-        ],
-        temperature=0,
+    data = call_openai_extraction(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=EXTRACTION_PROMPT + pdf_text[:15000],  # Limit text length
         max_tokens=4000
     )
 
-    content = response.choices[0].message.content.strip()
-
-    # Handle markdown code blocks if present
-    if content.startswith("```"):
-        lines = content.split("\n")
-        # Remove first and last lines (``` markers)
-        content = "\n".join(lines[1:-1])
-        if content.startswith("json"):
-            content = content[4:].strip()
-
-    data = json.loads(content)
     movements = []
-
     for idx, item in enumerate(data):
         # Parse date if provided
         movement_date = None

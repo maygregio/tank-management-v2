@@ -1,23 +1,14 @@
-import fitz  # pymupdf
-import json
-import os
+"""COA (Certificate of Analysis) PDF extraction service."""
 from datetime import date, datetime
-from openai import OpenAI
+
 from models import CertificateOfAnalysis
+from services.ai_extraction import (
+    extract_text_from_pdf,
+    call_openai_extraction,
+    AIExtractionError,
+)
 
-# OpenAI client - initialized lazily
-_client = None
-
-
-def get_openai_client() -> OpenAI:
-    global _client
-    if _client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
-        _client = OpenAI(api_key=api_key)
-    return _client
-
+SYSTEM_PROMPT = "You are a chemical analysis data extraction specialist. Your job is to extract Certificate of Analysis data for carbon black oil from PDF documents. Be precise with numerical values and units."
 
 COA_EXTRACTION_PROMPT = """Extract Certificate of Analysis (COA) data from this document for carbon black oil.
 
@@ -32,11 +23,11 @@ Look for the following information:
 2. CHEMICAL PROPERTIES (with typical ranges for reference):
    - bmci: Bureau of Mines Correlation Index (typical: 110-160)
    - api_gravity: API Gravity in degrees (typical: ~4.4)
-   - specific_gravity: Specific Gravity at 15.56°C or 60°F (typical: min 1.10)
+   - specific_gravity: Specific Gravity at 15.56C or 60F (typical: min 1.10)
    - viscosity: Viscosity value (typical: 50-102 SUS or cSt)
-   - viscosity_temp: Temperature for viscosity reading (e.g., "98.9°C", "210°F", "100°C")
+   - viscosity_temp: Temperature for viscosity reading (e.g., "98.9C", "210F", "100C")
    - sulfur_content: Sulfur Content in wt% (typical: max 0.5-1.0)
-   - flash_point: Flash Point in °C, PMCC method (typical: min 98)
+   - flash_point: Flash Point in C, PMCC method (typical: min 98)
    - ash_content: Ash Content in wt% (typical: max 0.05)
    - moisture_content: Moisture/Water Content in wt% (typical: max 0.5)
    - toluene_insoluble: Toluene Insoluble/TI in wt% (typical: max 6)
@@ -55,7 +46,7 @@ Example output:
   "api_gravity": 4.2,
   "specific_gravity": 1.12,
   "viscosity": 75.0,
-  "viscosity_temp": "98.9°C",
+  "viscosity_temp": "98.9C",
   "sulfur_content": 0.35,
   "flash_point": 110.0,
   "ash_content": 0.02,
@@ -68,47 +59,13 @@ DOCUMENT TEXT:
 """
 
 
-def extract_text_from_pdf(pdf_content: bytes) -> str:
-    """Extract text content from PDF bytes."""
-    doc = fitz.open(stream=pdf_content, filetype="pdf")
-    text_parts = []
-    for page in doc:
-        text_parts.append(page.get_text())
-    doc.close()
-    return "\n".join(text_parts)
-
-
 async def extract_coa_with_ai(pdf_text: str) -> dict:
     """Use AI to extract structured COA data from PDF text."""
-    client = get_openai_client()
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a chemical analysis data extraction specialist. Your job is to extract Certificate of Analysis data for carbon black oil from PDF documents. Be precise with numerical values and units."
-            },
-            {
-                "role": "user",
-                "content": COA_EXTRACTION_PROMPT + pdf_text[:15000]  # Limit text length
-            }
-        ],
-        temperature=0,
+    return call_openai_extraction(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=COA_EXTRACTION_PROMPT + pdf_text[:15000],  # Limit text length
         max_tokens=2000
     )
-
-    content = response.choices[0].message.content.strip()
-
-    # Handle markdown code blocks if present
-    if content.startswith("```"):
-        lines = content.split("\n")
-        # Remove first and last lines (``` markers)
-        content = "\n".join(lines[1:-1])
-        if content.startswith("json"):
-            content = content[4:].strip()
-
-    return json.loads(content)
 
 
 def parse_coa_extraction(raw_data: dict, pdf_url: str) -> CertificateOfAnalysis:

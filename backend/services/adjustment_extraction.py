@@ -1,23 +1,10 @@
 """Adjustment PDF extraction service for monthly inspection readings."""
-import json
-import os
 from datetime import date
-from openai import OpenAI
+
 from models.adjustments import AdjustmentExtractedReading
+from services.ai_extraction import call_openai_extraction, AIExtractionError
 
-# OpenAI client - initialized lazily
-_client = None
-
-
-def get_openai_client() -> OpenAI:
-    global _client
-    if _client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
-        _client = OpenAI(api_key=api_key)
-    return _client
-
+SYSTEM_PROMPT = "You are a data extraction specialist. Your job is to locate tank level readings in monthly inspection PDF text and extract the data as JSON. Focus on physical readings/measurements."
 
 ADJUSTMENT_EXTRACTION_PROMPT = """This PDF contains a monthly inspection report with physical tank level readings.
 
@@ -51,37 +38,13 @@ PDF TEXT:
 
 async def extract_adjustments_with_ai(pdf_text: str) -> list[AdjustmentExtractedReading]:
     """Use AI to extract structured adjustment readings from PDF text."""
-    client = get_openai_client()
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a data extraction specialist. Your job is to locate tank level readings in monthly inspection PDF text and extract the data as JSON. Focus on physical readings/measurements."
-            },
-            {
-                "role": "user",
-                "content": ADJUSTMENT_EXTRACTION_PROMPT + pdf_text[:15000]  # Limit text length
-            }
-        ],
-        temperature=0,
+    data = call_openai_extraction(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=ADJUSTMENT_EXTRACTION_PROMPT + pdf_text[:15000],  # Limit text length
         max_tokens=4000
     )
 
-    content = response.choices[0].message.content.strip()
-
-    # Handle markdown code blocks if present
-    if content.startswith("```"):
-        lines = content.split("\n")
-        # Remove first and last lines (``` markers)
-        content = "\n".join(lines[1:-1])
-        if content.startswith("json"):
-            content = content[4:].strip()
-
-    data = json.loads(content)
     readings = []
-
     for idx, item in enumerate(data):
         # Parse date if provided
         inspection_date = None
