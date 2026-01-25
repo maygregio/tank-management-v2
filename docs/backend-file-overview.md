@@ -81,6 +81,8 @@ Models:
 
 Key design: Uses paired fields pattern (`*_default` for system values, `*_manual` for user overrides) with computed properties that return `manual ?? default`.
 
+**Validation:** `actual_volume` must be non-negative for all movement types except ADJUSTMENT (which can be negative for loss adjustments).
+
 Models:
 - `MovementBase` - Base with paired fields for tank_id, volume, date, notes, trade info, workflow fields, **resulting_volume** (source tank level after movement), and **target_resulting_volume** (target tank level after transfer)
 - `MovementCreate` - Simple input for manual movement creation
@@ -143,9 +145,9 @@ FastAPI routers defining API endpoints.
 **Purpose:** Tank CRUD endpoints.
 
 Endpoints:
-- `GET /api/tanks` - List all tanks with levels (filter by location)
+- `GET /api/tanks` - List all tanks with levels (filter by location; pagination: skip, limit)
 - `GET /api/tanks/{id}` - Get single tank with level
-- `GET /api/tanks/{id}/history` - Get movement history for a tank
+- `GET /api/tanks/{id}/history` - Get movement history for a tank (pagination: skip, limit)
 - `GET /api/tanks/{id}/volume-history` - Get daily EOD volume history (query params: start_date, end_date)
 - `POST /api/tanks` - Create new tank
 - `PUT /api/tanks/{id}` - Update tank
@@ -157,8 +159,8 @@ Uses `TankService` via dependency injection.
 **Purpose:** Movement CRUD and operations.
 
 Endpoints:
-- `GET /api/movements` - List movements (filter by tank_id, type, status)
-- `GET /api/movements/overview` - Get movements joined with COA data for grid display
+- `GET /api/movements` - List movements (filter by tank_id, type, status; pagination: skip, limit)
+- `GET /api/movements/overview` - Get movements joined with COA data for grid display (filter by tank_id, type, status; pagination: skip, limit)
 - `POST /api/movements` - Create scheduled movement
 - `POST /api/movements/transfer` - Create multi-target transfer
 - `POST /api/movements/adjustment` - Create adjustment from physical reading
@@ -259,9 +261,9 @@ Singleton accessor: `get_tank_service()`
 **Purpose:** Movement business logic.
 
 `MovementService` class:
-- `get_all()` - List movements with filters (tank_id, type, status)
+- `get_all()` - List movements with filters (tank_id, type, status; pagination: skip, limit)
 - `get_by_id()` - Single movement lookup
-- `get_overview()` - Movements joined with COA chemical properties
+- `get_overview()` - Movements joined with COA chemical properties (filter by tank_id, type, status; pagination: skip, limit)
 - `create()` - Create movement, sets resulting_volume (and target_resulting_volume for transfers), updates tank.current_level only if scheduled_date <= today
 - `create_transfer()` - Multi-target transfer, sets both resulting_volume and target_resulting_volume, updates tank levels only if scheduled_date <= today
 - `update()` - Update pending movement, recalculates volumes if amount/tank changed
@@ -270,6 +272,8 @@ Singleton accessor: `get_tank_service()`
 - `delete()` - Remove movement, recalculates affected tanks from movement date forward
 
 **Volume Maintenance:** All mutation methods maintain `resulting_volume` (source tank) and `target_resulting_volume` (target tank for transfers) on movements, and `current_level` on tanks. Future movements (scheduled_date > today) do NOT affect tank.current_level—only the resulting volumes are stored. When edits/deletes occur, subsequent movements are recalculated and current_level is updated only for movements up to today.
+
+**Available Volume Calculation:** For discharge/transfer validation, `_get_available_volume_for_movement()` computes the tank level after applying all same-day movements that would be processed before the new/updated movement. This ensures validation accounts for other movements on the same day.
 
 Custom exception: `MovementServiceError` with status code.
 Singleton accessor: `get_movement_service()`
@@ -316,40 +320,48 @@ Function:
   - Handles multiple date formats
   - Validates required fields and data types
 
-### `pdf_extraction.py`
-**Purpose:** PDF movement extraction using AI.
+### `ai_extraction.py`
+**Purpose:** Shared utilities for AI-based extraction from documents.
 
 Functions:
 - `get_openai_client()` - Lazily initialized OpenAI client singleton
 - `extract_text_from_pdf()` - Uses PyMuPDF to extract text from PDF bytes
+- `parse_ai_json_response()` - Parses JSON from AI responses, handles markdown code fences
+- `call_openai_extraction()` - Calls OpenAI API with system/user prompts and parses JSON response
+
+Custom exception: `AIExtractionError` with message and raw content for debugging.
+
+Used by: `pdf_extraction.py`, `coa_extraction.py`, `adjustment_extraction.py`
+
+### `pdf_extraction.py`
+**Purpose:** PDF movement extraction using AI.
+
+Functions:
 - `extract_movements_with_ai()` - Sends PDF text to GPT-4o-mini with structured prompt
   - Extracts tank name, level before/after, movement quantity, date
-  - Handles markdown code blocks in AI response
 
-Uses prompt engineering to find volume difference tables and ignore non-tabular content.
+Uses `ai_extraction.py` for OpenAI client and JSON parsing.
 
 ### `coa_extraction.py`
 **Purpose:** Certificate of Analysis PDF extraction using AI.
 
 Functions:
-- `get_openai_client()` - Lazily initialized OpenAI client singleton
-- `extract_text_from_pdf()` - PyMuPDF text extraction
 - `extract_coa_with_ai()` - GPT-4o-mini extraction of COA properties
 - `parse_coa_extraction()` - Converts raw AI output to `CertificateOfAnalysis` model
 - `process_coa_pdf()` - Full pipeline: extract text, AI extraction, parse to model
 
 Extracts identification info and chemical properties (BMCI, API gravity, sulfur, etc.).
 
+Uses `ai_extraction.py` for OpenAI client, PDF text extraction, and JSON parsing.
+
 ### `adjustment_extraction.py`
 **Purpose:** Monthly adjustment PDF extraction using AI.
 
 Functions:
-- `get_openai_client()` - Lazily initialized OpenAI client singleton
 - `extract_adjustments_with_ai()` - GPT-4o-mini extraction of tank readings
   - Extracts tank name, physical level, inspection date
-  - Handles markdown code blocks in response
 
-Similar to pdf_extraction.py but for monthly inspection reports.
+Uses `ai_extraction.py` for OpenAI client, PDF text extraction, and JSON parsing.
 
 ### `adjustment_matching.py`
 **Purpose:** Tank matching and delta calculation for adjustments.
@@ -420,6 +432,7 @@ backend/
     ├── signal_service.py    # Signal workflow
     ├── calculations.py  # Level calculations
     ├── excel_parser.py  # Signal Excel parsing
+    ├── ai_extraction.py     # Shared AI extraction utilities
     ├── pdf_extraction.py    # Movement PDF extraction
     ├── coa_extraction.py    # COA PDF extraction
     ├── adjustment_extraction.py  # Adjustment PDF extraction
