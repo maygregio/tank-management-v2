@@ -59,10 +59,21 @@ def create_transfer(
 
 @router.get("/overview", response_model=list[MovementWithCOA])
 def get_overview(
+    tank_id: Optional[str] = Query(None, description="Filter by tank ID"),
+    type: Optional[MovementType] = Query(None, description="Filter by movement type"),
+    status: Optional[str] = Query(None, description="Filter by status: pending or completed"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     service: MovementService = Depends(get_movement_service)
 ):
-    """Get all movements with joined COA chemical properties for overview display."""
-    return service.get_overview()
+    """Get movements with joined COA chemical properties for overview display."""
+    return service.get_overview(
+        tank_id=tank_id,
+        movement_type=type,
+        status=status,
+        skip=skip,
+        limit=limit
+    )
 
 
 @router.put("/{movement_id}", response_model=Movement)

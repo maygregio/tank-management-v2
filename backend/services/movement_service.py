@@ -248,14 +248,53 @@ class MovementService:
         """Get a specific movement."""
         return self._movement_storage.get_by_id(movement_id)
 
-    def get_overview(self) -> list[MovementWithCOA]:
-        """Get all movements joined with COA chemical properties for overview display."""
-        logger.info("Fetching movements overview with COA data")
+    def get_overview(
+        self,
+        tank_id: Optional[str] = None,
+        movement_type: Optional[MovementType] = None,
+        status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> list[MovementWithCOA]:
+        """Get movements joined with COA chemical properties for overview display.
 
-        # Get all movements (pending and completed)
-        movements = self._movement_storage.get_all()
+        Args:
+            tank_id: Filter by tank ID (source or target)
+            movement_type: Filter by movement type
+            status: Filter by status ('pending' or 'completed')
+            skip: Number of records to skip (for pagination)
+            limit: Maximum number of records to return
+        """
+        logger.info(f"Fetching movements overview: tank_id={tank_id}, type={movement_type}, status={status}, skip={skip}, limit={limit}")
 
-        # Get all COAs for joining
+        # Build query conditions
+        conditions = []
+        parameters = []
+
+        if tank_id:
+            conditions.append("(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)")
+            parameters.append({"name": "@tank_id", "value": tank_id})
+
+        if movement_type:
+            conditions.append("c.type = @type")
+            parameters.append({"name": "@type", "value": movement_type.value})
+
+        if status == "pending":
+            conditions.append("IS_NULL(c.actual_volume)")
+        elif status == "completed":
+            conditions.append("NOT IS_NULL(c.actual_volume)")
+
+        # Get paginated movements
+        movements = self._movement_storage.query(
+            conditions=conditions,
+            parameters=parameters if parameters else None,
+            order_by="scheduled_date_default",
+            order_desc=True,
+            skip=skip,
+            limit=limit
+        )
+
+        # Get all COAs for joining (typically small dataset)
         coas = self._coa_storage.get_all()
 
         # Build lookup dictionaries for COAs by nomination_key and signal_id
