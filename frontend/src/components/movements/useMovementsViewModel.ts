@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { getLocalToday, isFutureDate } from '@/lib/dateUtils';
 import type {
   Movement,
   MovementCreate,
@@ -28,7 +29,6 @@ interface MovementsViewModelInput {
   tanks?: TankWithLevel[];
   formData: MovementCreate;
   transferTargets: TransferTargetCreate[];
-  todayDate: Date;
   searchQuery: string;
   statusFilter: 'all' | 'pending' | 'completed';
   typeFilter: MovementType | 'all';
@@ -40,12 +40,12 @@ export function useMovementsViewModel({
   tanks,
   formData,
   transferTargets,
-  todayDate,
   searchQuery,
   statusFilter,
   typeFilter,
   sourceFilter,
 }: MovementsViewModelInput) {
+  const todayString = getLocalToday();
   const tankMap = useMemo(() => new Map(tanks?.map((tank) => [tank.id, tank]) || []), [tanks]);
 
   const targetTanks = useMemo(() => (
@@ -72,10 +72,11 @@ export function useMovementsViewModel({
     const completed = total - pending;
     const scheduledToday = movements?.filter((movement) => {
       const dateValue = movement.scheduled_date || movement.created_at || '';
-      return new Date(dateValue).toDateString() === todayDate.toDateString();
+      // Compare YYYY-MM-DD strings directly - both are in local timezone
+      return dateValue.slice(0, 10) === todayString;
     }).length || 0;
     return { total, pending, completed, scheduledToday };
-  }, [movements, todayDate]);
+  }, [movements, todayString]);
 
   const filteredMovements = useMemo(() => {
     const search = searchQuery.trim().toLowerCase();
@@ -88,7 +89,7 @@ export function useMovementsViewModel({
       })
       .filter((movement) => {
         if (sourceFilter === 'all') return true;
-        const isFromPdf = movement.notes?.toLowerCase().includes('imported from pdf') || false;
+        const isFromPdf = movement.source === 'pdf_import';
         return sourceFilter === 'pdf' ? isFromPdf : !isFromPdf;
       })
       .filter((movement) => {
@@ -110,9 +111,8 @@ export function useMovementsViewModel({
       const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
       const isPending = movement.actual_volume === null;
       const dateValue = movement.scheduled_date || movement.created_at || '';
-      const scheduledDate = new Date(dateValue);
-      const isFuture = scheduledDate > todayDate;
-      const source: MovementSource = movement.notes?.toLowerCase().includes('imported from pdf') ? 'pdf' : 'manual';
+      // Map backend source to display source
+      const displaySource: MovementSource = movement.source === 'pdf_import' ? 'pdf' : 'manual';
       return {
         id: movement.id,
         date: dateValue,
@@ -121,12 +121,12 @@ export function useMovementsViewModel({
         expectedVolume: movement.expected_volume || 0,
         actualVolume: movement.actual_volume,
         status: isPending,
-        isFuture,
+        isFuture: isFutureDate(dateValue),
         notes: movement.notes || '',
-        source,
+        source: displaySource,
       };
     })
-  ), [filteredMovements, tankMap, todayDate]);
+  ), [filteredMovements, tankMap]);
 
   return {
     tankMap,

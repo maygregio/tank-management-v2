@@ -390,6 +390,7 @@ class MovementService:
             actual_volume=None,
             scheduled_date_default=movement_data.scheduled_date,
             notes_default=movement_data.notes,
+            source=movement_data.source,
             resulting_volume=new_source_level,
             target_resulting_volume=new_target_level
         )

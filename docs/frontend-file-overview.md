@@ -15,6 +15,7 @@ Key dependencies:
 - `@mui/material` (7.x) - Material UI component library
 - `@mui/x-data-grid` - Data grid component for tables
 - `@tanstack/react-query` - Server state management
+- `dayjs` - Lightweight date manipulation library
 - `highcharts` / `highcharts-react-official` - Charting library
 - `notistack` - Toast notifications
 
@@ -76,8 +77,9 @@ Key dependencies:
 **Purpose:** TypeScript interfaces mirroring backend Pydantic models.
 
 Key types:
+- `MovementSource` - Source tracking type (`'manual' | 'pdf_import' | 'signal' | 'adjustment'`)
 - `TankWithLevel` - Tank with calculated current_level, level_percentage
-- `Movement` - Movement with paired fields pattern (*_default/*_manual)
+- `Movement` - Movement with paired fields pattern (*_default/*_manual) and `source` field
 - `MovementCreate`, `MovementUpdate`, `MovementComplete` - Movement input types
 - `TransferCreate`, `TransferTargetCreate` - Transfer operations
 - `SignalAssignment`, `TradeInfoUpdate` - Signal workflow types
@@ -98,9 +100,18 @@ Contains:
 - `dataGridSx` - Shared DataGrid styling
 
 ### `dateUtils.ts`
-**Purpose:** Date formatting utilities.
+**Purpose:** Date formatting and manipulation utilities using dayjs.
 
-- `formatDate(date)` - Formats date strings for display
+Functions:
+- `formatDate(value)` - Formats date strings for display (M/D/YYYY format)
+- `getLocalToday()` - Gets today's date as YYYY-MM-DD in local timezone
+- `toLocalDateString(value)` - Extracts date portion (YYYY-MM-DD) from any date string
+- `isFutureDate(value)` - Checks if a date is after today
+- `isSameDay(a, b)` - Checks if two date strings represent the same day
+- `isWithinRange(value, start, end)` - Checks if a date is within a range (inclusive)
+- `compareDates(a, b)` - Compares two date strings for sorting
+
+Note: Uses dayjs for consistent timezone handling, avoiding issues with native `Date` parsing of date-only strings as UTC.
 
 ### `theme.ts`
 **Purpose:** Material UI theme configuration.
@@ -224,7 +235,7 @@ Defines:
 - `@mui/material`: Box, Button, Card, Typography, etc.
 - `@tanstack/react-query`: useQuery
 - `@/lib/api`: tanksApi
-- `@/lib/dateUtils`: formatDate
+- `@/lib/dateUtils`: formatDate, compareDates, isWithinRange
 - `@/components/TankLevelGauge`
 - `@/components/MovementTypeChip`
 - `@/components/MovementStatus`
@@ -233,6 +244,10 @@ Defines:
 **API calls:**
 - `tanksApi.getById(id)`
 - `tanksApi.getHistory(id)`
+
+**Date Handling:**
+- Uses `compareDates()` for sorting movement history
+- Uses `isWithinRange()` for date range filtering
 
 ---
 
@@ -246,6 +261,7 @@ Defines:
 - `@mui/x-data-grid`: DataGrid, GridColDef
 - `@tanstack/react-query`: useQuery, useMutation, useQueryClient
 - `@/lib/api`: tanksApi, movementsApi
+- `@/lib/dateUtils`: formatDate, getLocalToday
 - `@/components/movements/*`: ManualEntryForm, PdfImportForm, MovementsTableSection, MovementDialogs, MovementSummaryCards, SourceBadge
 - `@/components/movements/useMovementsViewModel`
 - `@/contexts/ToastContext`
@@ -258,6 +274,9 @@ Defines:
 - `movementsApi.update(id, data)`
 - `movementsApi.complete(id, data)`
 - `movementsApi.delete(id)`
+
+**Date Handling:**
+- Uses `getLocalToday()` for default scheduled date in forms
 
 ---
 
@@ -542,7 +561,7 @@ Defines:
 **Purpose:** ViewModel hook for movements page logic.
 
 **Exports:**
-- `MovementSource` type
+- `MovementSource` type (display type: `'manual' | 'pdf'`)
 - `MovementGridRowExtended` interface
 - `useMovementsViewModel()` hook
 
@@ -552,8 +571,12 @@ Defines:
 - `availableTargetTanks` - Targets not already selected
 - `totalTransferVolume` - Sum of transfer target volumes
 - `remainingTransferVolume` - Source tank level minus transfers
-- `summaryStats` - Movement statistics
-- `rows` - Filtered/transformed grid rows
+- `summaryStats` - Movement statistics (uses `getLocalToday()` for "scheduled today" count)
+- `rows` - Filtered/transformed grid rows (uses `isFutureDate()` for future detection)
+
+**Source Detection:**
+- Uses explicit `movement.source` field from backend (not notes text)
+- Maps backend source (`'pdf_import'`) to display source (`'pdf'`)
 
 ---
 
@@ -735,7 +758,7 @@ frontend/
 │   │   ├── types.ts          # TypeScript types
 │   │   ├── constants.ts      # Shared constants/styles
 │   │   ├── theme.ts          # MUI theme
-│   │   ├── dateUtils.ts      # Date formatting
+│   │   ├── dateUtils.ts      # Date utilities (dayjs-based)
 │   │   ├── columnProfiles.ts # Overview column profiles
 │   │   └── columnPreferences.ts # localStorage persistence
 │   │

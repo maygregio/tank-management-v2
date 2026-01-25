@@ -13,7 +13,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
-import { formatDate } from '@/lib/dateUtils';
+import { formatDate, getLocalToday } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 import MovementTypeChip from '@/components/MovementTypeChip';
 import MovementStatus from '@/components/MovementStatus';
@@ -52,8 +52,7 @@ export default function MovementsPage() {
   const [sourceFilter, setSourceFilter] = useState<MovementSource | 'all'>('all');
   const [activeTab, setActiveTab] = useState(0);
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayDate = useMemo(() => new Date(today), [today]);
+  const today = getLocalToday();
   const [formData, setFormData] = useState<MovementCreate>({
     type: 'load',
     tank_id: '',
@@ -257,7 +256,6 @@ export default function MovementsPage() {
     tanks,
     formData,
     transferTargets,
-    todayDate,
     searchQuery,
     statusFilter,
     typeFilter,

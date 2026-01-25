@@ -29,7 +29,7 @@ import { EditDialog, CompleteDialog } from '@/components/movements';
 import StorageIcon from '@mui/icons-material/Storage';
 import { adjustmentsApi } from '@/lib/api';
 import { feedstockTypeLabels, openPdfInNewTab, buttonStyles } from '@/lib/constants';
-import { formatDate } from '@/lib/dateUtils';
+import { formatDate, compareDates, isWithinRange } from '@/lib/dateUtils';
 import { exportToExcel, formatDataForExport } from '@/lib/export';
 import { useTankDetail } from '@/lib/hooks/useTankDetail';
 import { useToast } from '@/contexts/ToastContext';
@@ -242,28 +242,20 @@ export default function TankDetailPage() {
 
   const sortedHistory = useMemo(() => (
     history ? [...history].sort(
-      (a, b) => {
-        const left = a.scheduled_date || a.created_at;
-        const right = b.scheduled_date || b.created_at;
-        return new Date(left).getTime() - new Date(right).getTime();
-      }
+      (a, b) => compareDates(
+        a.scheduled_date || a.created_at,
+        b.scheduled_date || b.created_at
+      )
     ) : []
   ), [history]);
 
   const filteredHistory = useMemo(() => {
     if (!sortedHistory.length) return [];
-    const rangeStart = dateRange.start ? new Date(dateRange.start).getTime() : null;
-    const rangeEnd = dateRange.end
-      ? new Date(`${dateRange.end}T23:59:59.999`).getTime()
-      : null;
-
-    if (!rangeStart && !rangeEnd) return sortedHistory;
+    if (!dateRange.start && !dateRange.end) return sortedHistory;
 
     return sortedHistory.filter((movement) => {
-      const timestamp = new Date(movement.scheduled_date || movement.created_at).getTime();
-      if (rangeStart !== null && timestamp < rangeStart) return false;
-      if (rangeEnd !== null && timestamp > rangeEnd) return false;
-      return true;
+      const dateValue = movement.scheduled_date || movement.created_at;
+      return isWithinRange(dateValue, dateRange.start, dateRange.end);
     });
   }, [sortedHistory, dateRange.end, dateRange.start]);
 
