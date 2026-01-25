@@ -301,19 +301,20 @@ class MovementService:
         )
         created = self._movement_storage.create(movement)
 
-        # For non-future movements, recalculate from the scheduled date to handle
-        # back-dated movements that insert before existing ones
+        # Recalculate from the scheduled date to handle insertions and ensure
+        # resulting_volume reflects any earlier movements on that date.
+        new_level = self._recalculate_tank_volumes(tank, movement_data.scheduled_date)
         if not is_future_movement:
-            new_level = self._recalculate_tank_volumes(tank, movement_data.scheduled_date)
             self._update_tank_current_level(tank.id, new_level)
 
-            # For transfers, also recalculate target tank
-            if target_tank:
-                new_target_level = self._recalculate_tank_volumes(target_tank, movement_data.scheduled_date)
+        # For transfers, also recalculate target tank
+        if target_tank:
+            new_target_level = self._recalculate_tank_volumes(target_tank, movement_data.scheduled_date)
+            if not is_future_movement:
                 self._update_tank_current_level(target_tank.id, new_target_level)
 
-            # Refetch to get updated resulting_volume
-            created = self._movement_storage.get_by_id(created.id)
+        # Refetch to get updated resulting_volume
+        created = self._movement_storage.get_by_id(created.id)
 
         logger.info(f"Movement created: {created.id}")
         return created
@@ -370,25 +371,25 @@ class MovementService:
             created = self._movement_storage.create(movement)
             created_movements.append(created)
 
-        # For non-future movements, recalculate from the scheduled date to handle
-        # back-dated movements that insert before existing ones
+        # Recalculate from the scheduled date to handle insertions and ensure
+        # resulting_volume reflects any earlier movements on that date.
+        new_source_level = self._recalculate_tank_volumes(source_tank, transfer_data.scheduled_date)
         if not is_future_movement:
-            # Recalculate source tank
-            new_source_level = self._recalculate_tank_volumes(source_tank, transfer_data.scheduled_date)
             self._update_tank_current_level(source_tank.id, new_source_level)
 
-            # Recalculate each target tank
-            target_tank_ids = set(target.tank_id for target in transfer_data.targets)
-            for target_id in target_tank_ids:
-                target_tank = self._tank_storage.get_by_id(target_id)
-                if target_tank:
-                    new_level = self._recalculate_tank_volumes(target_tank, transfer_data.scheduled_date)
+        # Recalculate each target tank
+        target_tank_ids = set(target.tank_id for target in transfer_data.targets)
+        for target_id in target_tank_ids:
+            target_tank = self._tank_storage.get_by_id(target_id)
+            if target_tank:
+                new_level = self._recalculate_tank_volumes(target_tank, transfer_data.scheduled_date)
+                if not is_future_movement:
                     self._update_tank_current_level(target_id, new_level)
 
-            # Refetch all movements to get updated resulting_volumes
-            created_movements = [
-                self._movement_storage.get_by_id(m.id) for m in created_movements
-            ]
+        # Refetch all movements to get updated resulting_volumes
+        created_movements = [
+            self._movement_storage.get_by_id(m.id) for m in created_movements
+        ]
 
         logger.info(f"Created {len(created_movements)} transfer movements")
         return created_movements
