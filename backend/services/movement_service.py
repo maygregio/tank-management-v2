@@ -366,14 +366,17 @@ class MovementService:
         if movement.actual_volume is not None:
             raise MovementServiceError("Cannot edit completed movements")
 
-        # Track if volume changed for recalculation
+        # Track if volume, tank, or scheduled_date changed for recalculation
         old_volume = movement.expected_volume or 0
+        old_scheduled_date = movement.scheduled_date
         volume_changed = False
         tank_changed = False
+        scheduled_date_changed = False
         old_tank_id = movement.tank_id
 
         update_data = {}
         if data.scheduled_date_manual is not None:
+            scheduled_date_changed = (data.scheduled_date_manual != old_scheduled_date)
             update_data["scheduled_date_manual"] = data.scheduled_date_manual
         if data.expected_volume_manual is not None:
             volume_changed = (data.expected_volume_manual != old_volume)
@@ -418,27 +421,35 @@ class MovementService:
         if not updated:
             raise MovementServiceError("Failed to update movement", 500)
 
-        # Recalculate volumes if volume or tank changed
-        if volume_changed or tank_changed:
+        # Recalculate volumes if volume, tank, or scheduled_date changed
+        if volume_changed or tank_changed or scheduled_date_changed:
+            # Determine the recalculation start date
+            # For scheduled_date changes, use the earlier of old and new dates
+            new_scheduled_date = updated.scheduled_date
+            if scheduled_date_changed and old_scheduled_date and new_scheduled_date:
+                recalc_from_date = min(old_scheduled_date, new_scheduled_date)
+            else:
+                recalc_from_date = new_scheduled_date
+
             # Recalculate for the affected tank(s)
-            if movement.tank_id:
-                tank = self._tank_storage.get_by_id(movement.tank_id)
-                if tank and movement.scheduled_date:
-                    new_level = self._recalculate_tank_volumes(tank, movement.scheduled_date)
+            if updated.tank_id:
+                tank = self._tank_storage.get_by_id(updated.tank_id)
+                if tank and recalc_from_date:
+                    new_level = self._recalculate_tank_volumes(tank, recalc_from_date)
                     self._update_tank_current_level(tank.id, new_level)
 
             # For transfers, also recalculate target tank
-            if movement.type == MovementType.TRANSFER and movement.target_tank_id:
-                target_tank = self._tank_storage.get_by_id(movement.target_tank_id)
-                if target_tank and movement.scheduled_date:
-                    new_level = self._recalculate_tank_volumes(target_tank, movement.scheduled_date)
+            if updated.type == MovementType.TRANSFER and updated.target_tank_id:
+                target_tank = self._tank_storage.get_by_id(updated.target_tank_id)
+                if target_tank and recalc_from_date:
+                    new_level = self._recalculate_tank_volumes(target_tank, recalc_from_date)
                     self._update_tank_current_level(target_tank.id, new_level)
 
             # If tank changed, also recalculate the old tank
             if tank_changed and old_tank_id:
                 old_tank = self._tank_storage.get_by_id(old_tank_id)
-                if old_tank and movement.scheduled_date:
-                    new_level = self._recalculate_tank_volumes(old_tank, movement.scheduled_date)
+                if old_tank and recalc_from_date:
+                    new_level = self._recalculate_tank_volumes(old_tank, recalc_from_date)
                     self._update_tank_current_level(old_tank.id, new_level)
 
             # Refetch the updated movement to get the new resulting_volume
