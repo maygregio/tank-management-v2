@@ -127,33 +127,19 @@ class TankService:
             if movement.tank_id == tank_id and movement.resulting_volume is not None:
                 eod_by_day[movement_date] = movement.resulting_volume
             # For movements where this tank is the target (transfers in),
-            # we need to calculate the effect
-            elif movement.target_tank_id == tank_id:
-                # Get the previous EOD or starting volume
-                prev_volume = eod_by_day.get(movement_date)
-                if prev_volume is None:
-                    # Look for previous day
-                    for d in range((movement_date - start_date).days - 1, -1, -1):
-                        check_date = start_date + timedelta(days=d)
-                        if check_date in eod_by_day:
-                            prev_volume = eod_by_day[check_date]
-                            break
-                if prev_volume is None:
-                    prev_volume = tank.initial_level
-
-                # Add the transfer volume
-                from services.calculations import get_effective_volume
-                volume = get_effective_volume(movement)
-                eod_by_day[movement_date] = round(prev_volume + volume, 2)
+            # use target_resulting_volume
+            elif movement.target_tank_id == tank_id and movement.target_resulting_volume is not None:
+                eod_by_day[movement_date] = movement.target_resulting_volume
 
         # Build the result with all days in the range
         result: list[dict] = []
         current_volume = tank.initial_level
 
         # Get the last movement before start_date to get starting volume
+        # Include both source movements and transfer-ins (target_tank_id)
         pre_movements = self._movement_storage.query(
             conditions=[
-                "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id)",
+                "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
                 "(c.scheduled_date_default < @start_date OR c.scheduled_date_manual < @start_date)"
             ],
             parameters=[
@@ -162,10 +148,20 @@ class TankService:
             ],
             order_by="scheduled_date_default",
             order_desc=True,
-            limit=1
+            limit=10  # Get more to find the most recent by effective date
         )
-        if pre_movements and pre_movements[0].resulting_volume is not None:
-            current_volume = pre_movements[0].resulting_volume
+        if pre_movements:
+            # Sort by effective scheduled_date and find the most recent
+            pre_movements.sort(key=lambda m: m.scheduled_date or date.min, reverse=True)
+            for pre_mov in pre_movements:
+                # For transfer-ins, use target_resulting_volume
+                if pre_mov.target_tank_id == tank_id and pre_mov.target_resulting_volume is not None:
+                    current_volume = pre_mov.target_resulting_volume
+                    break
+                # For source movements, use resulting_volume
+                elif pre_mov.tank_id == tank_id and pre_mov.resulting_volume is not None:
+                    current_volume = pre_mov.resulting_volume
+                    break
 
         # Iterate through each day in the range
         current_date = start_date
