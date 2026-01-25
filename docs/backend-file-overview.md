@@ -82,7 +82,7 @@ Models:
 Key design: Uses paired fields pattern (`*_default` for system values, `*_manual` for user overrides) with computed properties that return `manual ?? default`.
 
 Models:
-- `MovementBase` - Base with paired fields for tank_id, volume, date, notes, trade info, workflow fields, and **resulting_volume** (source tank level after movement)
+- `MovementBase` - Base with paired fields for tank_id, volume, date, notes, trade info, workflow fields, **resulting_volume** (source tank level after movement), and **target_resulting_volume** (target tank level after transfer)
 - `MovementCreate` - Simple input for manual movement creation
 - `TransferCreate` - Multi-target transfer creation (source + list of targets)
 - `TransferTarget` - Single target tank with volume
@@ -262,14 +262,14 @@ Singleton accessor: `get_tank_service()`
 - `get_all()` - List movements with filters (tank_id, type, status)
 - `get_by_id()` - Single movement lookup
 - `get_overview()` - Movements joined with COA chemical properties
-- `create()` - Create movement, sets resulting_volume, updates tank.current_level
-- `create_transfer()` - Multi-target transfer, updates source and target tank levels
+- `create()` - Create movement, sets resulting_volume (and target_resulting_volume for transfers), updates tank.current_level only if scheduled_date <= today
+- `create_transfer()` - Multi-target transfer, sets both resulting_volume and target_resulting_volume, updates tank levels only if scheduled_date <= today
 - `update()` - Update pending movement, recalculates volumes if amount/tank changed
 - `complete()` - Record actual volume, recalculates from this movement forward
 - `create_adjustment()` - Create adjustment, sets resulting_volume = physical_level
 - `delete()` - Remove movement, recalculates affected tanks from movement date forward
 
-**Volume Maintenance:** All mutation methods maintain `resulting_volume` on movements and `current_level` on tanks. When edits/deletes occur, subsequent movements are recalculated.
+**Volume Maintenance:** All mutation methods maintain `resulting_volume` (source tank) and `target_resulting_volume` (target tank for transfers) on movements, and `current_level` on tanks. Future movements (scheduled_date > today) do NOT affect tank.current_level—only the resulting volumes are stored. When edits/deletes occur, subsequent movements are recalculated and current_level is updated only for movements up to today.
 
 Custom exception: `MovementServiceError` with status code.
 Singleton accessor: `get_movement_service()`
