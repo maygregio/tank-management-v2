@@ -1,7 +1,7 @@
 """Movement-related models."""
 from datetime import datetime, date
 from typing import Optional
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 from .shared import MovementType, generate_id, utc_now
 
@@ -10,7 +10,7 @@ class MovementBase(BaseModel):
     """Base movement model with common fields."""
     type: MovementType
     target_tank_id: Optional[str] = None  # Only for transfers
-    actual_volume: Optional[float] = Field(default=None, ge=0, description="Actual quantity after completion")
+    actual_volume: Optional[float] = Field(default=None, description="Actual quantity after completion (can be negative for adjustments)")
     # Resulting volume: tank level AFTER this movement (for source tank)
     resulting_volume: Optional[float] = Field(default=None, ge=0, description="Source tank volume after this movement")
     # Target resulting volume: target tank level AFTER this movement (for transfers only)
@@ -121,6 +121,14 @@ class MovementBase(BaseModel):
     @property
     def quality_adj_diff(self) -> Optional[float]:
         return self.quality_adj_diff_manual if self.quality_adj_diff_manual is not None else self.quality_adj_diff_default
+
+    @model_validator(mode='after')
+    def validate_actual_volume(self) -> 'MovementBase':
+        """Validate actual_volume: non-negative for all types except ADJUSTMENT."""
+        if self.actual_volume is not None and self.actual_volume < 0:
+            if self.type != MovementType.ADJUSTMENT:
+                raise ValueError('actual_volume must be non-negative for non-adjustment movements')
+        return self
 
 
 class MovementCreate(BaseModel):
