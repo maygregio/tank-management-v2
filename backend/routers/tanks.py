@@ -1,5 +1,6 @@
 """Tank management API endpoints."""
 import logging
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
@@ -40,6 +41,26 @@ def get_tank_history(
 ):
     """Get movement history for a specific tank."""
     history = service.get_history(tank_id, skip=skip, limit=limit)
+    if history is None:
+        raise HTTPException(status_code=404, detail="Tank not found")
+    return history
+
+
+@router.get("/{tank_id}/volume-history")
+def get_tank_volume_history(
+    tank_id: str,
+    start_date: date = Query(..., description="Start date for volume history"),
+    end_date: date = Query(..., description="End date for volume history"),
+    service: TankService = Depends(get_tank_service)
+):
+    """Get daily EOD volume history for a tank.
+
+    Returns a list of {date, eod_volume} for each day in the date range.
+    """
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be before or equal to end_date")
+
+    history = service.get_volume_history(tank_id, start_date, end_date)
     if history is None:
         raise HTTPException(status_code=404, detail="Tank not found")
     return history
