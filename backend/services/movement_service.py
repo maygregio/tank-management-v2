@@ -114,6 +114,57 @@ class MovementService:
 
         return tank.initial_level
 
+    def _get_available_volume_for_movement(
+        self,
+        tank: Tank,
+        scheduled_date: date,
+        exclude_movement_id: str | None = None
+    ) -> float:
+        """Get available volume for a discharge/transfer on a given date.
+
+        Computes the tank level after applying all same-day movements that would
+        be processed before a new/updated movement. This ensures validation
+        accounts for other movements on the same day.
+
+        Args:
+            tank: The source tank
+            scheduled_date: The date of the movement being validated
+            exclude_movement_id: Movement ID to exclude (for updates)
+
+        Returns:
+            Available volume in barrels
+        """
+        # Start with volume at beginning of the scheduled date
+        starting_volume = self._get_starting_volume_for_tank(tank, scheduled_date)
+
+        # Get all movements on this exact date for this tank
+        movements = self._movement_storage.query(
+            conditions=[
+                "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
+                "(c.scheduled_date_default = @date OR c.scheduled_date_manual = @date)"
+            ],
+            parameters=[
+                {"name": "@tank_id", "value": tank.id},
+                {"name": "@date", "value": scheduled_date.isoformat()}
+            ],
+            order_by="created_at",
+            order_desc=False
+        )
+
+        # Filter to only movements with effective date matching scheduled_date
+        movements = [m for m in movements if m.scheduled_date == scheduled_date]
+
+        # Exclude the movement being updated (if applicable)
+        if exclude_movement_id:
+            movements = [m for m in movements if m.id != exclude_movement_id]
+
+        # Apply all same-day movements to get current available volume
+        available = starting_volume
+        for movement in movements:
+            available = apply_movement_to_level(available, movement, tank.id)
+
+        return available
+
     def _recalculate_tank_volumes(
         self,
         tank: Tank,
@@ -264,15 +315,12 @@ class MovementService:
         today = date.today()
         is_future_movement = movement_data.scheduled_date > today
 
-        # For discharge/transfer, verify sufficient fuel
-        # Use level as of scheduled_date for historical movements, current_level for future
+        # For discharge/transfer, verify sufficient feedstock as of the scheduled date
+        # This accounts for other same-day movements that would be processed first
         if movement_data.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
-            if not is_future_movement:
-                # Historical movement: compute level as of the scheduled date
-                available_level = self._get_starting_volume_for_tank(tank, movement_data.scheduled_date)
-            else:
-                # Future movement: use current level
-                available_level = tank.current_level
+            available_level = self._get_available_volume_for_movement(
+                tank, movement_data.scheduled_date
+            )
             if movement_data.expected_volume > available_level:
                 raise MovementServiceError(
                     f"Insufficient feedstock. Available level: {available_level:.2f} bbl"
@@ -344,7 +392,7 @@ class MovementService:
         today = date.today()
         is_future_movement = transfer_data.scheduled_date > today
 
-        # Verify sufficient fuel
+        # Verify sufficient feedstock
         # Use level as of scheduled_date for historical movements, current_level for future
         total_volume = sum(target.volume for target in transfer_data.targets)
         if not is_future_movement:
@@ -432,13 +480,18 @@ class MovementService:
             update_data["scheduled_date_manual"] = data.scheduled_date_manual
         if data.expected_volume_manual is not None:
             volume_changed = (data.expected_volume_manual != old_volume)
-            # Validate sufficient fuel for discharge/transfer
+            # Validate sufficient feedstock for discharge/transfer
             if movement.type in [MovementType.DISCHARGE, MovementType.TRANSFER]:
-                tank = self._tank_storage.get_by_id(movement.tank_id)
+                # Use effective values (considering potential updates in this request)
+                effective_tank_id = data.tank_id_manual if data.tank_id_manual is not None else movement.tank_id
+                effective_date = data.scheduled_date_manual if data.scheduled_date_manual is not None else movement.scheduled_date
+                tank = self._tank_storage.get_by_id(effective_tank_id)
                 if not tank:
                     raise MovementServiceError("Tank not found")
-                # Available = current + what this movement was taking
-                available = tank.current_level + old_volume
+                # Compute available volume as of the scheduled date, excluding this movement
+                available = self._get_available_volume_for_movement(
+                    tank, effective_date, exclude_movement_id=movement.id
+                )
                 if data.expected_volume_manual > available:
                     raise MovementServiceError(
                         f"Insufficient feedstock. Available: {available:.2f} bbl"
