@@ -73,8 +73,8 @@ Models:
 - `TankBase` - Base fields: name, location, feedstock_type, capacity, initial_level
 - `TankCreate` - Input model for creating tanks
 - `TankUpdate` - Partial update model (all fields optional)
-- `Tank` - Complete model with id and created_at
-- `TankWithLevel` - Tank with calculated current_level and level_percentage
+- `Tank` - Complete model with id, created_at, and **current_level** (denormalized, updated when movements change)
+- `TankWithLevel` - Tank with level_percentage for display (inherits current_level from Tank)
 
 ### `movements.py`
 **Purpose:** Movement and signal data models.
@@ -82,7 +82,7 @@ Models:
 Key design: Uses paired fields pattern (`*_default` for system values, `*_manual` for user overrides) with computed properties that return `manual ?? default`.
 
 Models:
-- `MovementBase` - Base with paired fields for tank_id, volume, date, notes, trade info, and workflow fields
+- `MovementBase` - Base with paired fields for tank_id, volume, date, notes, trade info, workflow fields, and **resulting_volume** (source tank level after movement)
 - `MovementCreate` - Simple input for manual movement creation
 - `TransferCreate` - Multi-target transfer creation (source + list of targets)
 - `TransferTarget` - Single target tank with volume
@@ -143,9 +143,10 @@ FastAPI routers defining API endpoints.
 **Purpose:** Tank CRUD endpoints.
 
 Endpoints:
-- `GET /api/tanks` - List all tanks with calculated levels (filter by location)
+- `GET /api/tanks` - List all tanks with levels (filter by location)
 - `GET /api/tanks/{id}` - Get single tank with level
 - `GET /api/tanks/{id}/history` - Get movement history for a tank
+- `GET /api/tanks/{id}/volume-history` - Get daily EOD volume history (query params: start_date, end_date)
 - `POST /api/tanks` - Create new tank
 - `PUT /api/tanks/{id}` - Update tank
 - `DELETE /api/tanks/{id}` - Delete tank
@@ -244,10 +245,11 @@ Handles datetime serialization and uses `/id` as partition key.
 **Purpose:** Tank business logic.
 
 `TankService` class:
-- `get_all()` - Returns tanks with calculated levels, optional location filter
-- `get_by_id()` - Single tank with calculated level
+- `get_all()` - Returns tanks with stored levels, optional location filter
+- `get_by_id()` - Single tank with stored level
 - `get_history()` - Movement history for a tank
-- `create()` - Create new tank
+- `get_volume_history()` - Daily EOD volume for a date range (uses resulting_volume for O(1) lookups)
+- `create()` - Create new tank (sets current_level = initial_level)
 - `update()` - Update tank properties
 - `delete()` - Remove tank
 
@@ -260,12 +262,14 @@ Singleton accessor: `get_tank_service()`
 - `get_all()` - List movements with filters (tank_id, type, status)
 - `get_by_id()` - Single movement lookup
 - `get_overview()` - Movements joined with COA chemical properties
-- `create()` - Create scheduled movement with validation
-- `create_transfer()` - Multi-target transfer with fuel availability check
-- `update()` - Update pending movement (validates fuel for discharges)
-- `complete()` - Record actual volume
-- `create_adjustment()` - Create adjustment from physical reading
-- `delete()` - Remove movement
+- `create()` - Create movement, sets resulting_volume, updates tank.current_level
+- `create_transfer()` - Multi-target transfer, updates source and target tank levels
+- `update()` - Update pending movement, recalculates volumes if amount/tank changed
+- `complete()` - Record actual volume, recalculates from this movement forward
+- `create_adjustment()` - Create adjustment, sets resulting_volume = physical_level
+- `delete()` - Remove movement, recalculates affected tanks from movement date forward
+
+**Volume Maintenance:** All mutation methods maintain `resulting_volume` on movements and `current_level` on tanks. When edits/deletes occur, subsequent movements are recalculated.
 
 Custom exception: `MovementServiceError` with status code.
 Singleton accessor: `get_movement_service()`
@@ -283,18 +287,21 @@ Custom exception: `SignalServiceError` with status code.
 Singleton accessor: `get_signal_service()`
 
 ### `calculations.py`
-**Purpose:** Tank level calculation logic.
+**Purpose:** Tank level calculation logic and helpers.
 
 Functions:
 - `get_effective_volume()` - Returns actual_volume if set, else expected_volume
-- `calculate_tank_level()` - Computes tank level from initial + movements
+- `calculate_tank_level()` - **Legacy:** Computes tank level from initial + movements (kept for verification/reconciliation)
   - LOAD: adds to tank
   - DISCHARGE: subtracts from tank
   - TRANSFER: subtracts from source, adds to target
   - ADJUSTMENT: adds signed value (can be negative)
   - Supports `as_of` date for point-in-time calculations
-- `get_tank_with_level()` - Wraps tank with calculated level and percentage
+- `get_tank_with_level()` - Wraps tank with level_percentage (uses stored current_level)
 - `calculate_adjustment()` - Computes adjustment needed: `physical_level - current_level`
+- `apply_movement_to_level()` - Apply a single movement's effect to a tank level
+- `get_volume_delta()` - Get the volume change a movement causes for a specific tank
+- `recalculate_resulting_volumes()` - Recalculate resulting_volume for a list of movements
 
 ### `excel_parser.py`
 **Purpose:** Excel file parsing for signal imports.

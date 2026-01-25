@@ -32,9 +32,10 @@ class Tank(TankBase):
     """Complete tank model with ID and timestamp."""
     id: str = Field(default_factory=generate_id)
     created_at: datetime = Field(default_factory=utc_now)
+    # Denormalized current level - updated when movements change
+    current_level: float = Field(default=0.0, ge=0, description="Current tank level in barrels")
 
 
 class TankWithLevel(Tank):
-    """Tank with calculated current level."""
-    current_level: float = 0.0
+    """Tank with level percentage for display."""
     level_percentage: float = 0.0
