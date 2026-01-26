@@ -44,6 +44,8 @@ class TerminalService:
             total_capacity = sum(t.capacity for t in location_tanks)
             current_total_level = sum(t.current_level for t in location_tanks)
             utilization = (current_total_level / total_capacity * 100) if total_capacity > 0 else 0
+            # Clamp utilization to 100% max (tanks can exceed capacity)
+            utilization = min(utilization, 100.0)
 
             summaries.append(TerminalSummary(
                 location=location,
@@ -152,8 +154,9 @@ class TerminalService:
             # Ensure level doesn't go below 0
             current_total_level = max(0, current_total_level)
 
-            # Calculate utilization
+            # Calculate utilization (clamped to 100% max as tanks can exceed capacity)
             utilization = (current_total_level / total_capacity * 100) if total_capacity > 0 else 0
+            utilization = min(utilization, 100.0)
 
             result.append(TerminalDailyAggregation(
                 record_date=current_date,
@@ -187,6 +190,8 @@ class TerminalService:
 
         for tank in tanks:
             # Get the last movement for this tank on or before the target date
+            # Query without limit to ensure we find the latest effective movement
+            # even if many movements have been manually rescheduled
             movements = self._movement_storage.query(
                 conditions=[
                     "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
@@ -197,8 +202,7 @@ class TerminalService:
                     {"name": "@target_date", "value": target_date.isoformat()}
                 ],
                 order_by="scheduled_date_default",
-                order_desc=True,
-                limit=20  # Get more to find by effective date
+                order_desc=True
             )
 
             # Filter by effective date and find the most recent
