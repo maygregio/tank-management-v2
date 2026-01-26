@@ -5,7 +5,8 @@ import type {
   SignalAssignment, SignalUploadResult, TradeInfoUpdate,
   COAWithSignal, COALinkRequest,
   AdjustmentExtractionResult, AdjustmentImportRequest, AdjustmentImportResult,
-  MovementWithCOA
+  MovementWithCOA,
+  TerminalSummary, TerminalDailyAggregation
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -211,4 +212,24 @@ export const adjustmentsApi = {
     }),
 
   getPdfUrl: (blobName: string) => `${API_BASE}/adjustments/pdf/${encodeURIComponent(blobName)}`,
+};
+
+// Terminals
+export const terminalsApi = {
+  getAll: (signal?: AbortSignal) =>
+    fetchAPI<TerminalSummary[]>('/terminals', { signal }),
+
+  getLocations: (signal?: AbortSignal) =>
+    fetchAPI<string[]>('/terminals/locations', { signal }),
+
+  getAggregatedHistory: (location: string, startDate: string, endDate: string, signal?: AbortSignal) => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return fetchAPI<TerminalDailyAggregation[]>(
+      `/terminals/${encodeURIComponent(location)}/history?${params.toString()}`,
+      { signal }
+    );
+  },
 };

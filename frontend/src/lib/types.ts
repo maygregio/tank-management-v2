@@ -351,3 +351,25 @@ export interface AdjustmentImportResult {
   failed_count: number;
   errors: string[];
 }
+
+// Terminal Aggregation Types
+export interface TerminalSummary {
+  location: string;
+  tank_count: number;
+  total_capacity: number;
+  current_total_level: number;
+  utilization_percentage: number;
+}
+
+export interface TerminalDailyAggregation {
+  date: string;
+  total_level: number;
+  total_capacity: number;
+  net_movement: number;
+  loads_volume: number;
+  discharges_volume: number;
+  transfers_in_volume: number;
+  transfers_out_volume: number;
+  adjustments_volume: number;
+  utilization_percentage: number;
+}
