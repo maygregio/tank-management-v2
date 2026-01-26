@@ -62,6 +62,12 @@ from .adjustments import (
     AdjustmentImportResult,
 )
 
+# Terminals
+from .terminals import (
+    TerminalSummary,
+    TerminalDailyAggregation,
+)
+
 __all__ = [
     # Shared
     "generate_id",
@@ -107,4 +113,7 @@ __all__ = [
     "AdjustmentImportConfirmItem",
     "AdjustmentImportRequest",
     "AdjustmentImportResult",
+    # Terminals
+    "TerminalSummary",
+    "TerminalDailyAggregation",
 ]
