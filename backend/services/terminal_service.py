@@ -185,11 +185,12 @@ class TerminalService:
         """Get the combined level of all tanks at a specific date.
 
         Uses resulting_volume from movements to determine tank levels at EOD.
+        Falls back to calculating from movements if resulting_volume is not available.
         """
         total_level = 0.0
 
         for tank in tanks:
-            # Get the last movement for this tank on or before the target date
+            # Get all movements for this tank on or before the target date
             # Query without limit to ensure we find the latest effective movement
             # even if many movements have been manually rescheduled
             movements = self._movement_storage.query(
@@ -205,25 +206,67 @@ class TerminalService:
                 order_desc=True
             )
 
-            # Filter by effective date and find the most recent
+            # Filter by effective date
             movements = [m for m in movements if m.scheduled_date and m.scheduled_date <= target_date]
             movements.sort(key=lambda m: (m.scheduled_date or date.min, m.created_at), reverse=True)
 
             tank_level = tank.initial_level  # Default to initial level
+            found_resulting_volume = False
 
+            # Try to find most recent movement with resulting_volume
             for m in movements:
                 # For transfer-ins, use target_resulting_volume
                 if m.target_tank_id == tank.id and m.target_resulting_volume is not None:
                     tank_level = m.target_resulting_volume
+                    found_resulting_volume = True
                     break
                 # For source movements, use resulting_volume
                 elif m.tank_id == tank.id and m.resulting_volume is not None:
                     tank_level = m.resulting_volume
+                    found_resulting_volume = True
                     break
+
+            # Fallback: calculate from movements if no resulting_volume found
+            if not found_resulting_volume and movements:
+                tank_level = self._calculate_level_from_movements(tank, movements)
 
             total_level += tank_level
 
         return total_level
+
+    def _calculate_level_from_movements(
+        self,
+        tank: Tank,
+        movements: list[Movement]
+    ) -> float:
+        """Calculate tank level by applying all movements to initial_level.
+
+        This is a fallback for when resulting_volume is not available.
+        """
+        level = tank.initial_level
+
+        # Sort movements chronologically (oldest first)
+        sorted_movements = sorted(
+            movements,
+            key=lambda m: (m.scheduled_date or date.min, m.created_at)
+        )
+
+        for m in sorted_movements:
+            volume = m.actual_volume if m.actual_volume is not None else (m.expected_volume or 0)
+
+            if m.type == MovementType.LOAD and m.tank_id == tank.id:
+                level += volume
+            elif m.type == MovementType.DISCHARGE and m.tank_id == tank.id:
+                level -= volume
+            elif m.type == MovementType.TRANSFER:
+                if m.tank_id == tank.id:
+                    level -= volume  # Transfer out
+                if m.target_tank_id == tank.id:
+                    level += volume  # Transfer in
+            elif m.type == MovementType.ADJUSTMENT and m.tank_id == tank.id:
+                level += volume  # Adjustments can be positive or negative
+
+        return max(0, level)  # Ensure level doesn't go below 0
 
 
 # Singleton instance
