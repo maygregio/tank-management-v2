@@ -52,8 +52,8 @@ Key dependencies:
 | `tanksApi.create(data)` | POST | `/tanks` |
 | `tanksApi.update(id, data)` | PUT | `/tanks/{id}` |
 | `tanksApi.delete(id)` | DELETE | `/tanks/{id}` |
-| `movementsApi.getAll()` | GET | `/movements` |
-| `movementsApi.getSignals()` | GET | `/movements/signals` |
+| `movementsApi.getAll(params)` | GET | `/movements` (paginated, with type/status/source filters) |
+| `movementsApi.getSignals(params)` | GET | `/movements/signals` (paginated) |
 | `movementsApi.create(data)` | POST | `/movements` |
 | `movementsApi.createTransfer(data)` | POST | `/movements/transfer` |
 | `movementsApi.createAdjustment(data)` | POST | `/movements/adjustment` |
@@ -72,7 +72,7 @@ Key dependencies:
 | `adjustmentsApi.getPdfUrl(blobName)` | GET | `/adjustments/pdf/{blobName}` |
 | `importsApi.extractFromPDFs(files)` | POST | `/imports/extract` |
 | `importsApi.confirmImport(data)` | POST | `/imports/confirm` |
-| `overviewApi.getAll()` | GET | `/movements/overview` |
+| `overviewApi.getAll(params)` | GET | `/movements/overview` (paginated) |
 | `terminalsApi.getAll()` | GET | `/terminals` |
 | `terminalsApi.getLocations()` | GET | `/terminals/locations` |
 | `terminalsApi.getAggregatedHistory(location, start, end)` | GET | `/terminals/{location}/history` |
@@ -92,6 +92,7 @@ Key types:
 - `PDFExtractionResult`, `PDFMovementWithMatches` - PDF import types
 - `AdjustmentExtractionResult`, `AdjustmentReadingWithMatches` - Adjustment types
 - `MovementSummaryStats` - Summary statistics for movements page
+- `PaginatedResponse<T>` - Generic paginated response with `items`, `total`, `skip`, `limit`
 - `TerminalSummary` - Terminal summary (location, tank_count, capacity, level, utilization)
 - `TerminalDailyAggregation` - Daily aggregated terminal data (level, movements by type)
 
@@ -264,7 +265,7 @@ Defines:
 
 **Imports:**
 - `@mui/material`: Box, Grid, IconButton, etc.
-- `@mui/x-data-grid`: DataGrid, GridColDef
+- `@mui/x-data-grid`: DataGrid, GridColDef, GridPaginationModel
 - `@tanstack/react-query`: useQuery, useMutation, useQueryClient
 - `@/lib/api`: tanksApi, movementsApi
 - `@/lib/dateUtils`: formatDate, getLocalToday
@@ -274,12 +275,18 @@ Defines:
 
 **API calls:**
 - `tanksApi.getAll()`
-- `movementsApi.getAll()`
+- `movementsApi.getAll({ type, status, source, skip, limit })` - Server-side pagination and filtering
 - `movementsApi.create(data)`
 - `movementsApi.createTransfer(data)`
 - `movementsApi.update(id, data)`
 - `movementsApi.complete(id, data)`
 - `movementsApi.delete(id)`
+
+**Server-Side Pagination:**
+- Uses `paginationModel` state (`{ page, pageSize }`)
+- Query key includes pagination params: `['movements', page, pageSize, apiFilters]`
+- Filters (type, status, source) passed to API for server-side filtering
+- Page resets to 0 when filters change
 
 **Date Handling:**
 - Uses `getLocalToday()` for default scheduled date in forms
@@ -293,6 +300,7 @@ Defines:
 
 **Imports:**
 - `@mui/material`: Box, Button, Card, Chip, Dialog, Table, etc.
+- `@mui/x-data-grid`: DataGrid, GridPaginationModel
 - `@tanstack/react-query`: useQuery, useMutation, useQueryClient
 - `@/lib/api`: movementsApi, tanksApi
 - `@/lib/types`: Signal types
@@ -303,11 +311,16 @@ Defines:
 - `@/contexts/ToastContext`
 
 **API calls:**
-- `movementsApi.getSignals()`
+- `movementsApi.getSignals({ skip, limit })` - Server-side pagination
 - `movementsApi.uploadSignals(file)`
 - `movementsApi.assignSignal(id, data)`
 - `movementsApi.updateTradeInfo(id, data)`
 - `tanksApi.getAll()`
+
+**Server-Side Pagination:**
+- Uses `paginationModel` state (`{ page, pageSize }`)
+- Query key includes pagination params: `['signals', page, pageSize]`
+- DataGrid configured with `paginationMode="server"` and `rowCount`
 
 ---
 
@@ -553,16 +566,21 @@ Defines:
 - `@/lib/types`: MovementType, TankWithLevel, PDFExtractionResult, PDFMovementWithMatches, PDFImportConfirmItem
 
 ### `MovementsTableSection.tsx`
-**Purpose:** DataGrid section with filters and bulk actions.
+**Purpose:** DataGrid section with filters and bulk actions, server-side pagination.
 
 **Imports:**
 - `@mui/material/styles`: alpha
 - `@mui/material`: Box, Button, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography
-- `@mui/x-data-grid`: DataGrid, GridColDef, GridRowSelectionModel
+- `@mui/x-data-grid`: DataGrid, GridColDef, GridRowSelectionModel, GridPaginationModel
 - `@/lib/constants`: dataGridSx
 - `@/components/SectionHeader`
 - `@/lib/types`: MovementType, MovementUpdate
 - `./useMovementsViewModel`: MovementGridRowExtended, MovementSource
+
+**Server-Side Pagination Props:**
+- `paginationModel`, `onPaginationModelChange` - Pagination state
+- `rowCount` - Total count from API for server-side pagination
+- `loading` - Loading state for DataGrid
 
 ### `MovementDialogs.tsx`
 **Purpose:** Complete and Edit dialogs for movements.
@@ -621,7 +639,7 @@ Defines:
 
 **Imports:**
 - `@mui/material`: Box, CircularProgress, Typography
-- `@mui/x-data-grid`: DataGrid, GridColDef, GridColumnVisibilityModel
+- `@mui/x-data-grid`: DataGrid, GridColDef, GridColumnVisibilityModel, GridPaginationModel
 - `@tanstack/react-query`: useQuery, useMutation, useQueryClient
 - `@/lib/api`: overviewApi, movementsApi, tanksApi
 - `@/lib/dateUtils`: formatDate
@@ -632,9 +650,14 @@ Defines:
 - `./ProfileSelector`
 
 **API calls:**
-- `overviewApi.getAll()`
+- `overviewApi.getAll({ skip, limit })` - Server-side pagination
 - `tanksApi.getAll()`
 - `movementsApi.update(id, data)`
+
+**Server-Side Pagination:**
+- Uses `paginationModel` state (`{ page, pageSize }`)
+- Query key includes pagination params: `['overview', page, pageSize]`
+- DataGrid configured with `paginationMode="server"` and `rowCount`
 
 **Editable fields:**
 - notes, expected_volume, scheduled_date, base_diff, quality_adj_diff, equipment, tank_id, discharge_date, strategy, trade_number, destination
