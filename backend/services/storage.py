@@ -92,6 +92,23 @@ class CosmosStorage(Generic[T]):
         result = list(self.container.query_items(query=query, enable_cross_partition_query=True))
         return result[0] if result else 0
 
+    def count_with_conditions(
+        self,
+        conditions: list[str],
+        parameters: list[dict[str, Any]] | None = None
+    ) -> int:
+        """Get count of items matching the given conditions."""
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        query = f"SELECT VALUE COUNT(1) FROM c WHERE {where_clause}"
+
+        logger.debug(f"Executing count query: {query}")
+        result = list(self.container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+        return result[0] if result else 0
+
     def get_by_id(self, id: str) -> T | None:
         """Get a single item by ID."""
         try:

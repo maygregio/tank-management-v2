@@ -58,10 +58,12 @@ export default function AdjustmentsPage() {
     queryFn: () => tanksApi.getAll(),
   });
 
-  const { data: movements } = useQuery({
+  const { data: movementsData } = useQuery({
     queryKey: ['movements', 'adjustment'],
-    queryFn: () => movementsApi.getAll(undefined, 'adjustment'),
+    queryFn: () => movementsApi.getAll({ type: 'adjustment', limit: 1000 }),
   });
+
+  const movements = movementsData?.items;
 
   const extractMutation = useMutation({
     mutationFn: adjustmentsApi.extractFromPDFs,

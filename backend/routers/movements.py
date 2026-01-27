@@ -8,13 +8,14 @@ from models import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
     AdjustmentCreate, TransferCreate, MovementWithCOA
 )
+from models.shared import PaginatedResponse
 from services.movement_service import MovementService, MovementServiceError, get_movement_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=list[Movement])
+@router.get("", response_model=PaginatedResponse[Movement])
 def get_movements(
     tank_id: Optional[str] = Query(None, description="Filter by tank ID"),
     type: Optional[MovementType] = Query(None, description="Filter by movement type"),
@@ -23,7 +24,7 @@ def get_movements(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     service: MovementService = Depends(get_movement_service)
 ):
-    """Get all movements with optional filters."""
+    """Get all movements with optional filters (paginated)."""
     return service.get_all(
         tank_id=tank_id,
         movement_type=type,
@@ -57,7 +58,7 @@ def create_transfer(
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
-@router.get("/overview", response_model=list[MovementWithCOA])
+@router.get("/overview", response_model=PaginatedResponse[MovementWithCOA])
 def get_overview(
     tank_id: Optional[str] = Query(None, description="Filter by tank ID"),
     type: Optional[MovementType] = Query(None, description="Filter by movement type"),
@@ -66,7 +67,7 @@ def get_overview(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     service: MovementService = Depends(get_movement_service)
 ):
-    """Get movements with joined COA chemical properties for overview display."""
+    """Get movements with joined COA chemical properties for overview display (paginated)."""
     return service.get_overview(
         tank_id=tank_id,
         movement_type=type,

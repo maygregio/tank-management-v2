@@ -7,6 +7,7 @@ from models import (
     Movement, MovementCreate, MovementComplete, MovementUpdate, MovementType,
     Tank, AdjustmentCreate, TransferCreate, MovementWithCOA, CertificateOfAnalysis
 )
+from models.shared import PaginatedResponse
 from services.storage import CosmosStorage
 from services.calculations import (
     calculate_adjustment, get_volume_delta, apply_movement_to_level
@@ -214,7 +215,7 @@ class MovementService:
         status: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
-    ) -> list[Movement]:
+    ) -> PaginatedResponse[Movement]:
         """Get movements with optional filters."""
         logger.info(f"Fetching movements: tank_id={tank_id}, type={movement_type}, status={status}")
 
@@ -234,6 +235,12 @@ class MovementService:
         elif status == "completed":
             conditions.append("NOT IS_NULL(c.actual_volume)")
 
+        # Get total count for pagination
+        total = self._movement_storage.count_with_conditions(
+            conditions=conditions,
+            parameters=parameters if parameters else None
+        )
+
         movements = self._movement_storage.query(
             conditions=conditions,
             parameters=parameters if parameters else None,
@@ -242,7 +249,13 @@ class MovementService:
             skip=skip,
             limit=limit
         )
-        return movements
+
+        return PaginatedResponse(
+            items=movements,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
 
     def get_by_id(self, movement_id: str) -> Movement | None:
         """Get a specific movement."""
@@ -255,7 +268,7 @@ class MovementService:
         status: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
-    ) -> list[MovementWithCOA]:
+    ) -> PaginatedResponse[MovementWithCOA]:
         """Get movements joined with COA chemical properties for overview display.
 
         Args:
@@ -283,6 +296,12 @@ class MovementService:
             conditions.append("IS_NULL(c.actual_volume)")
         elif status == "completed":
             conditions.append("NOT IS_NULL(c.actual_volume)")
+
+        # Get total count for pagination
+        total = self._movement_storage.count_with_conditions(
+            conditions=conditions,
+            parameters=parameters if parameters else None
+        )
 
         # Get paginated movements
         movements = self._movement_storage.query(
@@ -328,7 +347,12 @@ class MovementService:
             results.append(movement_with_coa)
 
         logger.info(f"Returning {len(results)} movements with COA data")
-        return results
+        return PaginatedResponse(
+            items=results,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
 
     def create(self, movement_data: MovementCreate) -> Movement:
         """Create a new scheduled movement."""

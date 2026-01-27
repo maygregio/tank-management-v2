@@ -5,7 +5,7 @@ import type {
   SignalAssignment, SignalUploadResult, TradeInfoUpdate,
   COAWithSignal, COALinkRequest,
   AdjustmentExtractionResult, AdjustmentImportRequest, AdjustmentImportResult,
-  MovementWithCOA,
+  MovementWithCOA, PaginatedResponse,
   TerminalSummary, TerminalDailyAggregation
 } from './types';
 
@@ -60,13 +60,24 @@ export const tanksApi = {
 
 // Movements
 export const movementsApi = {
-  getAll: (tankId?: string, type?: string, status?: string, signal?: AbortSignal) => {
-    const params = new URLSearchParams();
-    if (tankId) params.append('tank_id', tankId);
-    if (type) params.append('type', type);
-    if (status) params.append('status', status);
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return fetchAPI<Movement[]>(`/movements${query}`, { signal });
+  getAll: (
+    params?: {
+      tankId?: string;
+      type?: string;
+      status?: string;
+      skip?: number;
+      limit?: number;
+    },
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<Movement>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.tankId) searchParams.append('tank_id', params.tankId);
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    return fetchAPI<PaginatedResponse<Movement>>(`/movements${query}`, { signal });
   },
   create: (data: MovementCreate) => fetchAPI<Movement>('/movements', {
     method: 'POST',
@@ -90,7 +101,16 @@ export const movementsApi = {
   }),
   delete: (id: string) => fetchAPI<void>(`/movements/${id}`, { method: 'DELETE' }),
   // Signal methods
-  getSignals: (signal?: AbortSignal) => fetchAPI<Movement[]>('/movements/signals', { signal }),
+  getSignals: (
+    params?: { skip?: number; limit?: number },
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<Movement>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    return fetchAPI<PaginatedResponse<Movement>>(`/movements/signals${query}`, { signal });
+  },
   uploadSignals: async (file: File): Promise<SignalUploadResult> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -119,8 +139,16 @@ export const movementsApi = {
 
 // Overview (movements with COA join)
 export const overviewApi = {
-  getAll: (signal?: AbortSignal) =>
-    fetchAPI<MovementWithCOA[]>('/movements/overview', { signal }),
+  getAll: (
+    params?: { skip?: number; limit?: number },
+    signal?: AbortSignal
+  ): Promise<PaginatedResponse<MovementWithCOA>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    return fetchAPI<PaginatedResponse<MovementWithCOA>>(`/movements/overview${query}`, { signal });
+  },
 };
 
 // Imports

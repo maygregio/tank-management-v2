@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
-import { DataGrid, GridColDef, GridColumnVisibilityModel } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridColumnVisibilityModel, GridPaginationModel } from '@mui/x-data-grid';
 import { overviewApi, movementsApi, tanksApi } from '@/lib/api';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
@@ -39,11 +39,22 @@ export default function OverviewGrid() {
   const [visibility, setVisibility] = useState<GridColumnVisibilityModel>(
     saved?.visibilityModel || getProfileVisibilityModel('All')
   );
-
-  const { data: movements, isLoading: loadingMovements } = useQuery({
-    queryKey: ['overview'],
-    queryFn: () => overviewApi.getAll(),
+  // Server-side pagination state
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
   });
+
+  const { data: movementsData, isLoading: loadingMovements } = useQuery({
+    queryKey: ['overview', paginationModel.page, paginationModel.pageSize],
+    queryFn: ({ signal }) => overviewApi.getAll({
+      skip: paginationModel.page * paginationModel.pageSize,
+      limit: paginationModel.pageSize,
+    }, signal),
+  });
+
+  const movements = movementsData?.items;
+  const totalMovements = movementsData?.total ?? 0;
 
   const { data: tanks, isLoading: loadingTanks } = useQuery({
     queryKey: ['tanks'],
@@ -156,7 +167,7 @@ export default function OverviewGrid() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {movements?.length || 0} Movements
+          {totalMovements} Movements
         </Typography>
         <ProfileSelector value={profile} onChange={handleProfileChange} />
       </Box>
@@ -185,8 +196,13 @@ export default function OverviewGrid() {
           onColumnVisibilityModelChange={handleVisibilityChange}
           processRowUpdate={processRowUpdate}
           onProcessRowUpdateError={(err) => showError(err.message)}
+          // Server-side pagination
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          rowCount={totalMovements}
           pageSizeOptions={[25, 50, 100]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          loading={loadingMovements}
           disableRowSelectionOnClick
           editMode="cell"
         />

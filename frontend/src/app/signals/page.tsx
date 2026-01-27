@@ -17,7 +17,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EditIcon from '@mui/icons-material/Edit';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
@@ -50,11 +50,22 @@ export default function SignalsPage() {
     trade_number: '',
     trade_line_item: '',
   });
-
-  const { data: signals, isLoading: signalsLoading } = useQuery({
-    queryKey: ['signals'],
-    queryFn: () => movementsApi.getSignals(),
+  // Server-side pagination state
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
   });
+
+  const { data: signalsData, isLoading: signalsLoading } = useQuery({
+    queryKey: ['signals', paginationModel.page, paginationModel.pageSize],
+    queryFn: ({ signal }) => movementsApi.getSignals({
+      skip: paginationModel.page * paginationModel.pageSize,
+      limit: paginationModel.pageSize,
+    }, signal),
+  });
+
+  const signals = signalsData?.items;
+  const totalSignals = signalsData?.total ?? 0;
 
   const { data: tanks, isLoading: tanksLoading } = useQuery({
     queryKey: ['tanks'],
@@ -396,12 +407,12 @@ export default function SignalsPage() {
             PENDING SIGNALS
           </Typography>
           <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-accent-cyan)' }}>
-            {signals?.length || 0}
+            {totalSignals}
           </Typography>
         </Box>
         <Box sx={styles.summaryCard}>
           <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.2em', fontSize: '0.6rem' }}>
-            TOTAL VOLUME
+            PAGE VOLUME
           </Typography>
           <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, color: '#8b5cf6' }}>
             {(signals?.reduce((sum, s) => sum + (s.expected_volume || 0), 0) || 0).toLocaleString()} bbl
@@ -516,8 +527,13 @@ export default function SignalsPage() {
                 rows={rows}
                 columns={columns}
                 disableRowSelectionOnClick
-                pageSizeOptions={[10, 20, 50]}
-                initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+                // Server-side pagination
+                paginationMode="server"
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                rowCount={totalSignals}
+                pageSizeOptions={[25, 50, 100]}
+                loading={signalsLoading}
                 sx={dataGridWithRowStylesSx}
               />
             </Box>

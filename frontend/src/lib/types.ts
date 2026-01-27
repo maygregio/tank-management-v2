@@ -1,6 +1,14 @@
 export type FeedstockType = 'carbon_black_oil' | 'other';
 export type MovementType = 'load' | 'discharge' | 'transfer' | 'adjustment';
 
+// Paginated response type
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 export interface Tank {
   id: string;
   name: string;

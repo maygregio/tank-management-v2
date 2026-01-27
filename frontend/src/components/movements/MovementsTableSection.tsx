@@ -8,7 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mui/x-data-grid';
 import { dataGridSx } from '@/lib/constants';
 import SectionHeader from '@/components/SectionHeader';
 import type { MovementType, MovementUpdate } from '@/lib/types';
@@ -31,6 +31,11 @@ interface MovementsTableSectionProps {
   onEditDataChange: (data: MovementUpdate) => void;
   onBulkComplete: () => void;
   onBulkReschedule: () => void;
+  // Server-side pagination props
+  paginationModel: GridPaginationModel;
+  onPaginationModelChange: (model: GridPaginationModel) => void;
+  rowCount: number;
+  loading?: boolean;
 }
 
 export default function MovementsTableSection({
@@ -50,6 +55,10 @@ export default function MovementsTableSection({
   onEditDataChange,
   onBulkComplete,
   onBulkReschedule,
+  paginationModel,
+  onPaginationModelChange,
+  rowCount,
+  loading,
 }: MovementsTableSectionProps) {
   return (
     <Grid size={{ xs: 12, md: 7 }}>
@@ -159,8 +168,13 @@ export default function MovementsTableSection({
           checkboxSelection
           onRowSelectionModelChange={onSelectedRowsChange}
           rowSelectionModel={selectedRows}
-          pageSizeOptions={[10, 20, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+          // Server-side pagination
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={onPaginationModelChange}
+          rowCount={rowCount}
+          pageSizeOptions={[25, 50, 100]}
+          loading={loading}
           getRowClassName={(params) => {
             const statusClass = params.row.status ? 'row-pending' : 'row-complete';
             const futureClass = params.row.isFuture ? 'row-future' : '';

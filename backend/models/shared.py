@@ -1,7 +1,20 @@
 """Shared models and utilities used across the application."""
 from datetime import datetime, timezone
 from enum import Enum
+from typing import TypeVar, Generic
 import uuid
+
+from pydantic import BaseModel
+
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response model."""
+    items: list[T]
+    total: int
+    skip: int
+    limit: int
 
 
 def generate_id() -> str:
