@@ -42,10 +42,12 @@ export default function COAPage() {
     queryFn: () => coaApi.getAll(),
   });
 
-  const { data: signals } = useQuery({
-    queryKey: ['movements'],
-    queryFn: () => movementsApi.getAll(),
+  const { data: signalsData } = useQuery({
+    queryKey: ['movements', 'all'],
+    queryFn: () => movementsApi.getAll({ limit: 1000 }),
   });
+
+  const signals = signalsData?.items;
 
   const uploadMutation = useMutation({
     mutationFn: ({ file, signalId }: { file: File; signalId?: string }) =>

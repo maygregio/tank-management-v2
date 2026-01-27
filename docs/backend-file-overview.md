@@ -66,6 +66,7 @@ Contains:
 - `utc_now()` - Returns current UTC datetime
 - `FeedstockType` enum - Types of feedstock (CARBON_BLACK_OIL, OTHER)
 - `MovementType` enum - Movement types (LOAD, DISCHARGE, TRANSFER, ADJUSTMENT)
+- `PaginatedResponse[T]` - Generic paginated response model with `items`, `total`, `skip`, `limit`
 
 ### `tanks.py`
 **Purpose:** Tank-related data models.
@@ -171,8 +172,8 @@ Uses `TankService` via dependency injection.
 **Purpose:** Movement CRUD and operations.
 
 Endpoints:
-- `GET /api/movements` - List movements (filter by tank_id, type, status; pagination: skip, limit)
-- `GET /api/movements/overview` - Get movements joined with COA data for grid display (filter by tank_id, type, status; pagination: skip, limit)
+- `GET /api/movements` - List movements (filter by tank_id, type, status, source; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
+- `GET /api/movements/overview` - Get movements joined with COA data for grid display (pagination: skip, limit). Returns `PaginatedResponse[MovementWithCOA]`
 - `POST /api/movements` - Create scheduled movement
 - `POST /api/movements/transfer` - Create multi-target transfer
 - `POST /api/movements/adjustment` - Create adjustment from physical reading
@@ -186,7 +187,7 @@ Uses `MovementService` via dependency injection.
 **Purpose:** Signal workflow endpoints.
 
 Endpoints:
-- `GET /api/movements/signals` - Get pending signals (unassigned OR missing trade info)
+- `GET /api/movements/signals` - Get pending signals (unassigned OR missing trade info; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
 - `POST /api/movements/signals/upload` - Upload Excel file with refinery signals
 - `PUT /api/movements/signals/{id}/assign` - Assign signal to tank with workflow fields
 - `PUT /api/movements/signals/{id}/trade` - Add trade number and line item
@@ -264,6 +265,7 @@ Classes:
   - `filter()` - Query by field values
   - `query()` - Custom queries with conditions and parameters
   - `count()` - Total item count
+  - `count_with_conditions()` - Count items matching filter conditions (for paginated responses)
 
 Handles datetime serialization and uses `/id` as partition key.
 
@@ -285,9 +287,9 @@ Singleton accessor: `get_tank_service()`
 **Purpose:** Movement business logic.
 
 `MovementService` class:
-- `get_all()` - List movements with filters (tank_id, type, status; pagination: skip, limit)
+- `get_all()` - List movements with filters (tank_id, type, status, source; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
 - `get_by_id()` - Single movement lookup
-- `get_overview()` - Movements joined with COA chemical properties (filter by tank_id, type, status; pagination: skip, limit)
+- `get_overview()` - Movements joined with COA chemical properties (pagination: skip, limit). Returns `PaginatedResponse[MovementWithCOA]`
 - `create()` - Create movement, sets resulting_volume (and target_resulting_volume for transfers), updates tank.current_level only if scheduled_date <= today
 - `create_transfer()` - Multi-target transfer, sets both resulting_volume and target_resulting_volume, updates tank levels only if scheduled_date <= today
 - `update()` - Update pending movement, recalculates volumes if amount/tank changed
@@ -306,7 +308,7 @@ Singleton accessor: `get_movement_service()`
 **Purpose:** Signal workflow business logic.
 
 `SignalService` class:
-- `get_pending_signals()` - Signals needing work (unassigned OR missing trade info)
+- `get_pending_signals()` - Signals needing work (unassigned OR missing trade info). Returns `PaginatedResponse[Movement]`
 - `upload_signals()` - Parse Excel and create signal movements (skips duplicates)
 - `assign_signal()` - Assign to tank with workflow fields
 - `update_trade_info()` - Add trade number and line item

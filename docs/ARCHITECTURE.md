@@ -96,10 +96,32 @@ Models are split by domain:
 3. **Linking**: COA linked to signal via `nomination_key` or manual linking
 
 ### Overview Grid
-- `GET /api/movements/overview` returns `MovementWithCOA[]`
+- `GET /api/movements/overview` returns `PaginatedResponse[MovementWithCOA]`
 - Movements joined with COA data via `nomination_key` or `signal_id`
 - Frontend displays editable DataGrid with column visibility profiles (All, Scheduler, Trader, Quality)
 - Preferences saved to localStorage
+
+### Server-Side Pagination
+List endpoints return `PaginatedResponse[T]` with server-side pagination:
+
+```python
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]  # Page of results
+    total: int      # Total count matching filters
+    skip: int       # Offset used
+    limit: int      # Page size used
+```
+
+**Paginated Endpoints:**
+- `GET /api/movements` - Supports `skip`, `limit`, `type`, `status`, `source` params
+- `GET /api/movements/overview` - Supports `skip`, `limit` params
+- `GET /api/movements/signals` - Supports `skip`, `limit` params
+
+**Frontend Pattern:**
+- DataGrid uses `paginationMode="server"` with `rowCount` from API response
+- Filters (type, status, source) passed to API to filter server-side
+- Page resets to 0 when filters change
+- Query keys include pagination params for proper cache invalidation
 
 ### Paired Fields Pattern
 Movement fields use a paired pattern for system vs. manual values:

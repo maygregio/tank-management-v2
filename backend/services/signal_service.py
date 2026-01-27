@@ -4,6 +4,7 @@ from datetime import date
 from typing import Optional
 
 from models import Movement, MovementType, Tank, SignalAssignment, TradeInfoUpdate
+from models.shared import PaginatedResponse
 from services.storage import CosmosStorage
 from services.excel_parser import parse_signals_excel, ExcelParseResult
 
@@ -31,7 +32,7 @@ class SignalService:
         self._movement_storage = CosmosStorage("movements", Movement)
         self._tank_storage = CosmosStorage("tanks", Tank)
 
-    def get_pending_signals(self, skip: int = 0, limit: int = 100) -> list[Movement]:
+    def get_pending_signals(self, skip: int = 0, limit: int = 100) -> PaginatedResponse[Movement]:
         """Get signals that need work (unassigned OR missing trade info)."""
         logger.info("Fetching pending signals")
 
@@ -49,9 +50,21 @@ class SignalService:
             if m.tank_id is None or m.trade_number is None or m.trade_line_item is None
         ]
 
-        # Sort by effective scheduled_date and apply pagination
+        # Sort by effective scheduled_date
         signals.sort(key=lambda m: m.scheduled_date or date.min, reverse=True)
-        return signals[skip:skip + limit] if limit else signals[skip:]
+
+        # Get total count before pagination
+        total = len(signals)
+
+        # Apply pagination
+        paginated_signals = signals[skip:skip + limit] if limit else signals[skip:]
+
+        return PaginatedResponse(
+            items=paginated_signals,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
 
     def upload_signals(self, file_content: bytes) -> SignalUploadResult:
         """Upload signals from Excel file."""

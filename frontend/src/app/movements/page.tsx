@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
-import { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
 import { formatDate, getLocalToday } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
@@ -51,6 +51,11 @@ export default function MovementsPage() {
   const [typeFilter, setTypeFilter] = useState<MovementType | 'all'>('all');
   const [sourceFilter, setSourceFilter] = useState<MovementSource | 'all'>('all');
   const [activeTab, setActiveTab] = useState(0);
+  // Server-side pagination state
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
+  });
 
   const today = getLocalToday();
   const [formData, setFormData] = useState<MovementCreate>({
@@ -63,10 +68,40 @@ export default function MovementsPage() {
   });
   const [transferTargets, setTransferTargets] = useState<TransferTargetCreate[]>([]);
 
-  const { data: movements, isLoading: movementsLoading } = useQuery({
-    queryKey: ['movements'],
-    queryFn: () => movementsApi.getAll(),
+  // Build API filter params (only pass non-'all' values)
+  const apiFilters = {
+    type: typeFilter !== 'all' ? typeFilter : undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    source: sourceFilter !== 'all' ? sourceFilter : undefined,
+  };
+
+  const { data: movementsData, isLoading: movementsLoading } = useQuery({
+    queryKey: ['movements', paginationModel.page, paginationModel.pageSize, apiFilters],
+    queryFn: ({ signal }) => movementsApi.getAll({
+      ...apiFilters,
+      skip: paginationModel.page * paginationModel.pageSize,
+      limit: paginationModel.pageSize,
+    }, signal),
   });
+
+  const movements = movementsData?.items;
+  const totalMovements = movementsData?.total ?? 0;
+
+  // Reset to page 0 when filters change
+  const handleStatusFilterChange = (value: 'all' | 'pending' | 'completed') => {
+    setStatusFilter(value);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
+
+  const handleTypeFilterChange = (value: MovementType | 'all') => {
+    setTypeFilter(value);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
+
+  const handleSourceFilterChange = (value: MovementSource | 'all') => {
+    setSourceFilter(value);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
 
   const { data: tanks, isLoading: tanksLoading } = useQuery({
     queryKey: ['tanks'],
@@ -464,15 +499,19 @@ export default function MovementsPage() {
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
+          onStatusFilterChange={handleStatusFilterChange}
           typeFilter={typeFilter}
-          onTypeFilterChange={setTypeFilter}
+          onTypeFilterChange={handleTypeFilterChange}
           sourceFilter={sourceFilter}
-          onSourceFilterChange={setSourceFilter}
+          onSourceFilterChange={handleSourceFilterChange}
           editData={editData}
           onEditDataChange={setEditData}
           onBulkComplete={handleBulkComplete}
           onBulkReschedule={handleBulkReschedule}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          rowCount={totalMovements}
+          loading={movementsLoading}
         />
       </Grid>
 

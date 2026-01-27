@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Query, Depends, UploadFile, File
 
 from models import Movement, SignalAssignment, TradeInfoUpdate
+from models.shared import PaginatedResponse
 from services.signal_service import (
     SignalService,
     SignalServiceError,
@@ -15,13 +16,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=list[Movement])
+@router.get("", response_model=PaginatedResponse[Movement])
 def get_pending_signals(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     service: SignalService = Depends(get_signal_service)
 ):
-    """Get signals that need work (unassigned OR missing trade info)."""
+    """Get signals that need work (unassigned OR missing trade info, paginated)."""
     return service.get_pending_signals(skip=skip, limit=limit)
 
 
