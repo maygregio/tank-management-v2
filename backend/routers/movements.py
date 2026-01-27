@@ -20,6 +20,7 @@ def get_movements(
     tank_id: Optional[str] = Query(None, description="Filter by tank ID"),
     type: Optional[MovementType] = Query(None, description="Filter by movement type"),
     status: Optional[str] = Query(None, description="Filter by status: pending or completed"),
+    source: Optional[str] = Query(None, description="Filter by source: manual, pdf_import, signal, adjustment"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     service: MovementService = Depends(get_movement_service)
@@ -29,6 +30,7 @@ def get_movements(
         tank_id=tank_id,
         movement_type=type,
         status=status,
+        source=source,
         skip=skip,
         limit=limit
     )

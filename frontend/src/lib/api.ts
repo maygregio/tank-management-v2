@@ -65,6 +65,7 @@ export const movementsApi = {
       tankId?: string;
       type?: string;
       status?: string;
+      source?: string;
       skip?: number;
       limit?: number;
     },
@@ -74,6 +75,7 @@ export const movementsApi = {
     if (params?.tankId) searchParams.append('tank_id', params.tankId);
     if (params?.type) searchParams.append('type', params.type);
     if (params?.status) searchParams.append('status', params.status);
+    if (params?.source) searchParams.append('source', params.source);
     if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
     if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
     const query = searchParams.toString() ? `?${searchParams.toString()}` : '';

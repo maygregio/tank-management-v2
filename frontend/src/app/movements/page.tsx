@@ -68,9 +68,17 @@ export default function MovementsPage() {
   });
   const [transferTargets, setTransferTargets] = useState<TransferTargetCreate[]>([]);
 
+  // Build API filter params (only pass non-'all' values)
+  const apiFilters = {
+    type: typeFilter !== 'all' ? typeFilter : undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    source: sourceFilter !== 'all' ? sourceFilter : undefined,
+  };
+
   const { data: movementsData, isLoading: movementsLoading } = useQuery({
-    queryKey: ['movements', paginationModel.page, paginationModel.pageSize],
+    queryKey: ['movements', paginationModel.page, paginationModel.pageSize, apiFilters],
     queryFn: ({ signal }) => movementsApi.getAll({
+      ...apiFilters,
       skip: paginationModel.page * paginationModel.pageSize,
       limit: paginationModel.pageSize,
     }, signal),
@@ -78,6 +86,22 @@ export default function MovementsPage() {
 
   const movements = movementsData?.items;
   const totalMovements = movementsData?.total ?? 0;
+
+  // Reset to page 0 when filters change
+  const handleStatusFilterChange = (value: 'all' | 'pending' | 'completed') => {
+    setStatusFilter(value);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
+
+  const handleTypeFilterChange = (value: MovementType | 'all') => {
+    setTypeFilter(value);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
+
+  const handleSourceFilterChange = (value: MovementSource | 'all') => {
+    setSourceFilter(value);
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
 
   const { data: tanks, isLoading: tanksLoading } = useQuery({
     queryKey: ['tanks'],
@@ -475,11 +499,11 @@ export default function MovementsPage() {
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
+          onStatusFilterChange={handleStatusFilterChange}
           typeFilter={typeFilter}
-          onTypeFilterChange={setTypeFilter}
+          onTypeFilterChange={handleTypeFilterChange}
           sourceFilter={sourceFilter}
-          onSourceFilterChange={setSourceFilter}
+          onSourceFilterChange={handleSourceFilterChange}
           editData={editData}
           onEditDataChange={setEditData}
           onBulkComplete={handleBulkComplete}
