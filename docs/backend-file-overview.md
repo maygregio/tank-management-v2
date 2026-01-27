@@ -20,6 +20,7 @@ This document describes each file in the `backend/` directory and its purpose in
   - `/api/coa` - Certificate of Analysis
   - `/api/adjustments` - Monthly adjustment imports
 - Provides global exception handler for unhandled errors
+- `/api/terminals` - Terminal aggregation
 - Includes health check endpoint (`/api/health`) and root endpoint (`/`)
 
 ### `requirements.txt`
@@ -120,6 +121,17 @@ Similar structure to imports.py but for physical reading adjustments:
 - `AdjustmentImportRequest` - Batch import with optional PDF URL
 - `AdjustmentImportResult` - Import counts and errors
 
+### `terminals.py`
+**Purpose:** Terminal aggregation data models.
+
+Models:
+- `TerminalSummary` - Summary for a terminal location:
+  - location, tank_count, total_capacity, current_total_level, utilization_percentage
+- `TerminalDailyAggregation` - Daily aggregated data:
+  - record_date (aliased as "date"), total_level, total_capacity, net_movement
+  - Movement breakdowns: loads_volume, discharges_volume, transfers_in_volume, transfers_out_volume, adjustments_volume
+  - utilization_percentage
+
 ### `coa.py`
 **Purpose:** Certificate of Analysis data models.
 
@@ -201,6 +213,18 @@ Endpoints:
 - `GET /api/adjustments/pdf/{blob_name}` - Proxy endpoint to serve PDFs from blob storage
 
 Uses AI extraction, tank matching, delta calculation, and enforces first-of-month rules.
+
+### `terminals.py`
+**Purpose:** Terminal aggregation endpoints.
+
+Endpoints:
+- `GET /api/terminals` - Get summary for all terminals (locations)
+- `GET /api/terminals/locations` - Get list of unique terminal location names
+- `GET /api/terminals/{location}/history` - Get daily aggregated history for a terminal
+  - Query params: start_date, end_date (required)
+  - Returns daily totals with movement breakdowns
+
+Uses `TerminalService` via dependency injection.
 
 ### `coa.py`
 **Purpose:** Certificate of Analysis endpoints.
@@ -289,6 +313,25 @@ Singleton accessor: `get_movement_service()`
 
 Custom exception: `SignalServiceError` with status code.
 Singleton accessor: `get_signal_service()`
+
+### `terminal_service.py`
+**Purpose:** Terminal aggregation business logic.
+
+`TerminalService` class:
+- `get_unique_locations()` - Returns sorted list of unique terminal locations
+- `get_terminal_summaries()` - Returns summary for all terminals (tank count, capacity, level, utilization)
+- `get_aggregated_history()` - Returns daily aggregated data for a terminal location
+  - Calculates starting level using `resulting_volume` from movements
+  - Falls back to calculating from movements if `resulting_volume` is not available
+  - Aggregates daily movements by type (loads, discharges, transfers in/out, adjustments)
+  - Computes running total level and utilization percentage
+  - Clamps utilization to 100% max (tanks can exceed capacity)
+
+Private methods:
+- `_get_terminal_level_at_date()` - Gets combined level of all tanks at a date using `resulting_volume`
+- `_calculate_level_from_movements()` - Fallback: calculates level by applying all movements to initial_level
+
+Singleton accessor: `get_terminal_service()`
 
 ### `calculations.py`
 **Purpose:** Tank level calculation logic and helpers.
@@ -415,7 +458,8 @@ backend/
 │   ├── movements.py     # Movement/signal models
 │   ├── imports.py       # PDF import models
 │   ├── adjustments.py   # Adjustment import models
-│   └── coa.py           # COA models
+│   ├── coa.py           # COA models
+│   └── terminals.py     # Terminal aggregation models
 │
 ├── routers/             # API endpoints
 │   ├── tanks.py         # Tank CRUD
@@ -423,13 +467,15 @@ backend/
 │   ├── signals.py       # Signal workflow
 │   ├── imports.py       # PDF movement import
 │   ├── adjustments.py   # Monthly adjustments
-│   └── coa.py           # COA management
+│   ├── coa.py           # COA management
+│   └── terminals.py     # Terminal aggregation
 │
 └── services/            # Business logic
     ├── storage.py       # Cosmos DB access
     ├── tank_service.py  # Tank operations
     ├── movement_service.py  # Movement operations
     ├── signal_service.py    # Signal workflow
+    ├── terminal_service.py  # Terminal aggregation
     ├── calculations.py  # Level calculations
     ├── excel_parser.py  # Signal Excel parsing
     ├── ai_extraction.py     # Shared AI extraction utilities

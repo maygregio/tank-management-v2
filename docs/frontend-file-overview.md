@@ -41,6 +41,7 @@ Key dependencies:
 - `adjustmentsApi` - Monthly adjustment imports
 - `importsApi` - PDF movement imports
 - `overviewApi` - Overview grid data
+- `terminalsApi` - Terminal aggregation data
 
 **Endpoints called:**
 | API Function | HTTP Method | Endpoint |
@@ -72,6 +73,9 @@ Key dependencies:
 | `importsApi.extractFromPDFs(files)` | POST | `/imports/extract` |
 | `importsApi.confirmImport(data)` | POST | `/imports/confirm` |
 | `overviewApi.getAll()` | GET | `/movements/overview` |
+| `terminalsApi.getAll()` | GET | `/terminals` |
+| `terminalsApi.getLocations()` | GET | `/terminals/locations` |
+| `terminalsApi.getAggregatedHistory(location, start, end)` | GET | `/terminals/{location}/history` |
 
 ### `types.ts`
 **Purpose:** TypeScript interfaces mirroring backend Pydantic models.
@@ -88,6 +92,8 @@ Key types:
 - `PDFExtractionResult`, `PDFMovementWithMatches` - PDF import types
 - `AdjustmentExtractionResult`, `AdjustmentReadingWithMatches` - Adjustment types
 - `MovementSummaryStats` - Summary statistics for movements page
+- `TerminalSummary` - Terminal summary (location, tank_count, capacity, level, utilization)
+- `TerminalDailyAggregation` - Daily aggregated terminal data (level, movements by type)
 
 ### `constants.ts`
 **Purpose:** Shared constants, labels, colors, and style objects.
@@ -347,6 +353,34 @@ Defines:
 
 ---
 
+## Terminals Page (`src/app/terminals/`)
+
+### `page.tsx` (`/terminals`)
+**Purpose:** Terminal aggregation page showing combined tank levels and movements for a location.
+
+**Imports:**
+- `@mui/material`: Box, Button, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography
+- `@tanstack/react-query`: useQuery
+- `dayjs` - Date manipulation
+- `@/lib/api`: terminalsApi
+- `@/lib/types`: TerminalSummary, TerminalDailyAggregation
+- `@/components/charts/DynamicCharts`: DynamicTankActivityChart
+- `@/components/SectionHeader`
+- `@/components/EmptyState`
+
+**API calls:**
+- `terminalsApi.getAll()`
+- `terminalsApi.getAggregatedHistory(location, startDate, endDate)`
+
+**Features:**
+- Terminal selector dropdown with auto-selection of first terminal
+- Date range filter (default: last 30 days)
+- Summary cards: tank count, total capacity, current level, utilization percentage
+- Dual-axis chart showing combined tank levels and net movements over time
+- Daily breakdown table with movement details (loads, discharges, transfers in/out, adjustments)
+
+---
+
 ## Adjustments Page (`src/app/adjustments/`)
 
 ### `page.tsx` (`/adjustments`)
@@ -400,7 +434,7 @@ Defines:
 - `@mui/icons-material`: Various icons
 
 **Navigation items:**
-- Tanks, Movements, Overview, Signals, COA, Adjustments
+- Tanks, Terminals, Movements, Overview, Signals, COA, Adjustments
 
 ### `TankCard.tsx`
 **Purpose:** Tank display card with level gauge.
@@ -729,6 +763,12 @@ COA (/coa)
 Adjustments (/adjustments)
 ├── AdjustmentReviewRow
 └── SectionHeader
+
+Terminals (/terminals)
+├── DynamicTankActivityChart
+│   └── BaseChart
+├── SectionHeader
+└── EmptyState
 ```
 
 ---
@@ -751,7 +791,8 @@ frontend/
 │   │   ├── signals/          # Signals page
 │   │   ├── overview/         # Overview page
 │   │   ├── coa/              # COA page
-│   │   └── adjustments/      # Adjustments page
+│   │   ├── adjustments/      # Adjustments page
+│   │   └── terminals/        # Terminals aggregation page
 │   │
 │   ├── lib/                  # Shared utilities
 │   │   ├── api.ts            # API client
