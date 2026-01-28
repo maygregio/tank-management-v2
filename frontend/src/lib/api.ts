@@ -214,6 +214,7 @@ export const coaApi = {
     }),
 
   delete: (id: string) => fetchAPI<void>(`/coa/${id}`, { method: 'DELETE' }),
+  getPdfUrl: (blobName: string) => `${API_BASE}/coa/pdf/${encodeURIComponent(blobName)}`,
 };
 
 // Adjustment Imports

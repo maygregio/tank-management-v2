@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi.responses import StreamingResponse
 
 from models import Movement, CertificateOfAnalysis, COALinkRequest, COAWithSignal
 from services.storage import CosmosStorage
@@ -172,3 +173,24 @@ async def delete_coa(coa_id: str):
 
     coa_storage.delete(coa_id)
     return {"message": "COA deleted successfully"}
+
+
+@router.get("/pdf/{blob_name:path}")
+async def get_pdf(blob_name: str):
+    """Proxy endpoint to serve COA PDFs from blob storage for access control.
+
+    The blob_name should be the path portion of the blob URL after the container name.
+    Example: "2024/01/01/120000_coa.pdf"
+    """
+    try:
+        content = pdf_storage.get_pdf(blob_name)
+        return StreamingResponse(
+            iter([content]),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename={blob_name.split('/')[-1]}"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve COA PDF: {e}")
+        raise HTTPException(status_code=404, detail="PDF not found")

@@ -1,4 +1,3 @@
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
@@ -8,11 +7,12 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { DataGrid, GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mui/x-data-grid';
-import { dataGridSx } from '@/lib/constants';
+import { GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mui/x-data-grid';
+import { movementSourceOptions, type MovementSourceFilter } from '@/lib/movementSource';
 import SectionHeader from '@/components/SectionHeader';
+import StyledDataGrid from '@/components/StyledDataGrid';
 import type { MovementType, MovementUpdate } from '@/lib/types';
-import type { MovementGridRowExtended, MovementSource } from './useMovementsViewModel';
+import type { MovementGridRowExtended } from './useMovementsViewModel';
 
 interface MovementsTableSectionProps {
   rows: MovementGridRowExtended[];
@@ -25,8 +25,8 @@ interface MovementsTableSectionProps {
   onStatusFilterChange: (value: 'all' | 'pending' | 'completed') => void;
   typeFilter: MovementType | 'all';
   onTypeFilterChange: (value: MovementType | 'all') => void;
-  sourceFilter: MovementSource | 'all';
-  onSourceFilterChange: (value: MovementSource | 'all') => void;
+  sourceFilter: MovementSourceFilter;
+  onSourceFilterChange: (value: MovementSourceFilter) => void;
   editData: MovementUpdate;
   onEditDataChange: (data: MovementUpdate) => void;
   onBulkComplete: () => void;
@@ -118,11 +118,14 @@ export default function MovementsTableSection({
           <Select
             value={sourceFilter}
             label="Source"
-            onChange={(e) => onSourceFilterChange(e.target.value as MovementSource | 'all')}
+            onChange={(e) => onSourceFilterChange(e.target.value as MovementSourceFilter)}
           >
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value="manual">Manual</MenuItem>
-            <MenuItem value="pdf">PDF</MenuItem>
+            {movementSourceOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
@@ -161,10 +164,9 @@ export default function MovementsTableSection({
       </Box>
 
       <Box sx={{ height: 520, width: '100%' }}>
-        <DataGrid
+        <StyledDataGrid
           rows={rows}
           columns={columns}
-          disableRowSelectionOnClick
           checkboxSelection
           onRowSelectionModelChange={onSelectedRowsChange}
           rowSelectionModel={selectedRows}
@@ -180,26 +182,7 @@ export default function MovementsTableSection({
             const futureClass = params.row.isFuture ? 'row-future' : '';
             return `${statusClass} ${futureClass}`.trim();
           }}
-          sx={{
-            ...dataGridSx,
-            '& .MuiDataGrid-row': {
-              '&:nth-of-type(even)': {
-                backgroundColor: alpha('#00e5ff', 0.02),
-              },
-            },
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(0, 229, 255, 0.04)',
-            },
-            '& .row-pending': {
-              backgroundColor: alpha('#ffb300', 0.06),
-            },
-            '& .row-complete': {
-              backgroundColor: alpha('#00e676', 0.05),
-            },
-            '& .row-future': {
-              boxShadow: 'inset 3px 0 0 rgba(139, 92, 246, 0.6)',
-            },
-          }}
+          variant="movement"
         />
       </Box>
     </Grid>

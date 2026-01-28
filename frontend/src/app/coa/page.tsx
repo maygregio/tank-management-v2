@@ -15,9 +15,9 @@ import LinkIcon from '@mui/icons-material/Link';
 import ScienceIcon from '@mui/icons-material/Science';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { coaApi, movementsApi } from '@/lib/api';
-import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
+import { styles } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 import SectionHeader from '@/components/SectionHeader';
@@ -26,6 +26,7 @@ import ConfirmationDialog from '@/components/ConfirmationDialog';
 import COAPropertiesDialog from '@/components/COAPropertiesDialog';
 import COAUploadDialog from '@/components/COAUploadDialog';
 import COALinkDialog from '@/components/COALinkDialog';
+import StyledDataGrid from '@/components/StyledDataGrid';
 import type { COAWithSignal, Movement, COAGridRow } from '@/lib/types';
 
 export default function COAPage() {
@@ -390,13 +391,12 @@ export default function COAPage() {
               />
             ) : (
               <Box sx={{ height: 520, width: '100%' }}>
-                <DataGrid
+                <StyledDataGrid
                   rows={rows}
                   columns={columns}
-                  disableRowSelectionOnClick
                   pageSizeOptions={[10, 20, 50]}
                   initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                  sx={dataGridWithRowStylesSx}
+                  variant="striped"
                 />
               </Box>
             )}

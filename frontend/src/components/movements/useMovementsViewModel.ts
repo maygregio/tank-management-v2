@@ -4,12 +4,12 @@ import type {
   Movement,
   MovementCreate,
   MovementType,
+  MovementSource,
   TransferTargetCreate,
   TankWithLevel,
   MovementSummaryStats,
 } from '@/lib/types';
-
-export type MovementSource = 'manual' | 'pdf';
+import { normalizeMovementSource, type MovementSourceFilter } from '@/lib/movementSource';
 
 export interface MovementGridRowExtended {
   id: string;
@@ -32,7 +32,7 @@ interface MovementsViewModelInput {
   searchQuery: string;
   statusFilter: 'all' | 'pending' | 'completed';
   typeFilter: MovementType | 'all';
-  sourceFilter: MovementSource | 'all';
+  sourceFilter: MovementSourceFilter;
 }
 
 export function useMovementsViewModel({
@@ -89,8 +89,7 @@ export function useMovementsViewModel({
       })
       .filter((movement) => {
         if (sourceFilter === 'all') return true;
-        const isFromPdf = movement.source === 'pdf_import';
-        return sourceFilter === 'pdf' ? isFromPdf : !isFromPdf;
+        return normalizeMovementSource(movement.source) === sourceFilter;
       })
       .filter((movement) => {
         if (!search) return true;
@@ -111,8 +110,7 @@ export function useMovementsViewModel({
       const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
       const isPending = movement.actual_volume === null;
       const dateValue = movement.scheduled_date || movement.created_at || '';
-      // Map backend source to display source
-      const displaySource: MovementSource = movement.source === 'pdf_import' ? 'pdf' : 'manual';
+      const displaySource = normalizeMovementSource(movement.source);
       return {
         id: movement.id,
         date: dateValue,
