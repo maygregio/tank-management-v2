@@ -10,19 +10,6 @@ from services.calculations import get_tank_with_level
 logger = logging.getLogger(__name__)
 
 
-class DailyVolume:
-    """Daily volume snapshot for a tank."""
-    def __init__(self, day: date, eod_volume: float):
-        self.date = day
-        self.eod_volume = eod_volume
-
-    def to_dict(self) -> dict:
-        return {
-            "date": self.date.isoformat(),
-            "eod_volume": self.eod_volume
-        }
-
-
 class TankService:
     """Service class for tank operations."""
 
