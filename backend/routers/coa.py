@@ -7,7 +7,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from models import Movement, CertificateOfAnalysis, COALinkRequest, COAWithSignal
 from services.storage import CosmosStorage
 from services.blob_storage import PDFBlobStorage
-from services.coa_extraction import extract_text_from_pdf, process_coa_pdf
+from services.coa_extraction import process_coa_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +44,6 @@ async def upload_coa(
             raise HTTPException(
                 status_code=500,
                 detail="Failed to store PDF file"
-            )
-
-        # Extract text and check if valid
-        pdf_text = extract_text_from_pdf(content)
-        if not pdf_text.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Could not extract text from PDF (may be scanned/image-based)"
             )
 
         # Process COA with AI extraction
@@ -91,6 +83,8 @@ async def upload_coa(
 
         return COAWithSignal(**coa.model_dump(), signal=linked_signal)
 
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

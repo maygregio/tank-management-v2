@@ -9,7 +9,7 @@ from models import (
     AdjustmentCreate, TransferCreate, MovementWithCOA
 )
 from models.shared import PaginatedResponse
-from services.movement_service import MovementService, MovementServiceError, get_movement_service
+from services.movement_service import MovementService, get_movement_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -42,10 +42,7 @@ def create_movement(
     service: MovementService = Depends(get_movement_service)
 ):
     """Create a new scheduled movement (load, discharge, transfer)."""
-    try:
-        return service.create(movement_data)
-    except MovementServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.create(movement_data)
 
 
 @router.post("/transfer", response_model=list[Movement], status_code=201)
@@ -54,10 +51,7 @@ def create_transfer(
     service: MovementService = Depends(get_movement_service)
 ):
     """Create a transfer from one source tank to multiple targets."""
-    try:
-        return service.create_transfer(movement_data)
-    except MovementServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.create_transfer(movement_data)
 
 
 @router.get("/overview", response_model=PaginatedResponse[MovementWithCOA])
@@ -86,10 +80,7 @@ def update_movement(
     service: MovementService = Depends(get_movement_service)
 ):
     """Update a pending movement's date, expected volume, or notes."""
-    try:
-        return service.update(movement_id, data)
-    except MovementServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.update(movement_id, data)
 
 
 @router.put("/{movement_id}/complete", response_model=Movement)
@@ -99,10 +90,7 @@ def complete_movement(
     service: MovementService = Depends(get_movement_service)
 ):
     """Record actual volume for a scheduled movement."""
-    try:
-        return service.complete(movement_id, data)
-    except MovementServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.complete(movement_id, data)
 
 
 @router.post("/adjustment", response_model=Movement, status_code=201)
@@ -111,10 +99,7 @@ def create_adjustment(
     service: MovementService = Depends(get_movement_service)
 ):
     """Create an adjustment movement based on physical reading."""
-    try:
-        return service.create_adjustment(adjustment_data)
-    except MovementServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.create_adjustment(adjustment_data)
 
 
 @router.delete("/{movement_id}", status_code=204)

@@ -7,7 +7,6 @@ from models import Movement, SignalAssignment, TradeInfoUpdate
 from models.shared import PaginatedResponse
 from services.signal_service import (
     SignalService,
-    SignalServiceError,
     SignalUploadResult,
     get_signal_service
 )
@@ -46,10 +45,7 @@ def assign_signal(
     service: SignalService = Depends(get_signal_service)
 ):
     """Assign an unassigned signal to a tank."""
-    try:
-        return service.assign_signal(movement_id, data)
-    except SignalServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.assign_signal(movement_id, data)
 
 
 @router.put("/{movement_id}/trade", response_model=Movement)
@@ -59,7 +55,4 @@ def update_trade_info(
     service: SignalService = Depends(get_signal_service)
 ):
     """Update trade information on a signal."""
-    try:
-        return service.update_trade_info(movement_id, data)
-    except SignalServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return service.update_trade_info(movement_id, data)

@@ -117,6 +117,8 @@ async def process_coa_pdf(pdf_content: bytes, pdf_url: str) -> CertificateOfAnal
     """
     # Extract text from PDF
     pdf_text = extract_text_from_pdf(pdf_content)
+    if not pdf_text.strip():
+        raise ValueError("Could not extract text from PDF (may be scanned/image-based)")
 
     # Use AI to extract structured data
     raw_data = await extract_coa_with_ai(pdf_text)
