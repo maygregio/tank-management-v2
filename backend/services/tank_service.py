@@ -6,6 +6,10 @@ from typing import Optional
 from models import Tank, TankCreate, TankUpdate, TankWithLevel, Movement
 from services.storage import CosmosStorage
 from services.calculations import get_tank_with_level
+from services.movement_queries import (
+    build_tank_date_range_conditions,
+    filter_movements_by_effective_date
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,17 +88,14 @@ class TankService:
 
         # Get all movements for this tank in the date range
         # Use OR to over-fetch candidates, then filter by effective date in Python
+        conditions, parameters = build_tank_date_range_conditions(
+            tank_id=tank_id,
+            start_date=start_date,
+            end_date=end_date
+        )
         movements = self._movement_storage.query(
-            conditions=[
-                "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
-                "(c.scheduled_date_default >= @start_date OR c.scheduled_date_manual >= @start_date)",
-                "(c.scheduled_date_default <= @end_date OR c.scheduled_date_manual <= @end_date)"
-            ],
-            parameters=[
-                {"name": "@tank_id", "value": tank_id},
-                {"name": "@start_date", "value": start_date.isoformat()},
-                {"name": "@end_date", "value": end_date.isoformat()}
-            ],
+            conditions=conditions,
+            parameters=parameters,
             order_by="scheduled_date_default",
             order_desc=False
         )
@@ -102,10 +103,11 @@ class TankService:
         # Filter by effective scheduled_date (manual overrides default)
         # The OR query over-fetches, so we filter to only include movements
         # where the effective date is actually within the range
-        movements = [
-            m for m in movements
-            if m.scheduled_date and start_date <= m.scheduled_date <= end_date
-        ]
+        movements = filter_movements_by_effective_date(
+            movements,
+            start_date=start_date,
+            end_date=end_date
+        )
 
         # Sort by effective scheduled_date
         movements.sort(key=lambda m: m.scheduled_date or date.min)
