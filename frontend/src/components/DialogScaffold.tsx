@@ -29,19 +29,30 @@ export default function DialogScaffold({
   ...dialogProps
 }: DialogScaffoldProps) {
   const paperSlotProps = dialogProps.slotProps?.paper;
-  const mergedPaperSx = Array.isArray(paperSlotProps?.sx)
-    ? [styles.dialogPaper, ...paperSlotProps.sx]
-    : [styles.dialogPaper, paperSlotProps?.sx].filter(Boolean);
+
+  const getPaperSlotProps = () => {
+    if (typeof paperSlotProps === 'function') {
+      return (ownerState: Parameters<typeof paperSlotProps>[0]) => {
+        const result = paperSlotProps(ownerState);
+        const resultSx = result?.sx;
+        const mergedSx = Array.isArray(resultSx)
+          ? [styles.dialogPaper, ...resultSx]
+          : [styles.dialogPaper, resultSx].filter(Boolean);
+        return { ...result, sx: mergedSx };
+      };
+    }
+    const mergedSx = Array.isArray(paperSlotProps?.sx)
+      ? [styles.dialogPaper, ...paperSlotProps.sx]
+      : [styles.dialogPaper, paperSlotProps?.sx].filter(Boolean);
+    return { ...paperSlotProps, sx: mergedSx };
+  };
 
   return (
     <Dialog
       {...dialogProps}
       slotProps={{
         ...dialogProps.slotProps,
-        paper: {
-          ...paperSlotProps,
-          sx: mergedPaperSx,
-        },
+        paper: getPaperSlotProps(),
       }}
     >
       {title !== undefined && (

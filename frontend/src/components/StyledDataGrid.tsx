@@ -76,7 +76,7 @@ export default function StyledDataGrid<R extends GridValidRowModel>({
     <DataGrid
       {...props}
       disableRowSelectionOnClick={disableRowSelectionOnClick ?? true}
-      sx={[variantStyles[variant], sx]}
+      sx={sx ? [variantStyles[variant], sx].flat() : variantStyles[variant]}
     />
   );
 }
