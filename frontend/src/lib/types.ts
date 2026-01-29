@@ -24,16 +24,12 @@ export interface TankWithLevel extends Tank {
   level_percentage: number;
 }
 
-export type MovementSource = 'manual' | 'pdf_import' | 'signal' | 'adjustment';
-
 export interface Movement {
   id: string;
   type: MovementType;
   target_tank_id?: string;
   actual_volume: number | null;
   created_at: string;
-  // Source tracking: how this movement was created
-  source?: MovementSource;
   // Signal metadata
   signal_id?: string;
   refinery_tank_name?: string;

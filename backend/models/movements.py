@@ -15,8 +15,6 @@ class MovementBase(BaseModel):
     resulting_volume: Optional[float] = Field(default=None, ge=0, description="Source tank volume after this movement")
     # Target resulting volume: target tank level AFTER this movement (for transfers only)
     target_resulting_volume: Optional[float] = Field(default=None, ge=0, description="Target tank volume after transfer")
-    # Source tracking: how this movement was created (manual, pdf_import, signal, adjustment)
-    source: Optional[str] = Field(default='manual', description="How the movement was created")
     # Signal metadata (for movements created from refinery signals)
     signal_id: Optional[str] = None  # Refinery's signal ID
     refinery_tank_name: Optional[str] = None  # Refinery tank name (external)
@@ -141,7 +139,6 @@ class MovementCreate(BaseModel):
     expected_volume: float = Field(gt=0, description="Expected quantity in barrels")  # Goes to expected_volume_default
     scheduled_date: date = Field(description="Date the movement is scheduled for")  # Goes to scheduled_date_default
     notes: Optional[str] = None  # Goes to notes_default
-    source: str = Field(default='manual', description="How the movement was created (manual, pdf_import)")
 
 
 class TransferTarget(BaseModel):

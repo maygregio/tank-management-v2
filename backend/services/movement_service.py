@@ -234,12 +234,11 @@ class MovementService:
         tank_id: Optional[str] = None,
         movement_type: Optional[MovementType] = None,
         status: Optional[str] = None,
-        source: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> PaginatedResponse[Movement]:
         """Get movements with optional filters."""
-        logger.info(f"Fetching movements: tank_id={tank_id}, type={movement_type}, status={status}, source={source}")
+        logger.info(f"Fetching movements: tank_id={tank_id}, type={movement_type}, status={status}")
 
         conditions = []
         parameters = []
@@ -256,10 +255,6 @@ class MovementService:
             conditions.append("IS_NULL(c.actual_volume)")
         elif status == "completed":
             conditions.append("NOT IS_NULL(c.actual_volume)")
-
-        if source:
-            conditions.append("c.source = @source")
-            parameters.append({"name": "@source", "value": source})
 
         # Get total count for pagination
         total = self._movement_storage.count_with_conditions(
@@ -440,7 +435,6 @@ class MovementService:
             actual_volume=None,
             scheduled_date_default=movement_data.scheduled_date,
             notes_default=movement_data.notes,
-            source=movement_data.source,
             resulting_volume=new_source_level,
             target_resulting_volume=new_target_level
         )

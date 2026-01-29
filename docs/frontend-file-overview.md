@@ -52,7 +52,7 @@ Key dependencies:
 | `tanksApi.create(data)` | POST | `/tanks` |
 | `tanksApi.update(id, data)` | PUT | `/tanks/{id}` |
 | `tanksApi.delete(id)` | DELETE | `/tanks/{id}` |
-| `movementsApi.getAll(params)` | GET | `/movements` (paginated, with type/status/source filters) |
+| `movementsApi.getAll(params)` | GET | `/movements` (paginated, with type/status filters) |
 | `movementsApi.getSignals(params)` | GET | `/movements/signals` (paginated) |
 | `movementsApi.create(data)` | POST | `/movements` |
 | `movementsApi.createTransfer(data)` | POST | `/movements/transfer` |
@@ -81,9 +81,8 @@ Key dependencies:
 **Purpose:** TypeScript interfaces mirroring backend Pydantic models.
 
 Key types:
-- `MovementSource` - Source tracking type (`'manual' | 'pdf_import' | 'signal' | 'adjustment'`)
 - `TankWithLevel` - Tank with calculated current_level, level_percentage
-- `Movement` - Movement with paired fields pattern (*_default/*_manual) and `source` field
+- `Movement` - Movement with paired fields pattern (*_default/*_manual)
 - `MovementCreate`, `MovementUpdate`, `MovementComplete` - Movement input types
 - `TransferCreate`, `TransferTargetCreate` - Transfer operations
 - `SignalAssignment`, `TradeInfoUpdate` - Signal workflow types
@@ -167,19 +166,6 @@ Functions:
 Functions:
 - `saveColumnPreferences(preferences)` - Save to localStorage
 - `loadColumnPreferences()` - Load from localStorage
-
-### `movementSource.ts`
-**Purpose:** Movement source utilities and type definitions.
-
-Types:
-- `MovementSourceFilter` - Union of `MovementSource | 'all'` for filter dropdowns
-
-Constants:
-- `movementSourceLabelMap` - Maps source to display label (manual→Manual, pdf_import→PDF, signal→Signal, adjustment→Adjustment)
-- `movementSourceOptions` - Array of value/label pairs for select options
-
-Functions:
-- `normalizeMovementSource(source)` - Returns source or 'manual' as default
 
 ---
 
@@ -295,13 +281,13 @@ Defines:
 - `@tanstack/react-query`: useQuery, useMutation, useQueryClient
 - `@/lib/api`: tanksApi, movementsApi
 - `@/lib/dateUtils`: formatDate, getLocalToday
-- `@/components/movements/*`: ManualEntryForm, PdfImportForm, MovementsTableSection, MovementDialogs, MovementSummaryCards, SourceBadge
+- `@/components/movements/*`: ManualEntryForm, PdfImportForm, MovementsTableSection, MovementDialogs, MovementSummaryCards
 - `@/components/movements/useMovementsViewModel`
 - `@/contexts/ToastContext`
 
 **API calls:**
 - `tanksApi.getAll()`
-- `movementsApi.getAll({ type, status, source, skip, limit })` - Server-side pagination and filtering
+- `movementsApi.getAll({ type, status, skip, limit })` - Server-side pagination and filtering
 - `movementsApi.create(data)`
 - `movementsApi.createTransfer(data)`
 - `movementsApi.update(id, data)`
@@ -311,7 +297,7 @@ Defines:
 **Server-Side Pagination:**
 - Uses `paginationModel` state (`{ page, pageSize }`)
 - Query key includes pagination params: `['movements', page, pageSize, apiFilters]`
-- Filters (type, status, source) passed to API for server-side filtering
+- Filters (type, status) passed to API for server-side filtering
 - Page resets to 0 when filters change
 
 **Date Handling:**
@@ -662,19 +648,10 @@ Variants:
 - `@/lib/constants`: styles
 - `@/lib/types`: MovementSummaryStats
 
-### `SourceBadge.tsx`
-**Purpose:** Badge showing movement source (Manual/PDF/Signal/Adjustment).
-
-**Imports:**
-- `@mui/material`: Chip
-- `@/lib/types`: MovementSource
-- `@/lib/movementSource`: movementSourceLabelMap
-
 ### `useMovementsViewModel.ts`
 **Purpose:** ViewModel hook for movements page logic.
 
 **Exports:**
-- `MovementSource` type (display type: `'manual' | 'pdf'`)
 - `MovementGridRowExtended` interface
 - `useMovementsViewModel()` hook
 
@@ -686,10 +663,6 @@ Variants:
 - `remainingTransferVolume` - Source tank level minus transfers
 - `summaryStats` - Movement statistics (uses `getLocalToday()` for "scheduled today" count)
 - `rows` - Filtered/transformed grid rows (uses `isFutureDate()` for future detection)
-
-**Source Detection:**
-- Uses explicit `movement.source` field from backend (not notes text)
-- Maps backend source (`'pdf_import'`) to display source (`'pdf'`)
 
 ---
 
@@ -821,8 +794,7 @@ Movements (/movements)
 ├── ManualEntryForm
 ├── PdfImportForm
 ├── MovementsTableSection
-│   ├── SectionHeader
-│   └── SourceBadge
+│   └── SectionHeader
 ├── MovementDialogs (CompleteDialog, EditDialog)
 │   └── GlassDialog
 ├── MovementSummaryCards
@@ -885,8 +857,7 @@ frontend/
 │   │   ├── theme.ts          # MUI theme
 │   │   ├── dateUtils.ts      # Date utilities (dayjs-based)
 │   │   ├── columnProfiles.ts # Overview column profiles
-│   │   ├── columnPreferences.ts # localStorage persistence
-│   │   └── movementSource.ts # Movement source utilities
+│   │   └── columnPreferences.ts # localStorage persistence
 │   │
 │   ├── contexts/             # React contexts
 │   │   └── ToastContext.tsx  # Toast notifications

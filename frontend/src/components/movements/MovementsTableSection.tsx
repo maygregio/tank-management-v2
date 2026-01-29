@@ -8,7 +8,6 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mui/x-data-grid';
-import { movementSourceOptions, type MovementSourceFilter } from '@/lib/movementSource';
 import SectionHeader from '@/components/SectionHeader';
 import StyledDataGrid from '@/components/StyledDataGrid';
 import type { MovementType, MovementUpdate } from '@/lib/types';
@@ -25,8 +24,6 @@ interface MovementsTableSectionProps {
   onStatusFilterChange: (value: 'all' | 'pending' | 'completed') => void;
   typeFilter: MovementType | 'all';
   onTypeFilterChange: (value: MovementType | 'all') => void;
-  sourceFilter: MovementSourceFilter;
-  onSourceFilterChange: (value: MovementSourceFilter) => void;
   editData: MovementUpdate;
   onEditDataChange: (data: MovementUpdate) => void;
   onBulkComplete: () => void;
@@ -49,8 +46,6 @@ export default function MovementsTableSection({
   onStatusFilterChange,
   typeFilter,
   onTypeFilterChange,
-  sourceFilter,
-  onSourceFilterChange,
   editData,
   onEditDataChange,
   onBulkComplete,
@@ -111,21 +106,6 @@ export default function MovementsTableSection({
             <MenuItem value="discharge">Discharge</MenuItem>
             <MenuItem value="transfer">Transfer</MenuItem>
             <MenuItem value="adjustment">Adjustment</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 90 }}>
-          <InputLabel>Source</InputLabel>
-          <Select
-            value={sourceFilter}
-            label="Source"
-            onChange={(e) => onSourceFilterChange(e.target.value as MovementSourceFilter)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            {movementSourceOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
           </Select>
         </FormControl>
 

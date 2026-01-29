@@ -92,8 +92,7 @@ async def confirm_import(
                 target_tank_id=None,
                 expected_volume=item.volume,
                 scheduled_date=item.date,
-                notes=item.notes,
-                source='pdf_import'
+                notes=item.notes
             )
             service.create_completed(movement_data, actual_volume=item.volume)
             created += 1

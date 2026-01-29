@@ -4,12 +4,10 @@ import type {
   Movement,
   MovementCreate,
   MovementType,
-  MovementSource,
   TransferTargetCreate,
   TankWithLevel,
   MovementSummaryStats,
 } from '@/lib/types';
-import { normalizeMovementSource, type MovementSourceFilter } from '@/lib/movementSource';
 
 export interface MovementGridRowExtended {
   id: string;
@@ -21,7 +19,6 @@ export interface MovementGridRowExtended {
   status: boolean;
   isFuture: boolean;
   notes: string;
-  source: MovementSource;
 }
 
 interface MovementsViewModelInput {
@@ -32,7 +29,6 @@ interface MovementsViewModelInput {
   searchQuery: string;
   statusFilter: 'all' | 'pending' | 'completed';
   typeFilter: MovementType | 'all';
-  sourceFilter: MovementSourceFilter;
 }
 
 export function useMovementsViewModel({
@@ -43,7 +39,6 @@ export function useMovementsViewModel({
   searchQuery,
   statusFilter,
   typeFilter,
-  sourceFilter,
 }: MovementsViewModelInput) {
   const todayString = getLocalToday();
   const tankMap = useMemo(() => new Map(tanks?.map((tank) => [tank.id, tank]) || []), [tanks]);
@@ -88,10 +83,6 @@ export function useMovementsViewModel({
         return true;
       })
       .filter((movement) => {
-        if (sourceFilter === 'all') return true;
-        return normalizeMovementSource(movement.source) === sourceFilter;
-      })
-      .filter((movement) => {
         if (!search) return true;
         const source = movement.tank_id ? tankMap.get(movement.tank_id)?.name || '' : '';
         const target = movement.target_tank_id ? tankMap.get(movement.target_tank_id)?.name || '' : '';
@@ -102,7 +93,7 @@ export function useMovementsViewModel({
           || movement.notes?.toLowerCase().includes(search)
         );
       });
-  }, [movements, statusFilter, typeFilter, sourceFilter, searchQuery, tankMap]);
+  }, [movements, statusFilter, typeFilter, searchQuery, tankMap]);
 
   const rows = useMemo<MovementGridRowExtended[]>(() => (
     filteredMovements.map((movement) => {
@@ -110,7 +101,6 @@ export function useMovementsViewModel({
       const targetTank = movement.target_tank_id ? tankMap.get(movement.target_tank_id) : null;
       const isPending = movement.actual_volume === null;
       const dateValue = movement.scheduled_date || movement.created_at || '';
-      const displaySource = normalizeMovementSource(movement.source);
       return {
         id: movement.id,
         date: dateValue,
@@ -121,7 +111,6 @@ export function useMovementsViewModel({
         status: isPending,
         isFuture: isFutureDate(dateValue),
         notes: movement.notes || '',
-        source: displaySource,
       };
     })
   ), [filteredMovements, tankMap]);

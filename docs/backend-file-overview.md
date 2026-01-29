@@ -172,7 +172,7 @@ Uses `TankService` via dependency injection.
 **Purpose:** Movement CRUD and operations.
 
 Endpoints:
-- `GET /api/movements` - List movements (filter by tank_id, type, status, source; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
+- `GET /api/movements` - List movements (filter by tank_id, type, status; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
 - `GET /api/movements/overview` - Get movements joined with COA data for grid display (pagination: skip, limit). Returns `PaginatedResponse[MovementWithCOA]`
 - `POST /api/movements` - Create scheduled movement
 - `POST /api/movements/transfer` - Create multi-target transfer
@@ -287,7 +287,7 @@ Singleton accessor: `get_tank_service()`
 **Purpose:** Movement business logic.
 
 `MovementService` class:
-- `get_all()` - List movements with filters (tank_id, type, status, source; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
+- `get_all()` - List movements with filters (tank_id, type, status; pagination: skip, limit). Returns `PaginatedResponse[Movement]`
 - `get_by_id()` - Single movement lookup
 - `get_overview()` - Movements joined with COA chemical properties (pagination: skip, limit). Returns `PaginatedResponse[MovementWithCOA]`
 - `create()` - Create movement, sets resulting_volume (and target_resulting_volume for transfers), updates tank.current_level only if scheduled_date <= today

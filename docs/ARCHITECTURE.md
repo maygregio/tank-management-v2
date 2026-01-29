@@ -33,7 +33,7 @@ frontend/src/
 │   └── adjustments/       # Adjustment imports
 ├── components/
 │   ├── overview/          # OverviewGrid, ProfileSelector
-│   ├── movements/         # Movement forms, dialogs, table, SourceBadge
+│   ├── movements/         # Movement forms, dialogs, table
 │   ├── DialogScaffold.tsx # Reusable dialog with glass-effect styling
 │   ├── StyledDataGrid.tsx # Styled DataGrid with variant support
 │   └── Navigation.tsx     # Tab-based navigation
@@ -41,7 +41,6 @@ frontend/src/
     ├── api.ts             # API client functions
     ├── types.ts           # TypeScript interfaces
     ├── constants.ts       # Shared constants, styles, button styles, utilities
-    ├── movementSource.ts  # Movement source labels and utilities
     ├── columnProfiles.ts  # Overview column visibility profiles
     └── columnPreferences.ts # localStorage for column preferences
 ```
@@ -120,13 +119,13 @@ class PaginatedResponse(BaseModel, Generic[T]):
 ```
 
 **Paginated Endpoints:**
-- `GET /api/movements` - Supports `skip`, `limit`, `type`, `status`, `source` params
+- `GET /api/movements` - Supports `skip`, `limit`, `type`, `status` params
 - `GET /api/movements/overview` - Supports `skip`, `limit` params
 - `GET /api/movements/signals` - Supports `skip`, `limit` params
 
 **Frontend Pattern:**
 - DataGrid uses `paginationMode="server"` with `rowCount` from API response
-- Filters (type, status, source) passed to API to filter server-side
+- Filters (type, status) passed to API to filter server-side
 - Page resets to 0 when filters change
 - Query keys include pagination params for proper cache invalidation
 

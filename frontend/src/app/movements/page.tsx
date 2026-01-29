@@ -20,7 +20,6 @@ import MovementStatus from '@/components/MovementStatus';
 import {
   useMovementsViewModel,
   MovementSummaryCards,
-  SourceBadge,
   MovementsTableSection,
   ManualEntryForm,
   PdfImportForm,
@@ -28,8 +27,6 @@ import {
   EditDialog,
   MovementGridRowExtended,
 } from '@/components/movements';
-import type { MovementSource } from '@/lib/types';
-import type { MovementSourceFilter } from '@/lib/movementSource';
 import type {
   MovementCreate,
   Movement,
@@ -50,7 +47,6 @@ export default function MovementsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
   const [typeFilter, setTypeFilter] = useState<MovementType | 'all'>('all');
-  const [sourceFilter, setSourceFilter] = useState<MovementSourceFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
   // Server-side pagination state
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -73,7 +69,6 @@ export default function MovementsPage() {
   const apiFilters = {
     type: typeFilter !== 'all' ? typeFilter : undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
-    source: sourceFilter !== 'all' ? sourceFilter : undefined,
   };
 
   const { data: movementsData, isLoading: movementsLoading } = useQuery({
@@ -96,11 +91,6 @@ export default function MovementsPage() {
 
   const handleTypeFilterChange = (value: MovementType | 'all') => {
     setTypeFilter(value);
-    setPaginationModel(prev => ({ ...prev, page: 0 }));
-  };
-
-  const handleSourceFilterChange = (value: MovementSourceFilter) => {
-    setSourceFilter(value);
     setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
@@ -295,7 +285,6 @@ export default function MovementsPage() {
     searchQuery,
     statusFilter,
     typeFilter,
-    sourceFilter,
   });
 
   const movementMap = useMemo(
@@ -332,16 +321,6 @@ export default function MovementsPage() {
       flex: 0.6,
       renderCell: (params) => (
         <MovementTypeChip type={params.value as MovementType} />
-      ),
-      sortable: false,
-    },
-    {
-      field: 'source',
-      headerName: 'Source',
-      minWidth: 80,
-      flex: 0.5,
-      renderCell: (params) => (
-        <SourceBadge source={params.value as MovementSource} />
       ),
       sortable: false,
     },
@@ -503,8 +482,6 @@ export default function MovementsPage() {
           onStatusFilterChange={handleStatusFilterChange}
           typeFilter={typeFilter}
           onTypeFilterChange={handleTypeFilterChange}
-          sourceFilter={sourceFilter}
-          onSourceFilterChange={handleSourceFilterChange}
           editData={editData}
           onEditDataChange={setEditData}
           onBulkComplete={handleBulkComplete}
