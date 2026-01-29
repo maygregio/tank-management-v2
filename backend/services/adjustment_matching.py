@@ -1,15 +1,11 @@
 """Adjustment tank matching and delta calculation service."""
-from rapidfuzz import fuzz, process
 from models.adjustments import (
     AdjustmentExtractedReading,
     AdjustmentMatchSuggestion,
     AdjustmentReadingWithMatches
 )
 from models import Tank, TankWithLevel
-
-EXACT_MATCH_THRESHOLD = 95  # Consider exact if score >= 95
-SUGGESTION_THRESHOLD = 50   # Only suggest if score >= 50
-MAX_SUGGESTIONS = 5
+from services.fuzzy_matching import build_tank_match_suggestions
 
 
 def find_adjustment_tank_matches(
@@ -17,36 +13,15 @@ def find_adjustment_tank_matches(
     tanks: list[Tank]
 ) -> tuple[list[AdjustmentMatchSuggestion], bool]:
     """Find tanks that match the extracted name using fuzzy matching."""
-    if not tanks:
-        return [], False
-
-    tank_names = {t.name: t for t in tanks}
-
-    # Use token_set_ratio for better matching with different word orders
-    matches = process.extract(
+    return build_tank_match_suggestions(
         extracted_name,
-        tank_names.keys(),
-        scorer=fuzz.token_set_ratio,
-        limit=MAX_SUGGESTIONS
+        tanks,
+        lambda tank, score: AdjustmentMatchSuggestion(
+            tank_id=tank.id,
+            tank_name=tank.name,
+            confidence=score
+        )
     )
-
-    suggestions = []
-    is_exact = False
-
-    for name, score, _ in matches:
-        if score >= SUGGESTION_THRESHOLD:
-            tank = tank_names[name]
-            suggestion = AdjustmentMatchSuggestion(
-                tank_id=tank.id,
-                tank_name=tank.name,
-                confidence=score
-            )
-            suggestions.append(suggestion)
-
-            if score >= EXACT_MATCH_THRESHOLD:
-                is_exact = True
-
-    return suggestions, is_exact
 
 
 def process_extracted_adjustments(

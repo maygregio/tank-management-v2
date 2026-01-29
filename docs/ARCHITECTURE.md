@@ -13,7 +13,7 @@ The solution is split into a Next.js frontend and a FastAPI backend. The fronten
 ### Routes
 | Route | Purpose |
 |-------|---------|
-| `/` | Dashboard with stats and tank cards grouped by location |
+| `/` | Redirects to `/tanks` |
 | `/tanks` | Tank list and creation |
 | `/tanks/[id]` | Tank detail with movement history |
 | `/movements` | Schedule and complete movements (manual entry + PDF import) |

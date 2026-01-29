@@ -1,12 +1,8 @@
-from rapidfuzz import fuzz, process
 from models import (
     Tank, TankMatchSuggestion, PDFExtractedMovement,
     PDFMovementWithMatches, MovementType
 )
-
-EXACT_MATCH_THRESHOLD = 95  # Consider exact if score >= 95
-SUGGESTION_THRESHOLD = 50   # Only suggest if score >= 50
-MAX_SUGGESTIONS = 5
+from services.fuzzy_matching import build_tank_match_suggestions
 
 
 def find_tank_matches(
@@ -14,36 +10,15 @@ def find_tank_matches(
     tanks: list[Tank]
 ) -> tuple[list[TankMatchSuggestion], bool]:
     """Find tanks that match the extracted name using fuzzy matching."""
-    if not tanks:
-        return [], False
-
-    tank_names = {t.name: t for t in tanks}
-
-    # Use token_set_ratio for better matching with different word orders
-    matches = process.extract(
+    return build_tank_match_suggestions(
         extracted_name,
-        tank_names.keys(),
-        scorer=fuzz.token_set_ratio,
-        limit=MAX_SUGGESTIONS
+        tanks,
+        lambda tank, score: TankMatchSuggestion(
+            tank_id=tank.id,
+            tank_name=tank.name,
+            confidence=score
+        )
     )
-
-    suggestions = []
-    is_exact = False
-
-    for name, score, _ in matches:
-        if score >= SUGGESTION_THRESHOLD:
-            tank = tank_names[name]
-            suggestion = TankMatchSuggestion(
-                tank_id=tank.id,
-                tank_name=tank.name,
-                confidence=score
-            )
-            suggestions.append(suggestion)
-
-            if score >= EXACT_MATCH_THRESHOLD:
-                is_exact = True
-
-    return suggestions, is_exact
 
 
 def infer_movement_type(level_before: float, level_after: float) -> MovementType:

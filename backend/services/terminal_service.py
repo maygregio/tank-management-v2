@@ -6,6 +6,10 @@ from typing import Optional
 from models import Tank, Movement, MovementType
 from models.terminals import TerminalSummary, TerminalDailyAggregation
 from services.storage import CosmosStorage
+from services.movement_queries import (
+    build_date_range_conditions,
+    filter_movements_by_effective_date
+)
 
 logger = logging.getLogger(__name__)
 
@@ -83,23 +87,19 @@ class TerminalService:
 
         # Get all movements in the date range that involve these tanks
         # We need to over-fetch and filter by effective dates in Python
+        conditions, parameters = build_date_range_conditions(start_date, end_date)
         movements = self._movement_storage.query(
-            conditions=[
-                "(c.scheduled_date_default >= @start_date OR c.scheduled_date_manual >= @start_date)",
-                "(c.scheduled_date_default <= @end_date OR c.scheduled_date_manual <= @end_date)"
-            ],
-            parameters=[
-                {"name": "@start_date", "value": start_date.isoformat()},
-                {"name": "@end_date", "value": end_date.isoformat()}
-            ]
+            conditions=conditions,
+            parameters=parameters
         )
 
         # Filter to movements that involve our tanks and are in date range
-        relevant_movements = [
-            m for m in movements
-            if m.scheduled_date and start_date <= m.scheduled_date <= end_date
-            and (m.tank_id in tank_ids or m.target_tank_id in tank_ids)
-        ]
+        relevant_movements = filter_movements_by_effective_date(
+            movements,
+            start_date=start_date,
+            end_date=end_date,
+            tank_ids=tank_ids
+        )
 
         # Group movements by day
         movements_by_day: dict[date, list[Movement]] = {}

@@ -12,6 +12,10 @@ from services.storage import CosmosStorage
 from services.calculations import (
     calculate_adjustment, get_volume_delta, apply_movement_to_level
 )
+from services.movement_queries import (
+    build_tank_date_range_conditions,
+    filter_movements_by_effective_date
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +45,13 @@ class MovementService:
         """Get movements for a tank from a certain date forward, sorted by scheduled_date ASC."""
         # Query movements where tank_id or target_tank_id matches
         # Use OR to over-fetch candidates, then filter by effective date in Python
+        conditions, parameters = build_tank_date_range_conditions(
+            tank_id=tank_id,
+            start_date=from_date
+        )
         movements = self._movement_storage.query(
-            conditions=[
-                "(c.tank_id_default = @tank_id OR c.tank_id_manual = @tank_id OR c.target_tank_id = @tank_id)",
-                "(c.scheduled_date_default >= @from_date OR c.scheduled_date_manual >= @from_date)"
-            ],
-            parameters=[
-                {"name": "@tank_id", "value": tank_id},
-                {"name": "@from_date", "value": from_date.isoformat()}
-            ],
+            conditions=conditions,
+            parameters=parameters,
             order_by="scheduled_date_default",
             order_desc=False
         )
@@ -61,7 +63,7 @@ class MovementService:
         # Filter by effective scheduled_date (manual overrides default)
         # The OR query over-fetches, so we must filter to only include movements
         # where the effective date is actually >= from_date
-        movements = [m for m in movements if m.scheduled_date and m.scheduled_date >= from_date]
+        movements = filter_movements_by_effective_date(movements, start_date=from_date)
 
         # Sort by effective scheduled_date
         movements.sort(key=lambda m: m.scheduled_date or date.min)
@@ -207,6 +209,25 @@ class MovementService:
     def _update_tank_current_level(self, tank_id: str, new_level: float) -> None:
         """Update a tank's current_level."""
         self._tank_storage.update(tank_id, {"current_level": round(new_level, 2)})
+
+    def _recalculate_tanks_from_date(
+        self,
+        tank_ids: set[str],
+        from_date: date,
+        *,
+        update_current_level: bool = True
+    ) -> dict[str, float]:
+        """Recalculate volumes for multiple tanks and optionally update current_level."""
+        results: dict[str, float] = {}
+        for tank_id in sorted(tank_ids):
+            tank = self._tank_storage.get_by_id(tank_id)
+            if not tank:
+                continue
+            new_level = self._recalculate_tank_volumes(tank, from_date)
+            results[tank_id] = new_level
+            if update_current_level:
+                self._update_tank_current_level(tank.id, new_level)
+        return results
 
     def get_all(
         self,
@@ -427,15 +448,14 @@ class MovementService:
 
         # Recalculate from the scheduled date to handle insertions and ensure
         # resulting_volume reflects any earlier movements on that date.
-        new_level = self._recalculate_tank_volumes(tank, movement_data.scheduled_date)
-        if not is_future_movement:
-            self._update_tank_current_level(tank.id, new_level)
-
-        # For transfers, also recalculate target tank
+        recalc_ids = {tank.id}
         if target_tank:
-            new_target_level = self._recalculate_tank_volumes(target_tank, movement_data.scheduled_date)
-            if not is_future_movement:
-                self._update_tank_current_level(target_tank.id, new_target_level)
+            recalc_ids.add(target_tank.id)
+        self._recalculate_tanks_from_date(
+            recalc_ids,
+            movement_data.scheduled_date,
+            update_current_level=not is_future_movement
+        )
 
         # Refetch to get updated resulting_volume
         created = self._movement_storage.get_by_id(created.id)
@@ -503,18 +523,13 @@ class MovementService:
 
         # Recalculate from the scheduled date to handle insertions and ensure
         # resulting_volume reflects any earlier movements on that date.
-        new_source_level = self._recalculate_tank_volumes(source_tank, transfer_data.scheduled_date)
-        if not is_future_movement:
-            self._update_tank_current_level(source_tank.id, new_source_level)
-
-        # Recalculate each target tank
         target_tank_ids = set(target.tank_id for target in transfer_data.targets)
-        for target_id in target_tank_ids:
-            target_tank = self._tank_storage.get_by_id(target_id)
-            if target_tank:
-                new_level = self._recalculate_tank_volumes(target_tank, transfer_data.scheduled_date)
-                if not is_future_movement:
-                    self._update_tank_current_level(target_id, new_level)
+        recalc_ids = {source_tank.id} | target_tank_ids
+        self._recalculate_tanks_from_date(
+            recalc_ids,
+            transfer_data.scheduled_date,
+            update_current_level=not is_future_movement
+        )
 
         # Refetch all movements to get updated resulting_volumes
         created_movements = [
@@ -606,25 +621,16 @@ class MovementService:
                 recalc_from_date = new_scheduled_date
 
             # Recalculate for the affected tank(s)
-            if updated.tank_id:
-                tank = self._tank_storage.get_by_id(updated.tank_id)
-                if tank and recalc_from_date:
-                    new_level = self._recalculate_tank_volumes(tank, recalc_from_date)
-                    self._update_tank_current_level(tank.id, new_level)
-
-            # For transfers, also recalculate target tank
-            if updated.type == MovementType.TRANSFER and updated.target_tank_id:
-                target_tank = self._tank_storage.get_by_id(updated.target_tank_id)
-                if target_tank and recalc_from_date:
-                    new_level = self._recalculate_tank_volumes(target_tank, recalc_from_date)
-                    self._update_tank_current_level(target_tank.id, new_level)
-
-            # If tank changed, also recalculate the old tank
-            if tank_changed and old_tank_id:
-                old_tank = self._tank_storage.get_by_id(old_tank_id)
-                if old_tank and recalc_from_date:
-                    new_level = self._recalculate_tank_volumes(old_tank, recalc_from_date)
-                    self._update_tank_current_level(old_tank.id, new_level)
+            if recalc_from_date:
+                recalc_ids: set[str] = set()
+                if updated.tank_id:
+                    recalc_ids.add(updated.tank_id)
+                if updated.type == MovementType.TRANSFER and updated.target_tank_id:
+                    recalc_ids.add(updated.target_tank_id)
+                if tank_changed and old_tank_id:
+                    recalc_ids.add(old_tank_id)
+                if recalc_ids:
+                    self._recalculate_tanks_from_date(recalc_ids, recalc_from_date)
 
             # Refetch the updated movement to get the new resulting_volume
             updated = self._movement_storage.get_by_id(movement_id)
@@ -648,18 +654,14 @@ class MovementService:
             raise MovementServiceError("Failed to update movement", 500)
 
         # Recalculate from this movement forward since actual may differ from expected
-        if movement.tank_id and movement.scheduled_date:
-            tank = self._tank_storage.get_by_id(movement.tank_id)
-            if tank:
-                new_level = self._recalculate_tank_volumes(tank, movement.scheduled_date)
-                self._update_tank_current_level(tank.id, new_level)
-
-        # For transfers, also recalculate target tank
-        if movement.type == MovementType.TRANSFER and movement.target_tank_id and movement.scheduled_date:
-            target_tank = self._tank_storage.get_by_id(movement.target_tank_id)
-            if target_tank:
-                new_level = self._recalculate_tank_volumes(target_tank, movement.scheduled_date)
-                self._update_tank_current_level(target_tank.id, new_level)
+        if movement.scheduled_date:
+            recalc_ids: set[str] = set()
+            if movement.tank_id:
+                recalc_ids.add(movement.tank_id)
+            if movement.type == MovementType.TRANSFER and movement.target_tank_id:
+                recalc_ids.add(movement.target_tank_id)
+            if recalc_ids:
+                self._recalculate_tanks_from_date(recalc_ids, movement.scheduled_date)
 
         # Refetch to get updated resulting_volume
         updated = self._movement_storage.get_by_id(movement_id)
@@ -722,9 +724,11 @@ class MovementService:
         created = self._movement_storage.create(movement)
 
         # Recalculate from the inspection date to refresh resulting volumes.
-        new_level = self._recalculate_tank_volumes(tank, inspection_date)
-        if inspection_date <= date.today():
-            self._update_tank_current_level(tank.id, new_level)
+        self._recalculate_tanks_from_date(
+            {tank.id},
+            inspection_date,
+            update_current_level=inspection_date <= date.today()
+        )
 
         created = self._movement_storage.get_by_id(created.id)
         logger.info(f"Adjustment created: {created.id}, quantity={adjustment_quantity}")
@@ -757,18 +761,14 @@ class MovementService:
             return False
 
         # Recalculate affected tanks from the movement's date
-        if tank_id and scheduled_date:
-            tank = self._tank_storage.get_by_id(tank_id)
-            if tank:
-                new_level = self._recalculate_tank_volumes(tank, scheduled_date)
-                self._update_tank_current_level(tank.id, new_level)
-
-        # For transfers, also recalculate target tank
-        if movement_type == MovementType.TRANSFER and target_tank_id and scheduled_date:
-            target_tank = self._tank_storage.get_by_id(target_tank_id)
-            if target_tank:
-                new_level = self._recalculate_tank_volumes(target_tank, scheduled_date)
-                self._update_tank_current_level(target_tank.id, new_level)
+        if scheduled_date:
+            recalc_ids: set[str] = set()
+            if tank_id:
+                recalc_ids.add(tank_id)
+            if movement_type == MovementType.TRANSFER and target_tank_id:
+                recalc_ids.add(target_tank_id)
+            if recalc_ids:
+                self._recalculate_tanks_from_date(recalc_ids, scheduled_date)
 
         logger.info(f"Movement deleted: {movement_id}")
         return True
