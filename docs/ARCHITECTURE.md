@@ -33,11 +33,15 @@ frontend/src/
 │   └── adjustments/       # Adjustment imports
 ├── components/
 │   ├── overview/          # OverviewGrid, ProfileSelector
-│   ├── movements/         # Movement forms, dialogs, table
+│   ├── movements/         # Movement forms, dialogs, table, SourceBadge
+│   ├── DialogScaffold.tsx # Reusable dialog with glass-effect styling
+│   ├── StyledDataGrid.tsx # Styled DataGrid with variant support
 │   └── Navigation.tsx     # Tab-based navigation
 └── lib/
     ├── api.ts             # API client functions
     ├── types.ts           # TypeScript interfaces
+    ├── constants.ts       # Shared constants, styles, button styles, utilities
+    ├── movementSource.ts  # Movement source labels and utilities
     ├── columnProfiles.ts  # Overview column visibility profiles
     └── columnPreferences.ts # localStorage for column preferences
 ```
@@ -78,7 +82,10 @@ Models are split by domain:
 | `calculations.py` | Tank level calculation from movements |
 | `coa_extraction.py` | AI extraction of chemical properties from COA PDFs |
 | `adjustment_extraction.py` | AI extraction from adjustment PDFs |
+| `fuzzy_matching.py` | Shared fuzzy matching helpers for tank suggestions |
+| `movement_queries.py` | Shared helpers for movement queries and date filtering |
 | `adjustment_matching.py` | Fuzzy tank name matching for adjustments |
+| `tank_matching.py` | Fuzzy tank name matching for PDF imports |
 | `excel_parser.py` | Signal Excel file parsing |
 | `blob_storage.py` | Azure Blob Storage for PDFs |
 

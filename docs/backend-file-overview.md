@@ -444,6 +444,34 @@ Classes:
 
 Uses content type `application/pdf` and creates container if not exists.
 
+### `fuzzy_matching.py`
+**Purpose:** Shared fuzzy matching helpers for tank name suggestions.
+
+Constants:
+- `EXACT_MATCH_THRESHOLD = 95` - Score for exact match
+- `SUGGESTION_THRESHOLD = 50` - Minimum score to suggest
+- `MAX_SUGGESTIONS = 5` - Maximum match suggestions
+
+Functions:
+- `build_tank_match_suggestions()` - Generic fuzzy matching function using RapidFuzz `token_set_ratio`
+  - Takes extracted name, tank list, and factory function for creating suggestions
+  - Returns tuple of (suggestions, is_exact_match)
+
+Used by: `tank_matching.py`, `adjustment_matching.py`
+
+### `movement_queries.py`
+**Purpose:** Shared helpers for movement queries and date filtering.
+
+Constants:
+- `TANK_MATCH_CONDITION` - SQL condition for matching tank_id (default, manual, or target)
+
+Functions:
+- `build_date_range_conditions(start_date, end_date)` - Build query conditions for scheduled_date range
+- `build_tank_date_range_conditions(tank_id, start_date, end_date)` - Build conditions for tank + date range
+- `filter_movements_by_effective_date(movements, start_date, end_date, tank_ids)` - In-memory filtering by effective date
+
+Used by: `tank_service.py`, `terminal_service.py`, `movement_service.py`
+
 ---
 
 ## Architecture Summary
@@ -484,6 +512,8 @@ backend/
     ├── pdf_extraction.py    # Movement PDF extraction
     ├── coa_extraction.py    # COA PDF extraction
     ├── adjustment_extraction.py  # Adjustment PDF extraction
+    ├── fuzzy_matching.py    # Shared fuzzy matching helpers
+    ├── movement_queries.py  # Shared movement query helpers
     ├── tank_matching.py     # Movement tank matching
     ├── adjustment_matching.py   # Adjustment tank matching
     └── blob_storage.py  # Azure Blob Storage

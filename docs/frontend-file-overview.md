@@ -99,12 +99,25 @@ Key types:
 ### `constants.ts`
 **Purpose:** Shared constants, labels, colors, and style objects.
 
-Contains:
+**Timing Constants:**
+- `DEFAULT_POLLING_INTERVAL_MS` - 30 seconds
+- `DEBOUNCE_DELAY_MS` - 500ms for search inputs
+- `CARD_HOVER_TRANSITION_SECONDS` - 0.35s
+- `TABLE_ROW_TRANSITION_SECONDS` - 0.25s
+
+**Label/Color Mappings:**
 - `feedstockTypeLabels` - Labels for feedstock types
 - `movementTypeLabels` - Labels for movement types (LOAD, DISCHARGE, etc.)
 - `movementTypeColors`, `movementTypeChipColors` - Color mappings
-- `styles` - Shared style objects (cardGradient, dialogPaper, summaryCard, tableHeadRow, etc.)
-- `dataGridSx` - Shared DataGrid styling
+
+**Style Objects:**
+- `styles` - Shared style objects (cardGradient, dialogPaper, summaryCard, tableHeadRow, alertError, alertSuccess)
+- `dataGridSx` - Base DataGrid styling
+- `dataGridWithRowStylesSx` - DataGrid with row hover and alternating rows
+- `buttonStyles` - Centralized button styles (primary, success, warning, danger, secondary, purple)
+
+**Utilities:**
+- `openPdfInNewTab(pdfUrl, getPdfUrlFn)` - Extracts blob name from Azure URL and opens PDF in new tab
 
 ### `dateUtils.ts`
 **Purpose:** Date formatting and manipulation utilities using dayjs.
@@ -154,6 +167,19 @@ Functions:
 Functions:
 - `saveColumnPreferences(preferences)` - Save to localStorage
 - `loadColumnPreferences()` - Load from localStorage
+
+### `movementSource.ts`
+**Purpose:** Movement source utilities and type definitions.
+
+Types:
+- `MovementSourceFilter` - Union of `MovementSource | 'all'` for filter dropdowns
+
+Constants:
+- `movementSourceLabelMap` - Maps source to display label (manual→Manual, pdf_import→PDF, signal→Signal, adjustment→Adjustment)
+- `movementSourceOptions` - Array of value/label pairs for select options
+
+Functions:
+- `normalizeMovementSource(source)` - Returns source or 'manual' as default
 
 ---
 
@@ -514,6 +540,40 @@ Defines:
 - `@mui/material`: Dialog, DialogActions, DialogContent, DialogTitle, Button, Box, Typography
 - `@mui/icons-material`: WarningIcon, DeleteIcon, CheckCircleIcon
 
+### `DialogScaffold.tsx`
+**Purpose:** Reusable dialog component with consistent glass-effect styling.
+
+Provides a standardized dialog structure with:
+- Glass morphism paper styling (from `styles.dialogPaper`)
+- Customizable title with cyan accent color
+- Bordered content and actions sections
+- Support for custom sx props on all sections
+
+**Props:**
+- `title` - Dialog title (string or ReactNode)
+- `titleColor` - Title color (default: cyan)
+- `titleSx`, `contentSx`, `actionsSx` - Custom styling for sections
+- `children` - Dialog content
+- `actions` - Action buttons
+
+**Imports:**
+- `@mui/material`: Dialog, DialogTitle, DialogContent, DialogActions, Typography
+- `@/lib/constants`: styles
+
+### `StyledDataGrid.tsx`
+**Purpose:** Styled DataGrid wrapper with variant support.
+
+Variants:
+- `default` - Basic DataGrid styling
+- `striped` - Alternating row colors
+- `movement` - Movement-specific styling with pending/complete/future row classes
+- `overview` - Overview grid styling with editable cell highlights
+
+**Imports:**
+- `@mui/x-data-grid`: DataGrid
+- `@mui/material/styles`: alpha
+- `@/lib/constants`: dataGridSx, dataGridWithRowStylesSx
+
 ---
 
 ## COA Components
@@ -603,11 +663,12 @@ Defines:
 - `@/lib/types`: MovementSummaryStats
 
 ### `SourceBadge.tsx`
-**Purpose:** Badge showing movement source (Manual/PDF).
+**Purpose:** Badge showing movement source (Manual/PDF/Signal/Adjustment).
 
 **Imports:**
 - `@mui/material`: Chip
-- `./useMovementsViewModel`: MovementSource
+- `@/lib/types`: MovementSource
+- `@/lib/movementSource`: movementSourceLabelMap
 
 ### `useMovementsViewModel.ts`
 **Purpose:** ViewModel hook for movements page logic.
@@ -820,11 +881,12 @@ frontend/
 │   ├── lib/                  # Shared utilities
 │   │   ├── api.ts            # API client
 │   │   ├── types.ts          # TypeScript types
-│   │   ├── constants.ts      # Shared constants/styles
+│   │   ├── constants.ts      # Shared constants/styles/utilities
 │   │   ├── theme.ts          # MUI theme
 │   │   ├── dateUtils.ts      # Date utilities (dayjs-based)
 │   │   ├── columnProfiles.ts # Overview column profiles
-│   │   └── columnPreferences.ts # localStorage persistence
+│   │   ├── columnPreferences.ts # localStorage persistence
+│   │   └── movementSource.ts # Movement source utilities
 │   │
 │   ├── contexts/             # React contexts
 │   │   └── ToastContext.tsx  # Toast notifications
@@ -840,6 +902,8 @@ frontend/
 │       ├── EmptyState.tsx       # Empty placeholder
 │       ├── SectionHeader.tsx    # Section divider
 │       ├── GlassDialog.tsx      # Styled dialog
+│       ├── DialogScaffold.tsx   # Reusable dialog scaffold
+│       ├── StyledDataGrid.tsx   # Styled DataGrid with variants
 │       ├── ConfirmationDialog.tsx # Confirm dialog
 │       ├── COA*.tsx             # COA dialogs
 │       ├── movements/           # Movement components
