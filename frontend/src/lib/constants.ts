@@ -217,7 +217,7 @@ export const buttonStyles = {
  */
 export function openPdfInNewTab(pdfUrl: string, getPdfUrlFn: (blobName: string) => string): void {
   const url = new URL(pdfUrl);
-  const pathParts = url.pathname.split('/');
-  const blobName = pathParts.slice(2).join('/');
+  const pathParts = url.pathname.split('/').slice(2);
+  const blobName = pathParts.map((part) => decodeURIComponent(part)).join('/');
   window.open(getPdfUrlFn(blobName), '_blank');
 }

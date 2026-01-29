@@ -27,8 +27,9 @@ import {
   CompleteDialog,
   EditDialog,
   MovementGridRowExtended,
-  MovementSource,
 } from '@/components/movements';
+import type { MovementSource } from '@/lib/types';
+import type { MovementSourceFilter } from '@/lib/movementSource';
 import type {
   MovementCreate,
   Movement,
@@ -49,7 +50,7 @@ export default function MovementsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
   const [typeFilter, setTypeFilter] = useState<MovementType | 'all'>('all');
-  const [sourceFilter, setSourceFilter] = useState<MovementSource | 'all'>('all');
+  const [sourceFilter, setSourceFilter] = useState<MovementSourceFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
   // Server-side pagination state
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -98,7 +99,7 @@ export default function MovementsPage() {
     setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
-  const handleSourceFilterChange = (value: MovementSource | 'all') => {
+  const handleSourceFilterChange = (value: MovementSourceFilter) => {
     setSourceFilter(value);
     setPaginationModel(prev => ({ ...prev, page: 0 }));
   };

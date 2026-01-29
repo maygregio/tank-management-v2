@@ -2,10 +2,6 @@
 
 import { useState } from 'react';
 import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
@@ -13,6 +9,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
+import DialogScaffold from '@/components/DialogScaffold';
 import type { COAWithSignal, Movement } from '@/lib/types';
 
 interface COALinkDialogProps {
@@ -51,33 +48,36 @@ export default function COALinkDialog({
   const signalsWithTrade = signals.filter(s => s.trade_number && s.trade_line_item);
 
   return (
-    <Dialog
+    <DialogScaffold
       open={open}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            bgcolor: 'var(--glass-bg)',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(18, 26, 39, 0.95)',
-            boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-            backdropFilter: 'blur(18px)',
-          },
-        },
-      }}
+      title="Link COA to Signal"
+      titleColor="#8b5cf6"
+      actions={(
+        <>
+          <Button onClick={handleClose} sx={{ color: 'text.secondary' }} disabled={isLinking}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleLink}
+            variant="contained"
+            disabled={!selectedSignalId || isLinking}
+            startIcon={isLinking ? <CircularProgress size={16} /> : undefined}
+            sx={{
+              bgcolor: 'rgba(139, 92, 246, 0.1)',
+              color: '#8b5cf6',
+              border: '1px solid #8b5cf6',
+              '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.2)' },
+              '&:disabled': { opacity: 0.3 },
+            }}
+          >
+            {isLinking ? 'Linking...' : 'Link'}
+          </Button>
+        </>
+      )}
     >
-      <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-        <Typography
-          variant="overline"
-          sx={{ color: '#8b5cf6', fontWeight: 700, letterSpacing: '0.15em' }}
-        >
-          Link COA to Signal
-        </Typography>
-      </DialogTitle>
-
-      <DialogContent sx={{ pt: 3 }}>
         {/* COA Info */}
         <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px' }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
@@ -130,28 +130,6 @@ export default function COALinkDialog({
         <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 2 }}>
           This will link the COA to the selected signal. If the signal already has a COA, it will be replaced.
         </Typography>
-      </DialogContent>
-
-      <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-        <Button onClick={handleClose} sx={{ color: 'text.secondary' }} disabled={isLinking}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleLink}
-          variant="contained"
-          disabled={!selectedSignalId || isLinking}
-          startIcon={isLinking ? <CircularProgress size={16} /> : undefined}
-          sx={{
-            bgcolor: 'rgba(139, 92, 246, 0.1)',
-            color: '#8b5cf6',
-            border: '1px solid #8b5cf6',
-            '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.2)' },
-            '&:disabled': { opacity: 0.3 },
-          }}
-        >
-          {isLinking ? 'Linking...' : 'Link'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </DialogScaffold>
   );
 }

@@ -8,7 +8,7 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Grid from '@mui/material/Grid';
@@ -26,6 +26,7 @@ import { DynamicTankActivityChart } from '@/components/charts/DynamicCharts';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import EmptyState from '@/components/EmptyState';
 import { EditDialog, CompleteDialog } from '@/components/movements';
+import StyledDataGrid from '@/components/StyledDataGrid';
 import StorageIcon from '@mui/icons-material/Storage';
 import { adjustmentsApi } from '@/lib/api';
 import { feedstockTypeLabels, openPdfInNewTab, buttonStyles } from '@/lib/constants';
@@ -617,56 +618,12 @@ export default function TankDetailPage() {
             />
           </Box>
         ) : (
-          <DataGrid
+          <StyledDataGrid
             rows={rows}
             columns={columns}
-            disableRowSelectionOnClick
             pageSizeOptions={[5, 10, 20]}
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-            sx={{
-              border: '1px solid var(--glass-border)',
-              backgroundColor: 'rgba(10, 15, 26, 0.9)',
-              borderRadius: '12px',
-              '& .MuiDataGrid-columnHeaders': {
-                borderBottom: '1px solid rgba(0, 229, 255, 0.15)',
-                backgroundColor: 'rgba(0, 229, 255, 0.08)',
-                fontSize: '0.7rem',
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: 'text.secondary',
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              },
-              '& .MuiDataGrid-cell': {
-                borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                color: 'text.secondary',
-              },
-              '& .MuiDataGrid-cellContent': {
-                display: 'flex',
-                alignItems: 'center',
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                width: '100%',
-              },
-              '& .MuiDataGrid-row': {
-                '&:nth-of-type(even)': {
-                  backgroundColor: 'rgba(0, 229, 255, 0.02)',
-                },
-              },
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: 'rgba(0, 229, 255, 0.04)',
-              },
-              '& .MuiDataGrid-footerContainer': {
-                borderTop: '1px solid rgba(0, 229, 255, 0.15)',
-              },
-            }}
+            variant="striped"
           />
         )}
       </Box>

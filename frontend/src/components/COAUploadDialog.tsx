@@ -2,10 +2,6 @@
 
 import { useState, useRef } from 'react';
 import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
@@ -16,6 +12,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DialogScaffold from '@/components/DialogScaffold';
 import type { Movement } from '@/lib/types';
 
 interface COAUploadDialogProps {
@@ -98,33 +95,35 @@ export default function COAUploadDialog({
   const signalsWithTrade = signals.filter(s => s.trade_number && s.trade_line_item);
 
   return (
-    <Dialog
+    <DialogScaffold
       open={open}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            bgcolor: 'var(--glass-bg)',
-            border: '1px solid var(--glass-border)',
-            backgroundColor: 'rgba(18, 26, 39, 0.95)',
-            boxShadow: '0 24px 60px rgba(5, 10, 18, 0.6)',
-            backdropFilter: 'blur(18px)',
-          },
-        },
-      }}
+      title="Upload Certificate of Analysis"
+      actions={(
+        <>
+          <Button onClick={handleClose} sx={{ color: 'text.secondary' }} disabled={isUploading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpload}
+            variant="contained"
+            disabled={!selectedFile || isUploading}
+            startIcon={isUploading ? <CircularProgress size={16} /> : undefined}
+            sx={{
+              bgcolor: 'rgba(0, 230, 118, 0.1)',
+              color: '#00e676',
+              border: '1px solid #00e676',
+              '&:hover': { bgcolor: 'rgba(0, 230, 118, 0.2)' },
+              '&:disabled': { opacity: 0.3 },
+            }}
+          >
+            {isUploading ? 'Processing...' : 'Upload & Extract'}
+          </Button>
+        </>
+      )}
     >
-      <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', pb: 2 }}>
-        <Typography
-          variant="overline"
-          sx={{ color: 'var(--color-accent-cyan)', fontWeight: 700, letterSpacing: '0.15em' }}
-        >
-          Upload Certificate of Analysis
-        </Typography>
-      </DialogTitle>
-
-      <DialogContent sx={{ pt: 3 }}>
         {error && (
           <Alert
             severity="error"
@@ -228,28 +227,6 @@ export default function COAUploadDialog({
             Moisture Content, Toluene Insoluble, Sodium Content
           </Typography>
         </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ borderTop: '1px solid var(--color-border)', p: 2 }}>
-        <Button onClick={handleClose} sx={{ color: 'text.secondary' }} disabled={isUploading}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleUpload}
-          variant="contained"
-          disabled={!selectedFile || isUploading}
-          startIcon={isUploading ? <CircularProgress size={16} /> : undefined}
-          sx={{
-            bgcolor: 'rgba(0, 230, 118, 0.1)',
-            color: '#00e676',
-            border: '1px solid #00e676',
-            '&:hover': { bgcolor: 'rgba(0, 230, 118, 0.2)' },
-            '&:disabled': { opacity: 0.3 },
-          }}
-        >
-          {isUploading ? 'Processing...' : 'Upload & Extract'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </DialogScaffold>
   );
 }

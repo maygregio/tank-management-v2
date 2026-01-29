@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
-import { DataGrid, GridColDef, GridColumnVisibilityModel, GridPaginationModel } from '@mui/x-data-grid';
+import { GridColDef, GridColumnVisibilityModel, GridPaginationModel } from '@mui/x-data-grid';
 import { overviewApi, movementsApi, tanksApi } from '@/lib/api';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
@@ -13,6 +13,7 @@ import type { MovementWithCOA, MovementUpdate } from '@/lib/types';
 import type { ProfileName } from '@/lib/columnProfiles';
 import { getProfileVisibilityModel, detectProfile } from '@/lib/columnProfiles';
 import { saveColumnPreferences, loadColumnPreferences } from '@/lib/columnPreferences';
+import StyledDataGrid from '@/components/StyledDataGrid';
 import ProfileSelector from './ProfileSelector';
 
 // Map grid field to API update field
@@ -172,24 +173,8 @@ export default function OverviewGrid() {
         <ProfileSelector value={profile} onChange={handleProfileChange} />
       </Box>
 
-      <Box
-        sx={{
-          height: 600,
-          borderRadius: '12px',
-          border: '1px solid var(--glass-border)',
-          bgcolor: 'rgba(10, 15, 26, 0.9)',
-          overflow: 'hidden',
-          '& .MuiDataGrid-root': { border: 'none' },
-          '& .MuiDataGrid-columnHeaders': { bgcolor: 'rgba(0, 229, 255, 0.08)', borderBottom: '1px solid var(--glass-border)' },
-          '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' },
-          '& .MuiDataGrid-row:hover': { bgcolor: 'rgba(0, 229, 255, 0.04)' },
-          '& .MuiDataGrid-cell': { borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem' },
-          '& .MuiDataGrid-cell--editable:hover': { bgcolor: 'rgba(0, 229, 255, 0.08)', cursor: 'pointer' },
-          '& .MuiDataGrid-cell--editing': { bgcolor: 'rgba(0, 229, 255, 0.12) !important' },
-          '& .MuiDataGrid-footerContainer': { borderTop: '1px solid var(--glass-border)', bgcolor: 'rgba(0, 229, 255, 0.04)' },
-        }}
-      >
-        <DataGrid<MovementWithCOA>
+      <Box sx={{ height: 600 }}>
+        <StyledDataGrid<MovementWithCOA>
           rows={movements || []}
           columns={columns}
           columnVisibilityModel={visibility}
@@ -203,8 +188,8 @@ export default function OverviewGrid() {
           rowCount={totalMovements}
           pageSizeOptions={[25, 50, 100]}
           loading={loadingMovements}
-          disableRowSelectionOnClick
           editMode="cell"
+          variant="overview"
         />
       </Box>
     </Box>

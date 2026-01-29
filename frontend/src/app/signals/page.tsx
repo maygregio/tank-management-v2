@@ -17,14 +17,15 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EditIcon from '@mui/icons-material/Edit';
-import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid';
+import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { movementsApi, tanksApi } from '@/lib/api';
-import { styles, dataGridWithRowStylesSx } from '@/lib/constants';
+import { styles } from '@/lib/constants';
 import { formatDate } from '@/lib/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 import SectionHeader from '@/components/SectionHeader';
 import EmptyState from '@/components/EmptyState';
 import GlassDialog from '@/components/GlassDialog';
+import StyledDataGrid from '@/components/StyledDataGrid';
 import type { Movement, SignalAssignment, TankWithLevel, TradeInfoUpdate, SignalGridRow } from '@/lib/types';
 
 export default function SignalsPage() {
@@ -523,10 +524,9 @@ export default function SignalsPage() {
             />
           ) : (
             <Box sx={{ height: 520, width: '100%' }}>
-              <DataGrid
+              <StyledDataGrid
                 rows={rows}
                 columns={columns}
-                disableRowSelectionOnClick
                 // Server-side pagination
                 paginationMode="server"
                 paginationModel={paginationModel}
@@ -534,7 +534,7 @@ export default function SignalsPage() {
                 rowCount={totalSignals}
                 pageSizeOptions={[25, 50, 100]}
                 loading={signalsLoading}
-                sx={dataGridWithRowStylesSx}
+                variant="striped"
               />
             </Box>
           )}
