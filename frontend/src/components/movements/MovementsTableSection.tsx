@@ -16,45 +16,53 @@ import type { MovementGridRowExtended } from './useMovementsViewModel';
 interface MovementsTableSectionProps {
   rows: MovementGridRowExtended[];
   columns: GridColDef[];
-  selectedRows: GridRowSelectionModel;
-  onSelectedRowsChange: (selection: GridRowSelectionModel) => void;
-  searchQuery: string;
-  onSearchQueryChange: (value: string) => void;
-  statusFilter: 'all' | 'pending' | 'completed';
-  onStatusFilterChange: (value: 'all' | 'pending' | 'completed') => void;
-  typeFilter: MovementType | 'all';
-  onTypeFilterChange: (value: MovementType | 'all') => void;
-  editData: MovementUpdate;
-  onEditDataChange: (data: MovementUpdate) => void;
-  onBulkComplete: () => void;
-  onBulkReschedule: () => void;
-  // Server-side pagination props
-  paginationModel: GridPaginationModel;
-  onPaginationModelChange: (model: GridPaginationModel) => void;
-  rowCount: number;
+  selection: {
+    selectedRows: GridRowSelectionModel;
+    onSelectedRowsChange: (selection: GridRowSelectionModel) => void;
+  };
+  filters: {
+    searchQuery: string;
+    onSearchQueryChange: (value: string) => void;
+    statusFilter: 'all' | 'pending' | 'completed';
+    onStatusFilterChange: (value: 'all' | 'pending' | 'completed') => void;
+    typeFilter: MovementType | 'all';
+    onTypeFilterChange: (value: MovementType | 'all') => void;
+  };
+  bulkActions: {
+    editData: MovementUpdate;
+    onEditDataChange: (data: MovementUpdate) => void;
+    onBulkComplete: () => void;
+    onBulkReschedule: () => void;
+  };
+  pagination: {
+    paginationModel: GridPaginationModel;
+    onPaginationModelChange: (model: GridPaginationModel) => void;
+    rowCount: number;
+  };
   loading?: boolean;
 }
 
 export default function MovementsTableSection({
   rows,
   columns,
-  selectedRows,
-  onSelectedRowsChange,
-  searchQuery,
-  onSearchQueryChange,
-  statusFilter,
-  onStatusFilterChange,
-  typeFilter,
-  onTypeFilterChange,
-  editData,
-  onEditDataChange,
-  onBulkComplete,
-  onBulkReschedule,
-  paginationModel,
-  onPaginationModelChange,
-  rowCount,
+  selection,
+  filters,
+  bulkActions,
+  pagination,
   loading,
 }: MovementsTableSectionProps) {
+  const { selectedRows, onSelectedRowsChange } = selection;
+  const {
+    searchQuery,
+    onSearchQueryChange,
+    statusFilter,
+    onStatusFilterChange,
+    typeFilter,
+    onTypeFilterChange,
+  } = filters;
+  const { editData, onEditDataChange, onBulkComplete, onBulkReschedule } = bulkActions;
+  const { paginationModel, onPaginationModelChange, rowCount } = pagination;
+
   return (
     <Grid size={{ xs: 12, md: 7 }}>
       <Box sx={{ mb: 2 }}>

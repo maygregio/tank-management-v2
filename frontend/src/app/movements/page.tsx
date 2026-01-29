@@ -474,21 +474,29 @@ export default function MovementsPage() {
         <MovementsTableSection
           rows={rows}
           columns={columns}
-          selectedRows={selectedRows}
-          onSelectedRowsChange={setSelectedRows}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={handleStatusFilterChange}
-          typeFilter={typeFilter}
-          onTypeFilterChange={handleTypeFilterChange}
-          editData={editData}
-          onEditDataChange={setEditData}
-          onBulkComplete={handleBulkComplete}
-          onBulkReschedule={handleBulkReschedule}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          rowCount={totalMovements}
+          selection={{
+            selectedRows,
+            onSelectedRowsChange: setSelectedRows,
+          }}
+          filters={{
+            searchQuery,
+            onSearchQueryChange: setSearchQuery,
+            statusFilter,
+            onStatusFilterChange: handleStatusFilterChange,
+            typeFilter,
+            onTypeFilterChange: handleTypeFilterChange,
+          }}
+          bulkActions={{
+            editData,
+            onEditDataChange: setEditData,
+            onBulkComplete: handleBulkComplete,
+            onBulkReschedule: handleBulkReschedule,
+          }}
+          pagination={{
+            paginationModel,
+            onPaginationModelChange: setPaginationModel,
+            rowCount: totalMovements,
+          }}
           loading={movementsLoading}
         />
       </Grid>
